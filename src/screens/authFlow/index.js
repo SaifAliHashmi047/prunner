@@ -1,0 +1,23 @@
+import Login from "./Login";
+import Splash from "./Splash";
+import onBoard from "./onBoard";
+import SignUp from "./SignUp";
+import Forgot from "./Forgot";
+import VerifyEmail from "./VerifyEmail";
+import ChangePassword from "./ChangePassword";
+import VerifyOTP from "./VerifyOtp";
+import AccountType from "./AccountType";
+import CreateProfile from "./CreateProfile";
+import ProfileCreated from "./ProfileCreated";
+import ScanQr from "./ScanQr";
+import ScanPage from "./ScanPage";
+import ProvideInfo from "./ProvideInfo";
+import VerificationProcess from "./VerificationProcess";
+import ProfileVerified from "./ProfileVerified";
+import UploadLicense from "./UploadLicense";
+import ScanLicense from "./ScanLicense";
+import TellAboutVehicle from "./TellAboutVehicle";
+import UploadVehicleRegistration from "./UploadVehicleRegistration";
+import ScanVehicleRegistration from "./ScanVehicleRegistration";
+
+export {Login, Splash , onBoard , SignUp , Forgot , VerifyEmail , ChangePassword , VerifyOTP ,AccountType , CreateProfile , ProfileCreated , ScanQr , ScanPage , ProvideInfo , VerificationProcess , ProfileVerified , UploadLicense , ScanLicense , TellAboutVehicle , UploadVehicleRegistration , ScanVehicleRegistration};
