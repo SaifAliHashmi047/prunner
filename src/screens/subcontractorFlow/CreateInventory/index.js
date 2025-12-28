@@ -14,23 +14,116 @@ import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import useCallApi from "../../../hooks/useCallApi";
+import { Image_Picker } from "../../../services/utilities/Image_Picker";
+import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { Loader } from "../../../components/Loader";
 
 const inventoryData = [
-    { id: "1", name: "Sand", quantity: "2", unit: "Cubic m", icon: appIcons.sand },
-    { id: "2", name: "Cement Bags", quantity: "500", unit: "Bags", icon: appIcons.cement },
-    { id: "3", name: "Steel Rods", quantity: "10", unit: "Tons", icon: appIcons.steel },
-    { id: "4", name: "Bricks", quantity: "10,000", unit: "Units", icon: appIcons.bricks },
-    { id: "5", name: "Gravel", quantity: "150", unit: "Cubic m", icon: appIcons.gravel },
-    { id: "6", name: "Paint Buckets (20L)", quantity: "293", unit: "Buckets", icon: appIcons.paint },
+    { id: "1", name: "Sand", unit: "Cubic m", icon: appIcons.sand },
+    { id: "2", name: "Cement Bags", unit: "Bags", icon: appIcons.cement },
+    { id: "3", name: "Steel Rods", unit: "Tons", icon: appIcons.steel },
+    { id: "4", name: "Bricks", unit: "Units", icon: appIcons.bricks },
+    { id: "5", name: "Gravel", unit: "Cubic m", icon: appIcons.gravel },
+    { id: "6", name: "Paint Buckets (20L)", unit: "Buckets", icon: appIcons.paint },
 ];
 
 const CreateInventory = ({ navigation }) => {
+    const { callApi, uploadFile } = useCallApi();
     const [selectedItem, setSelectedItem] = useState(null);
     const [customName, setCustomName] = useState("");
+    const [quantity, setQuantity] = useState("");
+    const [unit, setUnit] = useState("");
+    const [customImage, setCustomImage] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleSelect = (id) => {
         setSelectedItem(id);
-        if (id !== "custom") setCustomName("");
+        if (id !== "custom") {
+            const item = inventoryData.find(i => i.id === id);
+            setCustomName(item.name);
+            setUnit(item.unit);
+            setCustomImage(null); // Use default icon logic or ignore
+        } else {
+            setCustomName("");
+            setUnit("");
+            setCustomImage(null);
+        }
+    };
+
+    const handleImagePick = async () => {
+        try {
+            const image = await Image_Picker("gallery");
+            if (image && image.path) {
+                setCustomImage({
+                    uri: image.path,
+                    type: image.mime,
+                    name: `inventory_${Date.now()}.jpg`
+                });
+            }
+        } catch (error) {
+            console.log("Image picker error", error);
+        }
+    };
+
+    const handleCreate = async () => {
+        if (!selectedItem) {
+            toastError({ text: "Please select an item" });
+            return;
+        }
+        if (!customName.trim()) {
+            toastError({ text: "Name is required" });
+            return;
+        }
+        if (!quantity.trim()) {
+            toastError({ text: "Quantity is required" });
+            return;
+        }
+        if (selectedItem === "custom" && !unit.trim()) {
+            toastError({ text: "Unit is required" }); // If custom, force unit?
+            return;
+        }
+
+        try {
+            setLoading(true);
+            let imageUrl = "";
+
+            // If custom and image selected, upload it
+            if (selectedItem === "custom" && customImage) {
+                imageUrl = await uploadFile({
+                    uri: customImage.uri,
+                    type: customImage.type,
+                    name: customImage.name
+                });
+            } else if (selectedItem !== "custom") {
+                // For predefined items, maybe we don't send image or sending a placeholder?
+                // The API requires "image": "string".
+                // I'll leave it empty or mock it if not custom, or maybe the backend handles it.
+                // Assuming empty string is fine if utilizing existing icon on backend or not applicable.
+                imageUrl = "default_icon_url"; // or leave empty ""
+            }
+
+            const formData = new FormData();
+            formData.append("name", customName);
+            formData.append("quantity", parseInt(quantity)); // Ensure number
+            formData.append("itemUnit", unit);
+            formData.append("image", imageUrl);
+
+            const response = await callApi("inventory", "POST", formData, {}, true);
+
+            if (response?.success) {
+                toastSuccess({ text: "Inventory created successfully" });
+                navigation.goBack(); // Or navigate to List
+            } else {
+                toastError({ text: response?.message || "Failed to create inventory" });
+            }
+
+        } catch (error) {
+            console.log("Create inventory error", error);
+            toastError({ text: error?.response?.data?.message || "Failed to create inventory" });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -40,7 +133,7 @@ const CreateInventory = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header */}
-                <SecondHeader onPress={() => navigation.goBack()} title="Inventory" />
+                <SecondHeader onPress={() => navigation.goBack()} title="Create Inventory" />
 
                 {/* Custom Option */}
                 <TouchableOpacity
@@ -50,12 +143,18 @@ const CreateInventory = ({ navigation }) => {
                     <View style={{ flex: 1, }}>
                         <Text style={styles.itemName}>Custom</Text>
                         {selectedItem === "custom" && (
-                            <AppTextInput
-                                placeholder="Enter name"
-                                value={customName}
-                                onChangeText={setCustomName}
-                                style={styles.input}
-                            />
+                            <View>
+                                <AppTextInput
+                                    placeholder="Enter name"
+                                    value={customName}
+                                    onChangeText={setCustomName}
+                                    style={styles.input}
+                                />
+                                <TouchableOpacity onPress={handleImagePick} style={styles.uploadBtn}>
+                                    <Text style={styles.uploadText}>{customImage ? "Change Image" : "Upload Image"}</Text>
+                                </TouchableOpacity>
+                                {customImage && <Image source={{ uri: customImage.uri }} style={styles.previewImage} />}
+                            </View>
                         )}
                     </View>
                     <View
@@ -67,7 +166,7 @@ const CreateInventory = ({ navigation }) => {
                                 justifyContent: "center",
                                 alignItems: "center",
                                 marginRight: widthPixel(5),
-                                marginTop: widthPixel(-80)
+                                marginTop: widthPixel(selectedItem === "custom" ? -40 : 0) // adjusted alignment
                             }
                         ]}
                     >
@@ -86,40 +185,51 @@ const CreateInventory = ({ navigation }) => {
                             <Image source={item.icon} style={styles.icon} />
                             <View style={{ marginLeft: widthPixel(12), flex: 1 }}>
                                 <Text style={styles.itemName}>{item.name}</Text>
-
                             </View>
                         </View>
-                        <View style={{
-                            justifyContent: "space-between",
-                            alignItems: "flex-end",
-                            flexDirection: "row",
-                            width: widthPixel(100)
-                        }}>
-                            <Text style={styles.itemQty}>
-                                {item.quantity} {item.unit}
-                            </Text>
-                            <View
-                                style={[
-                                    styles.radioOuter,
-                                    selectedItem === item.id && styles.radioOuterActive,
-                                ]}
-                            >
-                                {selectedItem === item.id && <View style={styles.radioInner} />}
-                            </View>
+                        <View
+                            style={[
+                                styles.radioOuter,
+                                selectedItem === item.id && styles.radioOuterActive,
+                            ]}
+                        >
+                            {selectedItem === item.id && <View style={styles.radioInner} />}
                         </View>
                     </TouchableOpacity>
                 ))}
 
+                {/* Common Inputs */}
+                {selectedItem && (
+                    <View style={styles.inputContainer}>
+                        <AppTextInput
+                            placeholder="Enter Quantity"
+                            value={quantity}
+                            onChangeText={setQuantity}
+                            keyboardType="numeric"
+                            style={styles.input}
+                        />
+                        <AppTextInput
+                            placeholder="Enter Unit (e.g., Bags, Kg)"
+                            value={unit}
+                            onChangeText={setUnit}
+                            style={styles.input}
+                            editable={selectedItem === "custom"} // Pre-filled for items?
+                        />
+                    </View>
+                )}
+
                 {/* Bottom Button */}
-                <View style={{ flex: 1, justifyContent: "flex-end", marginBottom: heightPixel(20) }}>
+                <View style={{ flex: 1, justifyContent: "flex-end", marginBottom: heightPixel(20), marginTop: heightPixel(20) }}>
                     <AppButton
-                        title="NEXT"
-                        style={{ backgroundColor: colors.themeColor }}
+                        title={loading ? "CREATING..." : "CREATE"}
+                        style={[styles.button, loading && { opacity: 0.5 }]}
                         textStyle={{ color: colors.white }}
-                        onPress={() => navigation.navigate(routes.taskUser)}
+                        onPress={handleCreate}
+                        disabled={loading}
                     />
                 </View>
             </ScrollView>
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };
@@ -197,4 +307,28 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         backgroundColor: colors.themeColor,
     },
+    uploadBtn: {
+        marginTop: heightPixel(10),
+        padding: 8,
+        borderWidth: 1,
+        borderColor: colors.themeColor,
+        borderRadius: 6,
+        alignItems: "center"
+    },
+    uploadText: {
+        color: colors.themeColor,
+        fontSize: fontPixel(12)
+    },
+    previewImage: {
+        width: widthPixel(60),
+        height: widthPixel(60),
+        marginTop: 5,
+        borderRadius: 5
+    },
+    inputContainer: {
+        marginTop: heightPixel(20)
+    },
+    button: {
+        backgroundColor: colors.themeColor,
+    }
 });

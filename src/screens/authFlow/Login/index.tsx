@@ -6,19 +6,18 @@ import { AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { routes, emailFormat } from "../../../services/constant";
 import { useAppDispatch, useAppSelector } from "../../../services/store/hooks";
-import { loginSuccess, loginFailure, setLoading } from "../../../services/store/slices/userSlice";
+import { setUserData, setAuthenticated } from "../../../services/store/slices/userSlice";
 import axiosInstance from "../../../api/axiosInstance";
 import styles from "./styles";
 import { toastError } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 
-const Login = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Login = ({ navigation }: { navigation: any }) => {
+  const [email, setEmail] = useState("testing1@yopmail.com");
+  const [password, setPassword] = useState("mM@12345");
   const [errors, setErrors] = useState({ email: "", password: "" });
-
+  const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const loading = useAppSelector((state) => state.user.loading);
 
   // Validation function
   const validateForm = () => {
@@ -58,7 +57,7 @@ const Login = ({ navigation }) => {
     }
 
     try {
-      dispatch(setLoading(true));
+      setLoading(true);
 
       // Call login API
       const response = await axiosInstance.post(
@@ -77,7 +76,7 @@ const Login = ({ navigation }) => {
 
       if (token) {
         // Store token in AsyncStorage
-        await AsyncStorage.setItem("Token", token);
+        await AsyncStorage.setItem("token", token);
 
         // Store refresh token if available
         if (refreshToken) {
@@ -85,32 +84,28 @@ const Login = ({ navigation }) => {
         }
 
         // Store user data in Redux
-        dispatch(
-          loginSuccess({
-            user: user || { email: email.trim() },
-            token: token,
-          })
-        );
+        // Store user data in Redux
+        dispatch(setUserData(user || { email: email.trim() }));
+        dispatch(setAuthenticated(true));
 
         // Navigate to subcontractor flow
         navigation.replace(routes.subcontractorFlow);
       } else {
         throw new Error("Token not received from server");
       }
-    } catch (error) {
-      dispatch(loginFailure());
-      
+    } catch (error: any) {
+
+
       // Show error message
       const errorMessage =
         error?.error ||
         error?.message ||
         error?.response?.data?.message ||
         "Login failed. Please check your credentials and try again.";
-        toastError({text: errorMessage});
+      toastError({ text: errorMessage });
 
-      // Alert.alert("Login Failed", errorMessage, [{ text: "OK" }]);
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
     }
   };
 
@@ -139,7 +134,7 @@ const Login = ({ navigation }) => {
           }}
           keyboardType="email-address"
         />
-        {/* {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null} */}
+        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
         {/* Password Input */}
         <AppTextInput
@@ -153,7 +148,7 @@ const Login = ({ navigation }) => {
           }}
           secureTextEntry={true}
         />
-        {/* {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null} */}
+        {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
         {/* Forgot Password */}
         <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => navigation.navigate(routes.auth, { screen: routes.forgot })}>

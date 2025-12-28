@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -11,13 +11,18 @@ import {
     Alert
 } from "react-native";
 import { useDispatch } from 'react-redux';
-import { clearUserData } from '../../../services/store/slices/userSlice';
+import { clearUserData, setUserData } from '../../../services/store/slices/userSlice';
 import { SecondHeader } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import useCallApi from "../../../hooks/useCallApi";
+import { useAppSelector } from "../../../services/store/hooks";
+import { toastError } from "../../../services/utilities/toast/toast";
 
 const settingsOptions = [
     { id: 1, label: "Edit Profile", icon: appIcons.user, route: routes.editProfile },
@@ -33,8 +38,42 @@ const settingsOptions = [
 ];
 
 const Settings = ({ navigation }) => {
-    const [isNotificationEnabled, setIsNotificationEnabled] = useState(true);
+    const { user } = useAppSelector((state) => state.user);
+    const [isNotificationEnabled, setIsNotificationEnabled] = useState(user?.isNotification ?? true);
     const dispatch = useDispatch();
+    const insets = useSafeAreaInsets();
+    const { callApi } = useCallApi();
+
+    useEffect(() => {
+        if (user) {
+            setIsNotificationEnabled(user.isNotification ?? true);
+        }
+    }, [user]);
+
+    const toggleNotification = async (newValue) => {
+        // Optimistic update
+        setIsNotificationEnabled(newValue);
+
+        try {
+            const response = await callApi(
+                "user/update-me",
+                "PATCH",
+                { isNotification: newValue }
+            );
+
+            if (response?.success) {
+                // Update Redux store to persist state
+                dispatch(setUserData({ ...user, isNotification: newValue }));
+            } else {
+                throw new Error(response?.message || "Failed to update settings");
+            }
+        } catch (error) {
+            console.log("Toggle notification error", error);
+            // Revert state on error
+            setIsNotificationEnabled(!newValue);
+            toastError({ text: "Failed to update notification settings" });
+        }
+    };
 
     const handleLogout = () => {
         Alert.alert(
@@ -48,8 +87,9 @@ const Settings = ({ navigation }) => {
                 {
                     text: "Logout",
                     style: "destructive",
-                    onPress: () => {
+                    onPress: async () => {
                         // Clear user data from Redux store
+                        await AsyncStorage.clear();
                         dispatch(clearUserData());
                         // Navigate to login screen
                         navigation.reset({
@@ -61,10 +101,13 @@ const Settings = ({ navigation }) => {
             ],
             { cancelable: true }
         );
+
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, {
+            paddingTop: insets.top
+        }]}>
             <ScrollView contentContainerStyle={{ paddingHorizontal: widthPixel(20) }}>
                 {/* Header */}
                 <SecondHeader onPress={() => navigation.goBack()} title="Setting" />
@@ -90,7 +133,7 @@ const Settings = ({ navigation }) => {
                         {item.isToggle ? (
                             <Switch
                                 value={isNotificationEnabled}
-                                onValueChange={setIsNotificationEnabled}
+                                onValueChange={toggleNotification}
                                 thumbColor={isNotificationEnabled ? colors.white : "#f4f3f4"}
                                 trackColor={{ false: "#ccc", true: colors.themeColor }}
                             />

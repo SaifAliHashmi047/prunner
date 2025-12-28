@@ -28,6 +28,7 @@ const userSlice = createSlice({
       state.user = action.payload;
     },
     clearUserData: (state) => {
+
       state.userRole = null;
       state.selectedAccountType = null;
       state.isAuthenticated = false;

@@ -1,41 +1,104 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-
-    {
-        id: "1",
-        name: "Lorem ipum dolor coctetur...",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "2",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "3",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "4",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-];
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import useCallApi from "../../../hooks/useCallApi";
+import { Loader } from "../../../components/Loader";
 
 const SiteFeedback = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
+    const { callApi } = useCallApi();
+
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchFeedback = useCallback(async (pageNum, isRefresh = false) => {
+        try {
+            if (isRefresh) {
+                setRefreshing(true);
+            } else if (pageNum === 1) {
+                setLoading(true);
+            } else {
+                setLoadingMore(true);
+            }
+
+            const response = await callApi("feedback/my-feedback", "GET", null, {
+                page: pageNum,
+                limit: 10
+            });
+
+            if (response?.success && response?.data) {
+                const newFeedback = response.data.feedback || response.data.feedbacks || [];
+                const pagination = response.data.pagination;
+
+                if (isRefresh || pageNum === 1) {
+                    setData(newFeedback);
+                } else {
+                    setData(prev => [...prev, ...newFeedback]);
+                }
+
+                if (pagination && pagination.currentPage >= pagination.totalPages) {
+                    setHasMore(false);
+                } else if (newFeedback.length === 0) {
+                    setHasMore(false);
+                } else {
+                    setHasMore(true);
+                }
+
+                setPage(pageNum);
+            }
+
+        } catch (error) {
+            console.log("Fetch site feedback error", error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
+        }
+    }, [callApi]);
+
+    useEffect(() => {
+        fetchFeedback(1);
+    }, []);
+
+    const onRefresh = () => {
+        setHasMore(true);
+        fetchFeedback(1, true);
+    };
+
+    const loadMore = () => {
+        if (!loadingMore && !loading && hasMore) {
+            fetchFeedback(page + 1);
+        }
+    };
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.themeColor} />
+            </View>
+        );
+    };
+
+    const renderEmpty = () => {
+        if (loading) return null; // Loader covers this
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.emptyText}>No feedback found</Text>
+            </View>
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -45,17 +108,28 @@ const SiteFeedback = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={DATA}
-                    keyExtractor={(item) => item.id}
+                    data={data}
+                    keyExtractor={(item) => item._id}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+                    }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={renderEmpty}
+                    contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
                     renderItem={({ item }) => (
                         <View style={styles.workPackItem}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
-                                    <Text style={styles.workPackName}>{item.name}</Text>
+                                    <Text style={styles.workPackName}>{item.title}</Text>
                                 </View>
-                                <Text style={styles.time}>{item.time}</Text>
+                                <Text style={styles.time}>{item.createdAt}</Text>
                             </View>
-                            <Text style={styles.workPackDescription}>{item.description}</Text>
+                            <Text style={styles.workPackDescription} numberOfLines={2}>
+                                {item.details}
+                            </Text>
                             {/* Adding a line under each item */}
                         </View>
                     )}
@@ -66,6 +140,7 @@ const SiteFeedback = ({ navigation }) => {
             }}>
                 <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
             </TouchableOpacity>
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };
@@ -147,6 +222,20 @@ const styles = StyleSheet.create({
         alignItems: "center",
         elevation: 6,
     },
+    footerLoader: {
+        paddingVertical: heightPixel(20),
+        alignItems: "center",
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyText: {
+        fontSize: fontPixel(16),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    }
 });
 
 export default SiteFeedback;
