@@ -31,24 +31,24 @@ const SiteFeedback = ({ navigation }) => {
                 setLoadingMore(true);
             }
 
-            const response = await callApi("feedback/my-feedback", "GET", null, {
+            const response = await callApi("site", "GET", null, {
                 page: pageNum,
                 limit: 10
             });
 
             if (response?.success && response?.data) {
-                const newFeedback = response.data.feedback || response.data.feedbacks || [];
+                const newSites = response.data.sites || [];
                 const pagination = response.data.pagination;
 
                 if (isRefresh || pageNum === 1) {
-                    setData(newFeedback);
+                    setData(newSites);
                 } else {
-                    setData(prev => [...prev, ...newFeedback]);
+                    setData(prev => [...prev, ...newSites]);
                 }
 
                 if (pagination && pagination.currentPage >= pagination.totalPages) {
                     setHasMore(false);
-                } else if (newFeedback.length === 0) {
+                } else if (newSites.length === 0) {
                     setHasMore(false);
                 } else {
                     setHasMore(true);
@@ -119,20 +119,56 @@ const SiteFeedback = ({ navigation }) => {
                     ListFooterComponent={renderFooter}
                     ListEmptyComponent={renderEmpty}
                     contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
-                    renderItem={({ item }) => (
-                        <View style={styles.workPackItem}>
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
-                                    <Text style={styles.workPackName}>{item.title}</Text>
+                    renderItem={({ item }) => {
+                        // Format date
+                        const date = new Date(item.createdAt);
+                        const formattedDate = date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        });
+
+                        return (
+                            <View style={styles.workPackItem}>
+                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.workPackName}>{item.name}</Text>
+                                        <Text style={[styles.workPackDescription, { marginTop: heightPixel(4) }]}>
+                                            📍 {item.location?.address || "No address"}
+                                        </Text>
+                                    </View>
+                                    <View style={{ alignItems: "flex-end" }}>
+                                        <View style={[
+                                            styles.statusBadge,
+                                            { backgroundColor: item.status === 'active' ? '#E8F5E9' : '#FFEBEE' }
+                                        ]}>
+                                            <Text style={[
+                                                styles.statusText,
+                                                { color: item.status === 'active' ? '#4CAF50' : '#F44336' }
+                                            ]}>
+                                                {item.status}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.time}>{formattedDate}</Text>
+                                    </View>
                                 </View>
-                                <Text style={styles.time}>{item.createdAt}</Text>
+                                <View style={{ flexDirection: "row", marginTop: heightPixel(8), gap: widthPixel(4) }}>
+                                    <Text style={styles.createdByLabel}>Created by:</Text>
+                                    <Text style={styles.createdByName}>{item.createdBy?.name || "Unknown"}</Text>
+                                </View>
+                                {item.employeeCounts && (
+                                    <View style={{ flexDirection: "row", marginTop: heightPixel(8), gap: widthPixel(16) }}>
+                                        <Text style={styles.employeeCount}>
+                                            🚜 Forklift: {item.employeeCounts.forklift}
+                                        </Text>
+                                        <Text style={styles.employeeCount}>
+                                            👷 Sub-contractors: {item.employeeCounts.subConstructor}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
-                            <Text style={styles.workPackDescription} numberOfLines={2}>
-                                {item.details}
-                            </Text>
-                            {/* Adding a line under each item */}
-                        </View>
-                    )}
+                        );
+                    }}
                 />
             </View>
             <TouchableOpacity style={styles.fab} onPress={() => {
@@ -234,6 +270,34 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: fontPixel(16),
         color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    statusBadge: {
+        paddingHorizontal: widthPixel(8),
+        paddingVertical: heightPixel(4),
+        borderRadius: widthPixel(4),
+        marginBottom: heightPixel(4),
+    },
+    statusText: {
+        fontSize: fontPixel(12),
+        fontWeight: "600",
+        fontFamily: fonts.NunitoSemiBold,
+        textTransform: "capitalize",
+    },
+    createdByLabel: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    createdByName: {
+        fontSize: fontPixel(12),
+        color: colors.grey300,
+        fontFamily: fonts.NunitoSemiBold,
+        fontWeight: "600",
+    },
+    employeeCount: {
+        fontSize: fontPixel(12),
+        color: colors.grey300,
         fontFamily: fonts.NunitoRegular,
     }
 });

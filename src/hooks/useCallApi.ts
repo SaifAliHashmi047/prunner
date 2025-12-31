@@ -4,6 +4,43 @@ import axios, { AxiosError, Method } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { routes } from "../services/constant";
+export const handleApiError = (error: any) => {
+  // Network error
+  if (error.message === 'Network Error') {
+    return {
+      status: 'error',
+      errorCode: 503,
+      message: 'Network Error',
+    };
+  }
+
+  // Server responded with error
+  if (error.response) {
+    const { status, data } = error.response;
+    console.log("data", data, status);
+    return {
+      status: 'error',
+      errorCode: status,
+      message: data?.message || data?.error || 'Request failed',
+    };
+  }
+
+  // Request made but no response received
+  if (error.request) {
+    return {
+      status: 'error',
+      errorCode: 504,
+      message: 'No response received',
+    };
+  }
+
+  // Request setup error
+  return {
+    status: 'error',
+    errorCode: 500,
+    message: 'Request setup failed',
+  };
+};
 const BASE_URL = "http://ec2-52-91-126-131.compute-1.amazonaws.com/api/v1/";
 const REFRESH_ENDPOINT = "auth/refresh-token";
 const api = axios.create({
@@ -137,8 +174,9 @@ const useCallApi = () => {
             return null;
           }
         }
-        console.log("API error:", err.response?.status, err.message);
-        throw err;
+        const errorData = handleApiError(err);
+        console.log("API error:", errorData);
+        throw errorData;
       }
     },
     []
