@@ -8,110 +8,174 @@ import {
     SafeAreaView,
     ScrollView,
     FlatList,
+    Alert
 } from "react-native";
+import ImagePicker from "react-native-image-crop-picker";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import { Loader } from "../../../components/Loader";
+import useCallApi from "../../../hooks/useCallApi";
 
-const SelectTask = ({ navigation }) => {
-    const [taskType, setTaskType] = useState("");
-    const [time, setTime] = useState("");
-    const [note, setNote] = useState("");
-    const [pictures, setPictures] = useState([
-        { id: "1", uri: "https://picsum.photos/200/300" },
-    ]);
+const SelectTask = ({ navigation, route }) => {
+    const { materialLocation } = route.params || {};
 
-    const handleRemovePicture = (id) => {
-        setPictures(pictures.filter((pic) => pic.id !== id));
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+    const [taskType, setTaskType] = useState("instant");
+    const [priority, setPriority] = useState("medium");
+    const [time, setTime] = useState(""); // For scheduled date
+    const [dropAddress, setDropAddress] = useState("");
+    const [siteId, setSiteId] = useState("");
+    const [duration, setDuration] = useState("");
+
+    // Pictures
+    const [pictures, setPictures] = useState([]);
+
+    const { uploadFile } = useCallApi();
+    const [uploading, setUploading] = useState(false);
+
+    const handleRemovePicture = (uri) => {
+        setPictures(pictures.filter((pic) => pic.uri !== uri));
     };
 
-    const handleUploadPicture = () => {
-        const newPic = {
-            id: String(pictures.length + 1),
-            uri: "https://picsum.photos/200/400",
+    const handlePickImage = async () => {
+        try {
+            const images = await ImagePicker.openPicker({
+                multiple: true,
+                mediaType: "photo",
+                maxFiles: 5 - pictures.length
+            });
+            const formattedImages = images.map(img => ({
+                uri: img.path,
+                type: img.mime,
+                name: img.filename || `image_${Date.now()}_${Math.random()}.jpg`
+            }));
+            setPictures([...pictures, ...formattedImages]);
+        } catch (error) {
+            console.log("ImagePicker error", error);
+        }
+    }; const handleNext = () => {
+        if (!title || !description) {
+            Alert.alert("Error", "Please fill all fields");
+            return;
+        }
+
+        const taskData = {
+            materialLocation,
+            title,
+            description,
+            taskType,
+            priority,
+            scheduledDate: taskType === 'scheduled' ? new Date().toISOString() : new Date().toISOString(), // Mocking date logic if 'time' not fully parsed
+            estimatedDuration: parseInt(duration) || 60,
+            dropOffLocation: {
+                address: dropAddress,
+                coordinates: { latitude: 40.7589, longitude: -73.9851 } // Dummy
+            },
+            siteId: siteId || "60f7b3b3b3b3b3b3b3b3b3b3",
+            pictures: pictures
         };
-        setPictures([...pictures, newPic]);
+
+        navigation.navigate(routes.selectInventoryForTask, {
+            isSelection: true,
+            previousData: taskData
+        });
     };
+
+    const SelectionButton = ({ label, selected, onPress }) => (
+        <TouchableOpacity
+            style={[
+                styles.optionBox,
+                selected && { backgroundColor: colors.themeColor, borderColor: colors.themeColor }
+            ]}
+            onPress={onPress}
+        >
+            <Text style={[styles.optionText, selected && { color: colors.white }]}>{label}</Text>
+        </TouchableOpacity>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView
-                contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
+                contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1, paddingBottom: heightPixel(40) }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
-                <SecondHeader onPress={() => navigation.goBack()} title="Create Task" />
+                <SecondHeader onPress={() => navigation.goBack()} title="Task Details" />
+                <Text style={{
+                    fontSize: fontPixel(14),
+                    fontFamily: fonts.NunitoRegular,
+                    color: colors.greyText,
+                    marginTop: heightPixel(10),
+                    marginBottom: heightPixel(10),
+                }}>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor lectus augue</Text>
 
-                {/* Subtitle */}
-                <Text style={styles.subtitle}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor lectus augue
-                </Text>
 
-                {/* Task Type */}
-                <Text style={styles.label}>Select Task Type</Text>
-                <View>
-                    <TouchableOpacity
-                        style={[styles.optionBox, taskType === "Instant" && styles.activeOption]}
-                        onPress={() => setTaskType("Instant")}
-                    >
-                        <Text style={[styles.optionText, taskType === "Instant" && styles.activeOptionText]}>
-                            Instant
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.optionBox, taskType === "Schedule" && styles.activeOption]}
-                        onPress={() => setTaskType("Schedule")}
-                    >
-                        <Text style={[styles.optionText, taskType === "Schedule" && styles.activeOptionText]}>
-                            Schedule
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Time Input (only if Schedule) */}
-                {taskType === "Schedule" && (
-                    <>
-                        <Text style={styles.label}>Select Time</Text>
-                        <AppTextInput
-                            placeholder="hh:mm AM"
-                            value={time}
-                            onChangeText={setTime}
-                            keyboardType="default"
-                        />
-                    </>
-                )}
-
-                {/* Add Note */}
-                <Text style={styles.label}>Add Note</Text>
+                <Text style={styles.sectionTitle}>Basic Info</Text>
                 <AppTextInput
-                    placeholder="Add details"
-                    value={note}
-                    onChangeText={setNote}
+                    placeholder="Task Title"
+                    value={title}
+                    onChangeText={setTitle}
+                />
+                <AppTextInput
+                    placeholder="Description"
+                    value={description}
+                    onChangeText={setDescription}
                     multiline
+                    style={{ height: heightPixel(80), textAlignVertical: 'top' }}
                 />
 
-                {/* Add Pictures */}
+                <Text style={styles.sectionTitle}>Select Task Type</Text>
+                <View style={[styles.row, {
+                    marginBottom: taskType === "scheduled" ? heightPixel(10) : heightPixel(0)
+                }]}>
+                    <SelectionButton label="Instant" selected={taskType === 'instant'} onPress={() => setTaskType('instant')} />
+                    <SelectionButton label="Scheduled" selected={taskType === 'scheduled'} onPress={() => setTaskType('scheduled')} />
+                </View>
+
+                {taskType === "scheduled" && (
+                    <AppTextInput
+                        placeholder="Scheduled Date/Time"
+                        value={time}
+                        onChangeText={setTime}
+                    />
+                )}
+
+                <Text style={styles.sectionTitle}>Priority</Text>
+                <View style={styles.row}>
+                    <SelectionButton label="Low" selected={priority === 'low'} onPress={() => setPriority('low')} />
+                    <SelectionButton label="Medium" selected={priority === 'medium'} onPress={() => setPriority('medium')} />
+                    <SelectionButton label="High" selected={priority === 'high'} onPress={() => setPriority('high')} />
+                </View>
+
+                <Text style={styles.sectionTitle}>Estimateed Duration Time</Text>
+
+                <AppTextInput
+                    placeholder="minutes"
+                    value={duration}
+                    onChangeText={setDuration}
+                    keyboardType="numeric"
+                />
+
                 <Text style={styles.label}>Add Pictures</Text>
                 <View style={styles.picturesRow}>
-                    {/* Upload Button */}
-                    <TouchableOpacity style={styles.uploadBox} onPress={handleUploadPicture}>
+                    <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage}>
                         <Image source={appIcons.gallery} style={styles.uploadIcon} />
+                        <Text style={styles.uploadText}>Add Image</Text>
                     </TouchableOpacity>
-                    {/* Render Pictures */}
                     <FlatList
                         horizontal
                         data={pictures}
-                        keyExtractor={(item) => item.id}
+                        keyExtractor={(item) => item.uri}
                         renderItem={({ item }) => (
                             <View style={styles.pictureWrapper}>
                                 <Image source={{ uri: item.uri }} style={styles.picture} />
                                 <TouchableOpacity
                                     style={styles.removeBtn}
-                                    onPress={() => handleRemovePicture(item.id)}
+                                    onPress={() => handleRemovePicture(item.uri)}
                                 >
                                     <Text style={styles.removeText}>✕</Text>
                                 </TouchableOpacity>
@@ -120,13 +184,12 @@ const SelectTask = ({ navigation }) => {
                     />
                 </View>
 
-                {/* Bottom Button */}
                 <View style={{ flex: 1, justifyContent: "flex-end", marginBottom: heightPixel(20) }}>
                     <AppButton
-                        title="NEXT"
+                        title="NEXT: SELECT INVENTORY"
                         style={{ backgroundColor: colors.themeColor }}
                         textStyle={{ color: colors.white }}
-                        onPress={() => navigation.navigate(routes.createInventory)}
+                        onPress={handleNext}
                     />
                 </View>
             </ScrollView>
@@ -141,41 +204,37 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.white,
     },
-    subtitle: {
-        fontSize: fontPixel(14),
-        color: "#777",
-        fontFamily: fonts.NunitoRegular,
-        marginVertical: heightPixel(10),
+    sectionTitle: {
+        fontSize: fontPixel(16),
+        fontFamily: fonts.NunitoBold,
+        color: colors.black,
+        marginTop: heightPixel(20),
+        marginBottom: heightPixel(10),
     },
     label: {
-        fontSize: fontPixel(15),
+        fontSize: fontPixel(14),
         fontFamily: fonts.NunitoSemiBold,
-        color: colors.black,
-        marginVertical: heightPixel(10),
+        color: colors.greyText,
+        marginTop: heightPixel(10),
+        marginBottom: heightPixel(8),
+    },
+    row: {
+        flexDirection: 'row',
+        gap: widthPixel(10),
+        flexWrap: 'wrap'
     },
     optionBox: {
+        paddingVertical: heightPixel(8),
+        paddingHorizontal: widthPixel(16),
+        borderRadius: widthPixel(20),
+        borderWidth: 1,
+        borderColor: colors.greyBg,
         backgroundColor: colors.white,
-        paddingVertical: heightPixel(14),
-        paddingHorizontal: widthPixel(14),
-        borderRadius: widthPixel(8),
-        marginBottom: heightPixel(12),
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
     },
     optionText: {
         fontSize: fontPixel(14),
         color: colors.black,
         fontFamily: fonts.NunitoRegular,
-        textAlign: "center",
-    },
-    activeOption: {
-        backgroundColor: colors.themeColor,
-    },
-    activeOptionText: {
-        color: colors.white,
-        fontFamily: fonts.NunitoSemiBold,
     },
     picturesRow: {
         flexDirection: "row",

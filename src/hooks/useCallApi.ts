@@ -4,6 +4,7 @@ import axios, { AxiosError, Method } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { routes } from "../services/constant";
+import { toastError } from "../services/utilities/toast/toast";
 export const handleApiError = (error: any) => {
   // Network error
   if (error.message === 'Network Error') {
@@ -175,7 +176,8 @@ const useCallApi = () => {
           }
         }
         const errorData = handleApiError(err);
-        console.log("API error:", errorData);
+        // Only toast once here
+        toastError({ text: errorData.message });
         throw errorData;
       }
     },
@@ -184,36 +186,25 @@ const useCallApi = () => {
 
   const uploadFile = useCallback(async (file: any) => {
     try {
-      const extension = file.type.split('/')[1];
-      // 1. Get Signed URL
-      const signedUrlResponse = await callApi("s3/signed-upload-url", "GET", null, {
-        fileType: extension
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        type: file.type,
+        name: file.name,
       });
 
-      if (signedUrlResponse && signedUrlResponse.uploadUrl) {
-        // 2. Upload to S3
-        // Note: file.uri might need processing if it's not directly fetchable in React Native sometimes,
-        // but usually fetch(uri) works or creating a Blob.
-        // However, for RN, typical approach for Binary upload is fetch(url, {method: 'PUT', body: blob})
-        // We need to fetch the file to blob first.
+      const response = await callApi("auth/upload", "POST", formData, {}, true);
+      console.log("upload response", response);
 
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-
-        await fetch(signedUrlResponse.uploadUrl, {
-          method: "PUT",
-          body: blob,
-          headers: {
-            "Content-Type": file.type
-          }
-        });
-
-        return signedUrlResponse.fileUrl;
+      if (response && response.url) {
+        return response.url;
       } else {
-        throw new Error("Failed to get signed URL");
+        throw new Error(response?.message || "Upload failed");
       }
-    } catch (error) {
-      console.log("Upload file error", error);
+    } catch (error: any) {
+      if (!error.status) {
+        toastError({ text: error.message || "Upload failed" });
+      }
       throw error;
     }
   }, [callApi]);

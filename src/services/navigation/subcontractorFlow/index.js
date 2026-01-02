@@ -38,6 +38,7 @@ export const SubcontractorNavigation = () => {
             <SubcontractorStack.Screen name={routes.locationOnMap} component={Subcontractor.LocationOnMap} />
             <SubcontractorStack.Screen name={routes.selectTask} component={Subcontractor.SelectTask} />
             <SubcontractorStack.Screen name={routes.createInventory} component={Subcontractor.CreateInventory} />
+            <SubcontractorStack.Screen name={routes.selectInventoryForTask} component={Subcontractor.SelectInventoryForTask} />
             <SubcontractorStack.Screen name={routes.taskUser} component={Subcontractor.TaskUser} />
             <SubcontractorStack.Screen name={routes.settings} component={Subcontractor.Settings} />
             <SubcontractorStack.Screen name={routes.editProfile} component={Subcontractor.EditProfile} />

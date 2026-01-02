@@ -16,6 +16,7 @@ import useCallApi from "../../../hooks/useCallApi";
 import { useAppSelector } from "../../../services/store/hooks";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { AccountType } from "../../authFlow";
 
 const EditProfile = ({ navigation }) => {
     const { user } = useAppSelector((state) => state.user);
@@ -143,7 +144,7 @@ const EditProfile = ({ navigation }) => {
                     onChangeText={setName}
                     style={{ marginTop: heightPixel(30) }}
                 />
-
+                <AccountType />
                 {/* Update Button */}
                 <View style={{
                     marginTop: "auto",
@@ -160,6 +161,7 @@ const EditProfile = ({ navigation }) => {
 
                 </View>
             </View>
+
             <AppModal
                 title="Profile Updated"
                 subtitle="Your profile has been successfully updated."

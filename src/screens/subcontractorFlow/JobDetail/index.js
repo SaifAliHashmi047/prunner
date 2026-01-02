@@ -13,8 +13,11 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons, appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import { formateDate } from "../../../services/utilities/helper";
 
-const JobDetail = ({ navigation }) => {
+const JobDetail = ({ navigation, route }) => {
+  const { task } = route.params || {};
+
   return (
     <SafeAreaView style={styles.container}>
       <SecondHeader onPress={() => navigation.goBack()} title="Job Detail" />
@@ -24,14 +27,14 @@ const JobDetail = ({ navigation }) => {
         contentContainerStyle={{ padding: widthPixel(20), paddingBottom: heightPixel(100) }}
         showsVerticalScrollIndicator={false}
       >
-        {/* User Info */}
+        {/* User Info / Task Title as User for now */}
         <View style={styles.userRow}>
           <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
+            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} // Placeholder avatar
             style={styles.avatar}
           />
-          <Text style={styles.userName}>Alex Johnson</Text>
-          <Text style={styles.status}>Pending</Text>
+          <Text style={styles.userName}>{task?.title || "Task Detail"}</Text>
+          <Text style={styles.status}>{task?.status || "Pending"}</Text>
         </View>
 
         {/* Site Map */}
@@ -47,62 +50,64 @@ const JobDetail = ({ navigation }) => {
         <View style={styles.rowBox}>
           <View style={styles.iconText}>
             <Image source={appIcons.calandar} style={styles.icon} />
-            <Text style={styles.rowText}>12 Dec</Text>
+            <Text style={styles.rowText}>{formateDate(task?.createdAt, "DD-MMM")}</Text>
           </View>
           <View style={styles.iconText}>
             <Image source={appIcons.time} style={styles.icon} />
-            <Text style={styles.rowText}>02:30 PM</Text>
+            <Text style={styles.rowText}>{formateDate(task?.createdAt, "hh:mm A")}</Text>
           </View>
         </View>
 
         {/* Items */}
         <Text style={styles.sectionTitle}>Item to Deliver</Text>
-        <View style={styles.rowBox}>
-          <View style={styles.iconText}>
-            <Image source={appIcons.steel} style={styles.itemIcon} />
-            <Text style={styles.rowText}>Steel Rods</Text>
-          </View>
-          <Text style={styles.rowText}>10 Tons</Text>
-        </View>
-        <View style={styles.rowBox}>
-          <View style={styles.iconText}>
-            <Image source={appIcons.bricks} style={styles.itemIcon} />
-            <Text style={styles.rowText}>Bricks</Text>
-          </View>
-          <Text style={styles.rowText}>10,000 Units</Text>
-        </View>
+        {task?.inventory?.length > 0 ? (
+          task.inventory.map((item, index) => (
+            <View key={index} style={styles.rowBox}>
+              <View style={styles.iconText}>
+                <Image source={appIcons.steel} style={styles.itemIcon} />
+                <Text style={styles.rowText}>{item?.item || "Item"}</Text>
+              </View>
+              <Text style={styles.rowText}>{item?.quantity} {item?.unit || "Units"}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ ...styles.rowText, color: colors.greyText }}>No items listed</Text>
+        )}
 
         {/* Pictures */}
         <Text style={styles.sectionTitle}>Pictures</Text>
-        <View style={{ flexDirection: "row", gap: widthPixel(12) }}>
-          <Image
-            source={{ uri: "https://picsum.photos/200/300" }}
-            style={styles.picture}
-          />
-          <Image
-            source={{ uri: "https://picsum.photos/200/301" }}
-            style={styles.picture}
-          />
+        <View style={{ flexDirection: "row", gap: widthPixel(12), flexWrap: 'wrap' }}>
+          {task?.pictures?.length > 0 ? (
+            task.pictures.map((pic, index) => (
+              <Image
+                key={index}
+                source={{ uri: pic.url || "https://picsum.photos/200/300" }}
+                style={styles.picture}
+              />
+            ))
+          ) : (
+            <Text style={{ ...styles.rowText, color: colors.greyText }}>No pictures available</Text>
+          )}
         </View>
-        <View style={styles.footer}>
-        <AppButton
-          title="Cancel"
-          onPress={() => navigation.navigate(routes.cancelJob)}
-          style={{ 
-            marginTop: heightPixel(20) ,
-            borderWidth: 1,
-            borderColor: 'red',
-          }}
-          textStyle={{ 
-            color: 'red',
-            fontFamily: fonts.NunitoSemiBold,
-           }}
-        />
-      </View>
-      </ScrollView>
 
-      {/* Button pinned at bottom */}
-      
+        <View style={styles.footer}>
+          {task?.status !== 'cancelled' && (
+            <AppButton
+              title="Cancel"
+              onPress={() => navigation.navigate(routes.cancelJob, { taskId: task?._id })}
+              style={{
+                marginTop: heightPixel(20),
+                borderWidth: 1,
+                borderColor: 'red',
+              }}
+              textStyle={{
+                color: 'red',
+                fontFamily: fonts.NunitoSemiBold,
+              }}
+            />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

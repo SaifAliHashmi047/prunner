@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
@@ -7,88 +7,18 @@ import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useCallApi from "../../../hooks/useCallApi";
-import { toastError } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import useWorkpacks from "../../../hooks/useWorkpacks";
 
 const WorkPack = ({ navigation }) => {
     const insets = useSafeAreaInsets();
-    const { callApi } = useCallApi();
 
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-
-    const fetchWorkPacks = useCallback(async (pageNum, isRefresh = false) => {
-        try {
-            if (isRefresh) {
-                setRefreshing(true);
-            } else if (pageNum === 1) {
-                setLoading(true);
-            } else {
-                setLoadingMore(true);
-            }
-
-            const response = await callApi("workpacks", "GET", null, {
-                page: pageNum,
-                limit: 10
-            });
-
-            if (response?.success && response?.data) {
-                const newWorkPacks = response.data.workpacks || [];
-                const pagination = response.data.pagination;
-
-                if (isRefresh || pageNum === 1) {
-                    setData(newWorkPacks);
-                } else {
-                    setData(prev => [...prev, ...newWorkPacks]);
-                }
-
-                // Check if we have loaded all pages
-                if (pagination && pagination.currentPage >= pagination.totalPages) {
-                    setHasMore(false);
-                } else if (newWorkPacks.length === 0) {
-                    setHasMore(false);
-                } else {
-                    setHasMore(true);
-                }
-
-                setPage(pageNum);
-
-            } else {
-                if (pageNum === 1 && !isRefresh) {
-                    // Only show error on initial load failure or handle gracefully
-                    // toastError({ text: response?.message || "Failed to load work packs" });
-                }
-            }
-
-        } catch (error) {
-            console.log("Fetch workpacks error", error);
-            // toastError({ text: "Failed to load work packs" });
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-            setLoadingMore(false);
-        }
-    }, [callApi]);
+    const { workpacks, loading, refreshing, loadingMore, loadMore, onRefresh, fetchWorkPacks } = useWorkpacks();
+    console.log("workpacks,", workpacks);
 
     useEffect(() => {
         fetchWorkPacks(1);
-    }, [fetchWorkPacks]);
-
-    const onRefresh = () => {
-        setHasMore(true);
-        fetchWorkPacks(1, true);
-    };
-
-    const loadMore = () => {
-        if (!loadingMore && !loading && hasMore) {
-            fetchWorkPacks(page + 1);
-        }
-    };
+    }, []);
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -119,7 +49,7 @@ const WorkPack = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={data}
+                    data={workpacks}
                     keyExtractor={(item) => item._id}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
@@ -129,7 +59,7 @@ const WorkPack = ({ navigation }) => {
                     onEndReachedThreshold={0.5}
                     ListFooterComponent={renderFooter}
                     ListEmptyComponent={renderEmpty}
-                    contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
+                    contentContainerStyle={workpacks.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
                     renderItem={({ item }) => (
                         <View style={styles.workPackItem}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -140,10 +70,10 @@ const WorkPack = ({ navigation }) => {
                                         <Text style={styles.count}>0</Text>
                                     </View> */}
                                 </View>
-                                <Text style={styles.time}>{item.createdAt}</Text>
+                                <Text style={styles.time}>{item?.createdAt}</Text>
                             </View>
                             <Text style={styles.workPackDescription} numberOfLines={2}>
-                                {item.createdBy || "Admin"}: {item.description}
+                                {item?.createdBy?.email || "Admin"}: {item.description}
                             </Text>
                             {/* Adding a line under each item */}
                             <View style={styles.separator} />

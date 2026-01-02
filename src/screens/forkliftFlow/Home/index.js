@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,10 @@ import {
   Image,
   ScrollView,
   FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  StatusBar,
+  Platform
 } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { routes } from "../../../services/constant";
@@ -16,191 +20,75 @@ import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
+import { Loader } from "../../../components/Loader";
+import useTasks from "../../../hooks/useTasks";
+import { formateDate } from "../../../services/utilities/helper";
 
 const Home = () => {
 
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Pending");
 
-  const PendingTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Pending",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Pending",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Pending",
-    },
-  ];
+  const { tasks, loading, refreshing, loadMore, onRefresh, loadingMore, fetchTasks } = useTasks();
 
-  const ActiveTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Active",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Active",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Active",
-    },
-  ];
-
-
-  const CompleteTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Completed",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Completed",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Completed",
-    },
-  ];
-
-  const CancelledTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Cancelled",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Cancelled",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Cancelled",
-    },
-  ];
+  useEffect(() => {
+    fetchTasks(1);
+  }, []);
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-
   const handleStartTask = (task) => {
-    console.log("Starting task:", task);
-    if (task?.status === "Pending") {
-      navigation.navigate(routes.forkJobDetail)
-    } else if (task?.status === "Active") {
-      navigation.navigate(routes.materialPicked)
-    }
-
-    // TODO: Implement task start logic
+    // Navigate based on status or ID
+    // navigation.navigate(routes.forkJobDetail, { task })
+    // For now logging
+    console.log("Start task", task);
   };
 
-  const renderTask = ({ item }) => (
-    <TaskCard task={item} 
-    onStartPress={() => handleStartTask(item)} 
-    onCompletePress={() => handleStartTask(item)} 
-    />
-  );
+  const getFilteredTasks = () => {
+    // Filter logic
+    return tasks.filter(task => {
+      const status = task.status?.toLowerCase(); // pending, active, completed, cancelled, in_progress
+      if (activeTab === "Pending") return status === "pending";
+      if (activeTab === "Active") return status === "active" || status === "in_progress";
+      if (activeTab === "Completed") return status === "completed";
+      if (activeTab === "Cancelled") return status === "cancelled";
+      return false;
+    });
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return <ActivityIndicator style={{ marginVertical: 20 }} size="small" color={colors.themeColor} />;
+  };
+
+  const renderTask = ({ item }) => {
+    // Adapter for TaskCard
+    const materials = item.inventory?.map(i => ({
+      name: i.item,
+      quantity: `${i.quantity} ${i.unit || ''}`,
+      icon: appIcons.sand // Default icon?
+    })) || [];
+
+    return (
+      <TaskCard
+        task={{
+          ...item,
+          customerName: item.assignedTo?.name || "Unknown User",
+          customerImage: item.assignedTo?.profileImage || appIcons.dummyPic,
+          materials: materials,
+          date: formateDate(item.createdAt, "DD-MMM-YYYY"),
+          time: formateDate(item.createdAt, "hh:mm A"),
+          status: item.status // Or map specific string if needed
+        }}
+        onStartPress={() => handleStartTask(item)}
+        onCompletePress={() => handleStartTask(item)}
+      />
+    );
+  };
+
+  const filteredData = getFilteredTasks();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -239,45 +127,23 @@ const Home = () => {
           </TouchableOpacity>
         ))}
       </View>
-      {activeTab === "Pending" && (
-        <FlatList
-          data={PendingTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
-      {activeTab === "Active" && (
-        <FlatList
-          data={ActiveTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
-      {activeTab === "Completed" && (
-        <FlatList
-          data={CompleteTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
 
-      {activeTab === "Cancelled" && (
-        <FlatList
-          data={CancelledTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
+      <FlatList
+        data={filteredData}
+        keyExtractor={(item) => item._id || item.id}
+        renderItem={renderTask}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.taskList}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={!loading && <Text style={{ textAlign: 'center', marginTop: 20 }}>No tasks found</Text>}
+      />
 
-
+      <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };

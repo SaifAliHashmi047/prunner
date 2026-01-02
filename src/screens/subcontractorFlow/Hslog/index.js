@@ -1,31 +1,99 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-
-    {
-        id: "1",
-        name: "Crane in Operation",
-        description: "A crane is currently in operation on site. Always maintain a safe distance from the lifting zone to avoid accidents from swinging loads or dropped...",
-        time: "12-Dec-2023",
-        isActive : true,
-    },
-    {
-        id: "2",
-        name: "Overhead Work in Progress",
-        description: "A crane is currently in operation on site. Always maintain a safe distance from the lifting zone to avoid accidents from swinging loads or dropped...",
-        time: "12-Dec-2023",
-        isActive : false,
-    }
-];
+import useCallApi from "../../../hooks/useCallApi";
+import { Loader } from "../../../components/Loader";
 
 const HsLog = ({ navigation }) => {
+    const { callApi } = useCallApi();
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchLogs = useCallback(async (pageNum, isRefresh = false) => {
+        try {
+            if (isRefresh) {
+                setRefreshing(true);
+            } else if (pageNum === 1) {
+                setLoading(true);
+            } else {
+                setLoadingMore(true);
+            }
+
+            const response = await callApi("hs-logs", "GET", null, {
+                page: pageNum,
+                limit: 10
+            });
+
+            if (response?.success && response?.data) {
+                const newLogs = response.data.hsLogs || [];
+                const pagination = response.data.pagination;
+
+                if (isRefresh || pageNum === 1) {
+                    setLogs(newLogs);
+                } else {
+                    setLogs(prev => [...prev, ...newLogs]);
+                }
+
+                if (pagination && pagination.currentPage >= pagination.totalPages) {
+                    setHasMore(false);
+                } else if (newLogs.length === 0) {
+                    setHasMore(false);
+                } else {
+                    setHasMore(true);
+                }
+                setPage(pageNum);
+            }
+        } catch (error) {
+            console.log("Fetch HS logs error", error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
+        }
+    }, [callApi]);
+
+    useEffect(() => {
+        fetchLogs(1);
+    }, []);
+
+    const onRefresh = () => {
+        setHasMore(true);
+        fetchLogs(1, true);
+    };
+
+    const loadMore = () => {
+        if (!loadingMore && !loading && hasMore) {
+            fetchLogs(page + 1);
+        }
+    };
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color={colors.themeColor} />
+            </View>
+        );
+    };
+
+    const renderEmpty = () => {
+        if (loading) return null;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", marginTop: 50 }}>
+                <Text style={{ fontSize: 16, color: colors.greyBg, fontFamily: fonts.NunitoRegular }}>No logs found</Text>
+            </View>
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -35,20 +103,29 @@ const HsLog = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={DATA}
-                    keyExtractor={(item) => item.id}
+                    data={logs}
+                    keyExtractor={(item) => item._id}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+                    }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={renderEmpty}
+                    contentContainerStyle={logs.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(20) }}
                     renderItem={({ item }) => (
                         <View style={styles.workPackItem}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
                                     <Image source={appIcons.warning} style={{ width: widthPixel(20), height: widthPixel(20), resizeMode: "contain", }} />
-                                    <Text style={styles.workPackName}>{item.name}</Text>
+                                    <Text style={styles.workPackName}>{item.title}</Text>
                                 </View>
-                                {item.isActive ? <View style={styles.countContainer}>
+                                {item.status === 'active' ? <View style={styles.countContainer}>
                                     <Text style={styles.count}>Active</Text>
                                 </View> : null}
                             </View>
-                            <Text style={styles.workPackDescription}>{item.description}</Text>
+                            <Text style={styles.workPackDescription}>{item.precaution}</Text>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
                                     <Text style={[styles.workPackName, {
@@ -56,18 +133,14 @@ const HsLog = ({ navigation }) => {
                                     }]}>Active Date </Text>
                                 </View>
                                 <Image source={appIcons.calandar} style={{ width: widthPixel(20), height: widthPixel(20), resizeMode: "contain", }} />
-                                <Text style={styles.time}>{item.time}</Text>
+                                <Text style={styles.time}>{item.date}</Text>
                             </View>
                             {/* Adding a line under each item */}
                         </View>
                     )}
                 />
             </View>
-            {/* <TouchableOpacity style={styles.fab} onPress={() => {
-                navigation.navigate(routes.addFeedback)
-            }}>
-                <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
-            </TouchableOpacity> */}
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };

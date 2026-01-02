@@ -5,15 +5,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Alert
 } from "react-native";
 import { SecondHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import useTasks from "../../../hooks/useTasks";
+import { Loader } from "../../../components/Loader";
+import { toastSuccess } from "../../../services/utilities/toast/toast";
 
-const CancelJob = ({ navigation }) => {
+const CancelJob = ({ navigation, route }) => {
+  const { taskId } = route.params || {};
   const [selectedOption, setSelectedOption] = useState(null);
+  const { updateTaskStatus, loading } = useTasks();
 
   const options = [
     "Aliquam ultricies fermentum elit,",
@@ -22,6 +28,30 @@ const CancelJob = ({ navigation }) => {
     "Lorem ipsum dolor sit amet",
     "Other",
   ];
+
+  const handleCancelJob = async () => {
+    if (selectedOption === "Other") {
+      navigation.navigate(routes.cancelJobOther, { taskId });
+      return;
+    }
+
+    if (!taskId) {
+      Alert.alert("Error", "Task ID missing");
+      return;
+    }
+    try {
+      const response = await updateTaskStatus(taskId, "cancelled", selectedOption);
+      if (response?.success) {
+        toastSuccess({ message: "Task cancelled successfully" })
+      }
+    } catch (error) {
+      console.log("Cancel job error", error);
+      toastError({ message: "Failed to cancel task" })
+    } finally {
+      navigation.goBack();
+
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -73,13 +103,11 @@ const CancelJob = ({ navigation }) => {
             textStyle={{
               color: colors.white,
             }}
-            onPress={() => {
-              navigation.navigate(routes.cancelJobOther);
-            }}
+            onPress={handleCancelJob}
           />
         </View>
       </View>
-
+      <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };
@@ -107,7 +135,7 @@ const styles = StyleSheet.create({
     marginVertical: heightPixel(6),
   },
   optionSelected: {
-    backgroundColor: colors.themeColor , // light tint of theme
+    backgroundColor: colors.themeColor, // light tint of theme
     // borderWidth: 1,
     // borderColor: colors.themeColor,
   },

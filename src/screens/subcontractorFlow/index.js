@@ -30,5 +30,6 @@ import TermsOfUse from "./TermsOfUse";
 import DeleteAccount from "./DeleteAccount";
 import AccountDeleted from "./AccountDeleted";
 import LiveSound from "./LiveSound";
+import SelectInventoryForTask from "./SelectInventoryForTask";
 
-export { Home, Chat, SiteMap, Inventory, WorkPack, CreateWorkPack, SiteFeedback, MyComplaint, ChatDetail , AddFeedback , SubmitComplaint , HsLog , JobDetails , CancelJob , CancelJobOther , HomeDetail , CreateTask , LocationOnMap , SelectTask , CreateInventory , TaskUser , Settings , EditProfile , FeedBack , UpdatePassword , ContactUs , PrivacyPolicy , AboutUs , TermsOfUse , DeleteAccount , AccountDeleted , LiveSound };
+export { Home, Chat, SiteMap, Inventory, WorkPack, CreateWorkPack, SiteFeedback, MyComplaint, ChatDetail, AddFeedback, SubmitComplaint, HsLog, JobDetails, CancelJob, CancelJobOther, HomeDetail, CreateTask, LocationOnMap, SelectTask, CreateInventory, TaskUser, Settings, EditProfile, FeedBack, UpdatePassword, ContactUs, PrivacyPolicy, AboutUs, TermsOfUse, DeleteAccount, AccountDeleted, LiveSound, SelectInventoryForTask };

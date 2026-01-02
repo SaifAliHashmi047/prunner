@@ -26,7 +26,7 @@ const AddFeedback = ({ navigation, route }) => {
     const [details, setDetails] = useState("");
     const [pictures, setPictures] = useState([]);
     const [loading, setLoading] = useState(false);
-    const { callApi } = useCallApi();
+    const { callApi, uploadFile } = useCallApi();
 
     // Default rating to 5 as per request example "rating": 5
     // Unless UI is added for star rating, we keep it internal or fixed.
@@ -72,47 +72,18 @@ const AddFeedback = ({ navigation, route }) => {
         try {
             setLoading(true);
 
-            // Upload images first using the new S3 pattern
+            // Upload images first
             const uploadedUrls = [];
             for (const pic of pictures) {
-                try {
-                    // Step 1: Detect file type (default to image/jpeg)
-                    const fileType = pic.type || "image/jpeg";
+                console.log("pic", pic);
 
-                    // Step 2: Generate random file name
-                    const fileExtension = fileType.split('/')[1] || 'jpg';
-                    const randomName = `img_${Date.now()}_${Math.floor(Math.random() * 10000)}.${fileExtension}`;
-
-                    // Step 3: Request signed URL from backend
-                    const signedUrlResponse = await callApi(
-                        `s3/signed-upload-url?fileName=${randomName}&fileType=${fileType}`,
-                        "GET",
-                        {},
-                        true
-                    );
-
-                    if (!signedUrlResponse?.success || !signedUrlResponse?.data) {
-                        console.log("Failed to get signed URL for", randomName);
-                        continue;
-                    }
-
-                    const { uploadUrl, fileUrl } = signedUrlResponse.data;
-
-                    // Step 4: Upload image directly to S3
-                    const response = await fetch(pic.uri);
-                    const blob = await response.blob();
-
-                    await fetch(uploadUrl, {
-                        method: "PUT",
-                        body: blob,
-                        headers: { 'Content-Type': fileType },
-                    });
-
-                    // Step 5: Add uploaded image URL to array
-                    uploadedUrls.push(fileUrl);
-                } catch (uploadError) {
-                    console.log("Error uploading image:", uploadError);
-                    // Continue with other images even if one fails
+                const url = await uploadFile({
+                    uri: pic.uri,
+                    type: pic.type || "image/jpeg",
+                    name: pic.name
+                });
+                if (url) {
+                    uploadedUrls.push(url);
                 }
             }
 

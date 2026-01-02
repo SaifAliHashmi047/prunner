@@ -6,7 +6,7 @@ import { AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { routes, emailFormat } from "../../../services/constant";
 import { useAppDispatch, useAppSelector } from "../../../services/store/hooks";
-import { setUserData, setAuthenticated } from "../../../services/store/slices/userSlice";
+import { setUserData, setAuthenticated, setUserRole } from "../../../services/store/slices/userSlice";
 import axiosInstance from "../../../api/axiosInstance";
 import styles from "./styles";
 import { toastError } from "../../../services/utilities/toast/toast";
@@ -68,11 +68,13 @@ const Login = ({ navigation }: { navigation: any }) => {
         },
         { skipAuth: true }
       );
+      console.log("response login", response);
 
       // Extract token and user data from response
-      const token = response?.data?.accessToken || response?.data?.token || response?.data?.data?.accessToken || response?.data?.data?.token;
-      const refreshToken = response?.data?.refreshToken || response?.data?.data?.refreshToken;
-      const user = response?.data?.user || response?.data?.data?.user || response?.data?.data;
+      const token = response?.data?.data?.token;
+      const refreshToken = response?.data?.data?.refreshToken;
+      const user = response?.data?.data?.user
+      console.log("user", user);
 
       if (token) {
         // Store token in AsyncStorage
@@ -83,13 +85,25 @@ const Login = ({ navigation }: { navigation: any }) => {
           await AsyncStorage.setItem("refreshToken", refreshToken);
         }
 
+        // Store user in AsyncStorage for persistence
+        if (user) {
+          await AsyncStorage.setItem("user", JSON.stringify(user));
+        }
+
         // Store user data in Redux
-        // Store user data in Redux
-        dispatch(setUserData(user || { email: email.trim() }));
+        dispatch(setUserData(user));
         dispatch(setAuthenticated(true));
 
-        // Navigate to subcontractor flow
-        navigation.replace(routes.subcontractorFlow);
+        if (user?.role) {
+          dispatch(setUserRole(user.role));
+          if (user.role === 'forklift') {
+            navigation.replace(routes.forkliftFlow);
+          } else {
+            navigation.replace(routes.subcontractorFlow);
+          }
+        } else {
+          navigation.replace(routes.subcontractorFlow);
+        }
       } else {
         throw new Error("Token not received from server");
       }

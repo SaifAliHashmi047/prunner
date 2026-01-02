@@ -1,29 +1,28 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-
-    {
-        id: "1",
-        name: "Lorem ipum dolor coctetur...",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "2",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    }
-];
+import useComplaints from "../../../hooks/useComplaints";
+import { formateDate } from "../../../services/utilities/helper";
+import { Loader } from "../../../components/Loader";
 
 const MyComplaint = ({ navigation }) => {
+    const { complaints, loading, refreshing, loadMore, onRefresh, loadingMore, fetchComplaints } = useComplaints();
+    const onEndReachedCalledDuringMomentum = useRef(true);
+
+    useEffect(() => {
+        fetchComplaints(1);
+    }, []);
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return <ActivityIndicator style={{ marginVertical: 20 }} size="small" color={colors.themeColor} />;
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -33,18 +32,31 @@ const MyComplaint = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={DATA}
-                    keyExtractor={(item) => item.id}
+                    data={complaints}
+                    keyExtractor={(item) => item._id || item.id}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+                    }
+                    onMomentumScrollBegin={() => { onEndReachedCalledDuringMomentum.current = false; }}
+                    onEndReached={() => {
+                        if (!onEndReachedCalledDuringMomentum.current) {
+                            loadMore();
+                            onEndReachedCalledDuringMomentum.current = true;
+                        }
+                    }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={!loading && <Text style={{ textAlign: "center", marginTop: 20, color: colors.greyText, fontFamily: fonts.NunitoRegular }}>No complaints found</Text>}
                     renderItem={({ item }) => (
                         <View style={styles.workPackItem}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
-                                    <Text style={styles.workPackName}>{item.name}</Text>
+                                    <Text style={styles.workPackName}>{item.title || "Complaint"}</Text>
                                 </View>
-                                <Text style={styles.time}>{item.time}</Text>
+                                <Text style={styles.time}>{formateDate(item.createdAt, "DD-MMM-YYYY")}</Text>
                             </View>
                             <Text style={styles.workPackDescription}>{item.description}</Text>
-                            {/* Adding a line under each item */}
                         </View>
                     )}
                 />
@@ -54,6 +66,7 @@ const MyComplaint = ({ navigation }) => {
             }}>
                 <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
             </TouchableOpacity>
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };

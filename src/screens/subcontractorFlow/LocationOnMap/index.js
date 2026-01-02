@@ -56,7 +56,12 @@ const LocationOnMap = ({ navigation }) => {
             style={{ backgroundColor: colors.themeColor }}
             textStyle={{ color: colors.white }}
             onPress={() => {
-              navigation.navigate(routes.selectTask)
+              navigation.navigate(routes.selectTask, {
+                materialLocation: {
+                  address: "Selected Map Location",
+                  coordinates: { latitude: 40.7128, longitude: -74.006 }
+                }
+              })
             }}
           />
         </View>
