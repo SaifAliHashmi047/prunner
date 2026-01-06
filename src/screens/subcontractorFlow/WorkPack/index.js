@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
@@ -9,6 +9,7 @@ import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Loader } from "../../../components/Loader";
 import useWorkpacks from "../../../hooks/useWorkpacks";
+import { useFocusEffect } from "@react-navigation/native";
 
 const WorkPack = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -16,9 +17,9 @@ const WorkPack = ({ navigation }) => {
     const { workpacks, loading, refreshing, loadingMore, loadMore, onRefresh, fetchWorkPacks } = useWorkpacks();
     console.log("workpacks,", workpacks);
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         fetchWorkPacks(1);
-    }, []);
+    }, [fetchWorkPacks]));
 
     const renderFooter = () => {
         if (!loadingMore) return null;

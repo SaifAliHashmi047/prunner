@@ -22,6 +22,8 @@ import { Loader } from "../../../components/Loader";
 
 const AddFeedback = ({ navigation, route }) => {
     const { user } = useSelector((state) => state.user);
+    const { selectedSite } = useSelector((state) => state.site);
+
     const [title, setTitle] = useState("");
     const [details, setDetails] = useState("");
     const [pictures, setPictures] = useState([]);
@@ -31,11 +33,6 @@ const AddFeedback = ({ navigation, route }) => {
     // Default rating to 5 as per request example "rating": 5
     // Unless UI is added for star rating, we keep it internal or fixed.
     const [rating, setRating] = useState(5);
-
-    // Assuming siteId comes from route params or is required. 
-    // If not passed, we might need a fallback or it might be null.
-    // user request: "siteId": "string"
-    const siteId = route?.params?.siteId || "default-site-id";
 
     const handleRemovePicture = (id) => {
         setPictures(pictures.filter((pic) => pic.id !== id));
@@ -68,6 +65,10 @@ const AddFeedback = ({ navigation, route }) => {
             toastError({ text: "Please enter details" });
             return;
         }
+        if (!selectedSite?._id) {
+            toastError({ text: "Please select a site" });
+            return;
+        }
 
         try {
             setLoading(true);
@@ -91,7 +92,7 @@ const AddFeedback = ({ navigation, route }) => {
                 title: title,
                 description: details,
                 rating: rating,
-                siteId: siteId,
+                siteId: selectedSite?._id,
                 media: uploadedUrls
             };
 

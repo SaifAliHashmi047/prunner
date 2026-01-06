@@ -15,9 +15,10 @@ import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import { useSelector } from "react-redux";
 
 const LocationOnMap = ({ navigation }) => {
-
+const {sites} = useSelector(state => state.site);
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -57,10 +58,8 @@ const LocationOnMap = ({ navigation }) => {
             textStyle={{ color: colors.white }}
             onPress={() => {
               navigation.navigate(routes.selectTask, {
-                materialLocation: {
-                  address: "Selected Map Location",
-                  coordinates: { latitude: 40.7128, longitude: -74.006 }
-                }
+                "materialLocation":sites[0]?.location,
+                "dropOffLocation":sites[1]?.location
               })
             }}
           />

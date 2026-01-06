@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl, Platform, ScrollView } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -7,79 +7,28 @@ import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import useCallApi from "../../../hooks/useCallApi";
 import { Loader } from "../../../components/Loader";
+import useFeedback from "../../../hooks/useFeedback";
 
 const SiteFeedback = ({ navigation }) => {
     const insets = useSafeAreaInsets();
-    const { callApi } = useCallApi();
-
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-
-    const fetchFeedback = useCallback(async (pageNum, isRefresh = false) => {
-        try {
-            if (isRefresh) {
-                setRefreshing(true);
-            } else if (pageNum === 1) {
-                setLoading(true);
-            } else {
-                setLoadingMore(true);
-            }
-
-            const response = await callApi("site", "GET", null, {
-                page: pageNum,
-                limit: 10
-            });
-
-            if (response?.success && response?.data) {
-                const newSites = response.data.sites || [];
-                const pagination = response.data.pagination;
-
-                if (isRefresh || pageNum === 1) {
-                    setData(newSites);
-                } else {
-                    setData(prev => [...prev, ...newSites]);
-                }
-
-                if (pagination && pagination.currentPage >= pagination.totalPages) {
-                    setHasMore(false);
-                } else if (newSites.length === 0) {
-                    setHasMore(false);
-                } else {
-                    setHasMore(true);
-                }
-
-                setPage(pageNum);
-            }
-
-        } catch (error) {
-            console.log("Fetch site feedback error", error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-            setLoadingMore(false);
-        }
-    }, [callApi]);
+    
+    // Use the feedback hook with "site" endpoint
+    const {
+        feedback: data,
+        loading,
+        refreshing,
+        loadingMore,
+        hasMore,
+        fetchFeedback,
+        loadMore,
+        onRefresh,
+    } = useFeedback();
 
     useEffect(() => {
         fetchFeedback(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    const onRefresh = () => {
-        setHasMore(true);
-        fetchFeedback(1, true);
-    };
-
-    const loadMore = () => {
-        if (!loadingMore && !loading && hasMore) {
-            fetchFeedback(page + 1);
-        }
-    };
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -121,23 +70,49 @@ const SiteFeedback = ({ navigation }) => {
                     contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
                     renderItem={({ item }) => {
                         // Format date
-                        const date = new Date(item.createdAt);
+                        const date = new Date(item.createdAt || item.created_at || Date.now());
                         const formattedDate = date.toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                         });
 
+                        // Render rating stars
+                        const renderRating = () => {
+                            const stars = [];
+                            const rating = item.rating || 0;
+                            for (let i = 1; i <= 5; i++) {
+                                stars.push(
+                                    <Text key={i} style={styles.star}>
+                                        {i <= rating ? '★' : '☆'}
+                                    </Text>
+                                );
+                            }
+                            return stars;
+                        };
+
                         return (
                             <View style={styles.workPackItem}>
-                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.workPackName}>{item.name}</Text>
+                                        <Text style={styles.workPackName}>{item.title || "No title"}</Text>
                                         <Text style={[styles.workPackDescription, { marginTop: heightPixel(4) }]}>
-                                            📍 {item.location?.address || "No address"}
+                                            {item.description || "No description"}
                                         </Text>
+                                        {item.siteId && (
+                                            <View style={{ marginTop: heightPixel(6) }}>
+                                                <Text style={[styles.siteInfo, { marginBottom: heightPixel(2) }]}>
+                                                    📍 Site: {item.siteId.name || "Unknown"}
+                                                </Text>
+                                                {item.siteId.location?.address && (
+                                                    <Text style={styles.siteInfo}>
+                                                        {item.siteId.location.address}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        )}
                                     </View>
-                                    <View style={{ alignItems: "flex-end" }}>
+                                    <View style={{ alignItems: "flex-end", marginLeft: widthPixel(12) }}>
                                         <View style={[
                                             styles.statusBadge,
                                             { backgroundColor: item.status === 'active' ? '#E8F5E9' : '#FFEBEE' }
@@ -152,19 +127,31 @@ const SiteFeedback = ({ navigation }) => {
                                         <Text style={styles.time}>{formattedDate}</Text>
                                     </View>
                                 </View>
-                                <View style={{ flexDirection: "row", marginTop: heightPixel(8), gap: widthPixel(4) }}>
-                                    <Text style={styles.createdByLabel}>Created by:</Text>
-                                    <Text style={styles.createdByName}>{item.createdBy?.name || "Unknown"}</Text>
-                                </View>
-                                {item.employeeCounts && (
-                                    <View style={{ flexDirection: "row", marginTop: heightPixel(8), gap: widthPixel(16) }}>
-                                        <Text style={styles.employeeCount}>
-                                            🚜 Forklift: {item.employeeCounts.forklift}
-                                        </Text>
-                                        <Text style={styles.employeeCount}>
-                                            👷 Sub-contractors: {item.employeeCounts.subConstructor}
-                                        </Text>
+                                
+                                {/* Rating */}
+                                <View style={{ flexDirection: "row", alignItems: "center", marginTop: heightPixel(8) }}>
+                                    <Text style={styles.ratingLabel}>Rating: </Text>
+                                    <View style={{ flexDirection: "row" }}>
+                                        {renderRating()}
                                     </View>
+                                </View>
+
+                                {/* Media Images */}
+                                {item.media && item.media.length > 0 && (
+                                    <ScrollView 
+                                        horizontal 
+                                        showsHorizontalScrollIndicator={false}
+                                        style={{ marginTop: heightPixel(12) }}
+                                    >
+                                        {item.media.map((imageUrl, index) => (
+                                            <Image
+                                                key={index}
+                                                source={{ uri: imageUrl }}
+                                                style={styles.mediaImage}
+                                                resizeMode="cover"
+                                            />
+                                        ))}
+                                    </ScrollView>
                                 )}
                             </View>
                         );
@@ -299,7 +286,30 @@ const styles = StyleSheet.create({
         fontSize: fontPixel(12),
         color: colors.grey300,
         fontFamily: fonts.NunitoRegular,
-    }
+    },
+    ratingLabel: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+        marginRight: widthPixel(4),
+    },
+    star: {
+        fontSize: fontPixel(16),
+        color: '#FFD700',
+        marginRight: widthPixel(2),
+    },
+    siteInfo: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    mediaImage: {
+        width: widthPixel(80),
+        height: widthPixel(80),
+        borderRadius: widthPixel(8),
+        marginRight: widthPixel(8),
+        backgroundColor: colors.greyBg,
+    },
 });
 
 export default SiteFeedback;

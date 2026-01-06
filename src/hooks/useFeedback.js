@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import useCallApi from "./useCallApi";
 
-const useTasks = () => {
+const useFeedback = ( ) => {
   const { callApi } = useCallApi();
-  const [tasks, setTasks] = useState([]);
+  const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -16,7 +16,7 @@ const useTasks = () => {
   // Keep callApi ref updated
   callApiRef.current = callApi;
 
-  const fetchTasks = useCallback(
+  const fetchFeedback = useCallback(
     async (pageNum = 1, isRefresh = false) => {
       if (isLoadingRef.current && !isRefresh) return;
 
@@ -32,23 +32,28 @@ const useTasks = () => {
       }
 
       try {
-        const response = await callApiRef.current("tasks", "GET", null, {
+        const response = await callApiRef.current("feedback/my-feedback", "GET", null, {
           page: pageNum,
           limit: 10,
         });
 
         if (response?.success && response?.data) {
-          const newTasks = response.data.tasks || [];
+          // Handle different response structures
+          const list =
+            response.data.sites ||
+            response.data.feedback ||
+            response.data.feedbacks ||
+            [];
           const pagination = response.data.pagination;
 
           if (isRefresh || pageNum === 1) {
-            setTasks(newTasks);
+            setFeedback(list);
           } else {
-            setTasks((prev) => [...prev, ...newTasks]);
+            setFeedback((prev) => [...prev, ...list]);
           }
 
           // Logic to determine if there are more items
-          if (newTasks.length < 10) {
+          if (list.length < 10) {
             setHasMore(false);
           } else if (
             pagination &&
@@ -61,7 +66,7 @@ const useTasks = () => {
           setPage(pageNum);
         }
       } catch (error) {
-        console.log("Fetch tasks error", error);
+        console.log("Fetch feedback error", error);
         setHasMore(false);
       } finally {
         setLoading(false);
@@ -70,67 +75,31 @@ const useTasks = () => {
         isLoadingRef.current = false;
       }
     },
-    [] // Remove callApi from dependencies, using ref instead
+    [ ] // Only endpoint in dependencies, using ref for callApi
   );
 
   const loadMore = useCallback(() => {
     if (!isLoadingRef.current && hasMore && !loading && !loadingMore) {
-      fetchTasks(page + 1);
+      fetchFeedback(page + 1);
     }
-  }, [fetchTasks, hasMore, loading, loadingMore, page]);
+  }, [fetchFeedback, hasMore, loading, loadingMore, page]);
 
   const onRefresh = useCallback(() => {
-    fetchTasks(1, true);
-  }, [fetchTasks]);
-
-  const updateTaskStatus = useCallback(
-    async (taskId, status, notes) => {
-      try {
-        setLoading(true);
-        const response = await callApiRef.current(`tasks/${taskId}/status`, "PATCH", {
-          status,
-          notes,
-        });
-        return response;
-      } catch (error) {
-        console.log("Update task status error", error);
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [] // Remove callApi from dependencies, using ref instead
-  );
-
-  const createTask = useCallback(
-    async (payload) => {
-      try {
-        setLoading(true);
-        const response = await callApiRef.current("tasks", "POST", payload);
-        return response;
-      } catch (error) {
-        console.log("Create task error", error);
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [] // Remove callApi from dependencies, using ref instead
-  );
+    fetchFeedback(1, true);
+  }, [fetchFeedback]);
 
   return {
-    tasks,
+    feedback,
     loading,
     refreshing,
     loadingMore,
     hasMore,
     page,
-    fetchTasks,
+    fetchFeedback,
     loadMore,
     onRefresh,
-    updateTaskStatus,
-    createTask,
   };
 };
 
-export default useTasks;
+export default useFeedback;
+

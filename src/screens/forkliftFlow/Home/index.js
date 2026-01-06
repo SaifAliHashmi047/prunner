@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  Platform
+  Platform,
 } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { routes } from "../../../services/constant";
@@ -23,17 +23,24 @@ import { appIcons } from "../../../services/utilities/assets";
 import { Loader } from "../../../components/Loader";
 import useTasks from "../../../hooks/useTasks";
 import { formateDate } from "../../../services/utilities/helper";
+import useSite from "../../../hooks/useSite";
+import { useDispatch } from "react-redux";
+import { setSelectedSite, setSites } from "../../../services/store/slices/siteSlice";
 
 const Home = () => {
-
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Pending");
 
-  const { tasks, loading, refreshing, loadMore, onRefresh, loadingMore, fetchTasks } = useTasks();
-
-  useEffect(() => {
-    fetchTasks(1);
-  }, []);
+  const {
+    tasks,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchTasks,
+  } = useTasks();
+  
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
@@ -48,10 +55,11 @@ const Home = () => {
 
   const getFilteredTasks = () => {
     // Filter logic
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       const status = task.status?.toLowerCase(); // pending, active, completed, cancelled, in_progress
       if (activeTab === "Pending") return status === "pending";
-      if (activeTab === "Active") return status === "active" || status === "in_progress";
+      if (activeTab === "Active")
+        return status === "active" || status === "in_progress";
       if (activeTab === "Completed") return status === "completed";
       if (activeTab === "Cancelled") return status === "cancelled";
       return false;
@@ -60,16 +68,23 @@ const Home = () => {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    return <ActivityIndicator style={{ marginVertical: 20 }} size="small" color={colors.themeColor} />;
+    return (
+      <ActivityIndicator
+        style={{ marginVertical: 20 }}
+        size="small"
+        color={colors.themeColor}
+      />
+    );
   };
 
   const renderTask = ({ item }) => {
     // Adapter for TaskCard
-    const materials = item.inventory?.map(i => ({
-      name: i.item,
-      quantity: `${i.quantity} ${i.unit || ''}`,
-      icon: appIcons.sand // Default icon?
-    })) || [];
+    const materials =
+      item.inventory?.map((i) => ({
+        name: i.item,
+        quantity: `${i.quantity} ${i.unit || ""}`,
+        icon: appIcons.sand, // Default icon?
+      })) || [];
 
     return (
       <TaskCard
@@ -80,7 +95,7 @@ const Home = () => {
           materials: materials,
           date: formateDate(item.createdAt, "DD-MMM-YYYY"),
           time: formateDate(item.createdAt, "hh:mm A"),
-          status: item.status // Or map specific string if needed
+          status: item.status, // Or map specific string if needed
         }}
         onStartPress={() => handleStartTask(item)}
         onCompletePress={() => handleStartTask(item)}
@@ -92,16 +107,40 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: widthPixel(16) }}>
-        <TouchableOpacity onPress={openDrawer} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.drawer} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: widthPixel(16),
+        }}
+      >
+        <TouchableOpacity
+          onPress={openDrawer}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.drawer}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => navigation.navigate(routes.forkHomeDetail)} style={{ padding: heightPixel(12) }}>
-            <Image source={appIcons.building} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate(routes.forkHomeDetail)}
+            style={{ padding: heightPixel(12) }}
+          >
+            <Image
+              source={appIcons.building}
+              style={{ width: widthPixel(24), height: widthPixel(24) }}
+            />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate(routes.chat)} style={{ padding: heightPixel(12) }}>
-            <Image source={appIcons.blackChat} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate(routes.chat)}
+            style={{ padding: heightPixel(12) }}
+          >
+            <Image
+              source={appIcons.blackChat}
+              style={{ width: widthPixel(24), height: widthPixel(24) }}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -111,10 +150,7 @@ const Home = () => {
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTab,
-            ]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
           >
             <Text
               style={[
@@ -140,7 +176,13 @@ const Home = () => {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={!loading && <Text style={{ textAlign: 'center', marginTop: 20 }}>No tasks found</Text>}
+        ListEmptyComponent={
+          !loading && (
+            <Text style={{ textAlign: "center", marginTop: 20 }}>
+              No tasks found
+            </Text>
+          )
+        }
       />
 
       <Loader isVisible={loading} />

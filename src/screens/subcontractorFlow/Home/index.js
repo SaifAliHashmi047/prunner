@@ -1,39 +1,75 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, FlatList, StatusBar, TouchableOpacity, Text, StyleSheet, Image, SafeAreaView, ActivityIndicator, RefreshControl, Platform } from "react-native";
+import {
+  View,
+  FlatList,
+  StatusBar,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  Platform,
+} from "react-native";
 import { routes } from "../../../services/constant";
 import { AppTaskCard } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel } from "../../../services/constant";
 import { appIcons } from "../../../services/utilities/assets";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  DrawerActions,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { fonts } from "../../../services/utilities/fonts";
 import { Loader } from "../../../components/Loader";
 import { formateDate } from "../../../services/utilities/helper";
 import useTasks from "../../../hooks/useTasks";
+import {
+  setSelectedSite,
+  setSites,
+} from "../../../services/store/slices/siteSlice";
+import { useDispatch } from "react-redux";
+import useSite from "../../../hooks/useSite";
 
 const Home = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Active"); // Active, Completed, Cancelled
 
   // Use useTasks hook
-  const { tasks, loading, refreshing, loadMore, onRefresh, loadingMore, fetchTasks } = useTasks();
+  const {
+    tasks,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchTasks,
+  } = useTasks();
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-  useEffect(() => {
-    fetchTasks(1);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks(1);
+    },
+    [])
+  );
 
   // loadMore and onRefresh are now handled by the hook and passed directly
 
-
   const getFilteredTasks = () => {
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       const status = task.status?.toLowerCase();
       if (activeTab === "Active") {
-        return status === "pending" || status === "in_progress" || status === "active";
+        return (
+          status === "pending" ||
+          status === "in_progress" ||
+          status === "active"
+        );
       } else if (activeTab === "Completed") {
         return status === "completed";
       } else if (activeTab === "Cancelled") {
@@ -55,8 +91,23 @@ const Home = () => {
   const renderEmpty = () => {
     if (loading) return null;
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", marginTop: 50 }}>
-        <Text style={{ fontSize: 16, color: colors.greyText, fontFamily: fonts.NunitoRegular }}>No tasks found</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 50,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 16,
+            color: colors.greyText,
+            fontFamily: fonts.NunitoRegular,
+          }}
+        >
+          No tasks found
+        </Text>
       </View>
     );
   };
@@ -69,7 +120,11 @@ const Home = () => {
       keyExtractor={(item) => item._id}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.themeColor]}
+        />
       }
       onEndReached={loadMore}
       onEndReachedThreshold={0.5}
@@ -84,12 +139,18 @@ const Home = () => {
             userName={item.title || "Task"} // Using title as header
             status={item.status}
             material1={item1?.item}
-            material1Qty={item1 ? `${item1.quantity} ${item1.unit || ''}` : undefined}
+            material1Qty={
+              item1 ? `${item1.quantity} ${item1.unit || ""}` : undefined
+            }
             material2={item2?.item}
-            material2Qty={item2 ? `${item2.quantity} ${item2.unit || ''}` : undefined}
+            material2Qty={
+              item2 ? `${item2.quantity} ${item2.unit || ""}` : undefined
+            }
             date={formateDate(item?.createdAt, "DD-MMM-YYYY")}
             time={formateDate(item?.createdAt, "hh:mm A")}
-            onPress={() => { navigation.navigate(routes.jobDetails, { task: item }) }}
+            onPress={() => {
+              navigation.navigate(routes.jobDetails, { task: item });
+            }}
           />
         );
       }}
@@ -99,12 +160,30 @@ const Home = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Drawer Toggle Button */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: widthPixel(16) }}>
-        <TouchableOpacity onPress={openDrawer} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.drawer} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: widthPixel(16),
+        }}
+      >
+        <TouchableOpacity
+          onPress={openDrawer}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.drawer}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate(routes.homeDetail)} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.building} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+        <TouchableOpacity
+          onPress={() => navigation.navigate(routes.homeDetail)}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.building}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
       </View>
 
@@ -114,10 +193,7 @@ const Home = () => {
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTab,
-            ]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
           >
             <Text
               style={[
@@ -132,21 +208,29 @@ const Home = () => {
       </View>
 
       {/* Tab Content */}
-      <View style={{ flex: 1, paddingHorizontal: widthPixel(15), marginTop: heightPixel(10) }}>
+      <View
+        style={{
+          flex: 1,
+          paddingHorizontal: widthPixel(15),
+          marginTop: heightPixel(10),
+        }}
+      >
         <TabContent />
       </View>
 
       {/* Floating Action Button (FAB) */}
-      <TouchableOpacity style={styles.fab} onPress={() => {
-        navigation.navigate(routes.createTask)
-      }}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => {
+          navigation.navigate(routes.createTask);
+        }}
+      >
         <Text style={styles.fabPlus}>+</Text>
       </TouchableOpacity>
       <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeArea: {
