@@ -10,12 +10,21 @@ import {
 } from "react-native";
 import { AppHeader, AppOtp, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
-import { heightPixel, widthPixel, fontPixel, emailFormat } from "../../../services/constant";
+import {
+  heightPixel,
+  widthPixel,
+  fontPixel,
+  emailFormat,
+} from "../../../services/constant";
 import { routes } from "../../../services/constant";
 import { useRoute } from "@react-navigation/native";
 import axiosInstance from "../../../api/axiosInstance";
-import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import {
+  toastError,
+  toastSuccess,
+} from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const VerifyOTP = ({ navigation }) => {
   const route = useRoute();
@@ -23,7 +32,7 @@ const VerifyOTP = ({ navigation }) => {
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  
+
   // Get email from route params or use empty string
   const email = route?.params?.email || "";
 
@@ -33,24 +42,22 @@ const VerifyOTP = ({ navigation }) => {
       toastError({ text: "Email is required" });
       return false;
     }
-    
 
-    
     if (!otp.trim()) {
       toastError({ text: "OTP is required" });
       return false;
     }
-    
+
     if (otp.length !== 6) {
       toastError({ text: "OTP must be 6 digits" });
       return false;
     }
-    
+
     if (!/^\d+$/.test(otp)) {
       toastError({ text: "OTP must contain only numbers" });
       return false;
     }
-    
+
     return true;
   };
 
@@ -72,10 +79,17 @@ const VerifyOTP = ({ navigation }) => {
         },
         { skipAuth: true }
       );
-
+      const token = response?.data?.data?.token;
+      const refreshToken = response?.data?.data?.refreshToken;
+      if (token) {
+        await AsyncStorage.setItem("token", token);
+      }
+      if (refreshToken) {
+        await AsyncStorage.setItem("refreshToken", refreshToken);
+      }
       // Show success message
       toastSuccess({ text: "Email verified successfully!" });
-      console.log("response", JSON.stringify(response , null, 2));
+      console.log("response", JSON.stringify(response, null, 2));
 
       // Navigate to account type screen
       navigation.navigate(routes.auth, {
@@ -157,7 +171,9 @@ const VerifyOTP = ({ navigation }) => {
         {/* Header */}
         <AppHeader
           title="Verify Email"
-          subtitle={`Enter the 6-digit code sent to ${email || "your email address"}.`}
+          subtitle={`Enter the 6-digit code sent to ${
+            email || "your email address"
+          }.`}
           onBack={() => navigation.goBack()}
         />
 
@@ -166,7 +182,6 @@ const VerifyOTP = ({ navigation }) => {
           <AppOtp value={otp} onChange={setOtp} />
 
           {/* Timer / Resend */}
-
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.timerContainer}>
@@ -235,7 +250,7 @@ const styles = StyleSheet.create({
   },
   timerCount: {
     fontWeight: "600",
-    color: '#008C0E',
+    color: "#008C0E",
     fontSize: fontPixel(24),
   },
   resendText: {

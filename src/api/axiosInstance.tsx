@@ -52,7 +52,7 @@ const handleRequestError = (e: any) => {
 // 🔹 REQUEST INTERCEPTOR
 axiosInstance.interceptors.request.use(
   async (config: any) => {
-    const token = await AsyncStorage.getItem('Token');
+    const token = await AsyncStorage.getItem('token');
 
     // 🚀 Skip adding Authorization if skipAuth flag is set
     if (!config.skipAuth && token) {
@@ -81,6 +81,7 @@ axiosInstance.interceptors.request.use(
       params: config.params,
       data: config.data,
       headers: config.headers,
+      token
     });
 
     return config;

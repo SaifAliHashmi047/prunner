@@ -7,15 +7,22 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import { useDispatch } from 'react-redux';
-import { setUserRole, setSelectedAccountType } from '../../../services/store/slices/userSlice';
+import { useDispatch } from "react-redux";
+import {
+  setUserRole,
+  setSelectedAccountType,
+  setUserData,
+} from "../../../services/store/slices/userSlice";
 import { AppHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { appIcons } from "../../../services/utilities/assets";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { routes } from "../../../services/constant";
 import useCallApi from "../../../hooks/useCallApi";
-import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import {
+  toastError,
+  toastSuccess,
+} from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 
 const accountTypes = [
@@ -41,12 +48,16 @@ const AccountType = ({ navigation }) => {
   const { callApi } = useCallApi();
   const [loading, setLoading] = useState(false);
 
-
-  console.log("Selected Account Type:", accountTypes.find(type => type.id === selected)?.role);
+  console.log(
+    "Selected Account Type:",
+    accountTypes.find((type) => type.id === selected)?.role
+  );
 
   const handleConfirm = async () => {
     // Find the selected account type
-    const selectedAccountType = accountTypes.find(type => type.id === selected);
+    const selectedAccountType = accountTypes.find(
+      (type) => type.id === selected
+    );
 
     if (selectedAccountType) {
       // Save the selected role to Redux store
@@ -58,39 +69,37 @@ const AccountType = ({ navigation }) => {
         // Payload as requested
         const payload = {
           role: selectedAccountType.role,
-
         };
 
         const response = await callApi("user/update-me", "PATCH", payload);
 
         if (response?.success) {
+          dispatch(setUserData(response?.data?.user));
           // Show success modal
           toastSuccess({ text: "Role updated successfully" });
           // Navigate based on selected role
-          if (selectedAccountType.role === 'subcontractor') {
-            // Navigate to subcontractor flow
+          if (selectedAccountType.role === "subConstructor") {
+            // Navigate to subConstructor flow
             navigation.navigate(routes.auth, { screen: routes.createProfile });
-          } else if (selectedAccountType.role === 'forklift') {
+          } else if (selectedAccountType.role === "forklift") {
             // Navigate to forklift flow (you can create this later)
             navigation.navigate(routes.auth, { screen: routes.createProfile });
             // TODO: Create forklift-specific flow if needed
           }
-
         } else {
           if (response?.message) {
             toastError({ text: response.message });
           }
         }
-
       } catch (error) {
         // Error handling is mostly done in useCallApi or here if needed
         console.log("Update role error", error);
-        const errorMessage = error?.response?.data?.message || "Failed to update profile";
+        const errorMessage =
+          error?.response?.data?.message || "Failed to update profile";
         toastError({ text: errorMessage });
       } finally {
         setLoading(false);
       }
-
     }
   };
 
@@ -101,7 +110,7 @@ const AccountType = ({ navigation }) => {
         <AppHeader
           title="Select Your Account Type"
           subtitle="Please select one of the following account types to proceed."
-        // onBack={() => navigation.goBack()}
+          // onBack={() => navigation.goBack()}
         />
 
         {/* Account Cards */}
@@ -140,8 +149,6 @@ const AccountType = ({ navigation }) => {
         </View>
 
         {/* Footer Button */}
-
-
       </View>
       <View style={styles.footer}>
         <AppButton
@@ -211,6 +218,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: heightPixel(20),
-    paddingBottom: heightPixel(20)
+    paddingBottom: heightPixel(20),
   },
 });
