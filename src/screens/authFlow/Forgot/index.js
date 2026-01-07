@@ -60,7 +60,7 @@ const Forgot = ({ navigation }) => {
         toastSuccess({ text: response?.data?.message || "Password reset email sent successfully!" });
         
         // Navigate to VerifyEmail screen with email
-        navigation.navigate(routes.auth, {
+    navigation.navigate(routes.auth, {
           screen: routes.verifyEmail,
           params: { email: email.trim() },
         });
@@ -109,11 +109,11 @@ const Forgot = ({ navigation }) => {
             title={loading ? "Sending..." : "NEXT"}
             onPress={handleNext}
             style={{
-              backgroundColor: colors.themeColor,
+            backgroundColor: colors.themeColor,
             }}
             textStyle={{
-              color: colors.white,
-            }}
+            color: colors.white,
+          }} 
             disabled={loading}
           />
         </View>

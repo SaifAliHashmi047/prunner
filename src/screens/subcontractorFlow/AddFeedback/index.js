@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginBottom: heightPixel(20),
-    },
+     },
     uploadBox: {
         width: widthPixel(100),
         height: widthPixel(100),
@@ -270,8 +270,8 @@ const styles = StyleSheet.create({
     },
     removeBtn: {
         position: "absolute",
-        top: -6,
-        right: -6,
+        top: 0,
+        right: 0,
         width: widthPixel(22),
         height: widthPixel(22),
         borderRadius: widthPixel(11),

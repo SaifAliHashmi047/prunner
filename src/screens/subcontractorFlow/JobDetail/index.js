@@ -14,9 +14,28 @@ import { fonts } from "../../../services/utilities/fonts";
 import { appIcons, appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
 import { formateDate } from "../../../services/utilities/helper";
+import SafeImageBackground from "../../../components/SafeImageBackground";
 
 const JobDetail = ({ navigation, route }) => {
   const { task } = route.params || {};
+
+  if (!task) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <SecondHeader onPress={() => navigation.goBack()} title="Job Detail" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text style={{ fontSize: fontPixel(16), color: colors.greyBg }}>No task data available</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const taskTitle = task.title || "Task";
+  const customerName = task.assignedTo?.name || task.createdBy?.name || "Unknown User";
+  const customerImage = task.assignedTo?.profileImage || task.assignedTo?.image || task.createdBy?.profileImage || task.createdBy?.image || null;
+  const status = task.status || "pending";
+  const taskDate = task.createdAt || task.date || task.scheduledDate;
+  const siteMapUrl = task.siteId?.siteMap || task.siteMap || null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -27,36 +46,49 @@ const JobDetail = ({ navigation, route }) => {
         contentContainerStyle={{ padding: widthPixel(20), paddingBottom: heightPixel(100) }}
         showsVerticalScrollIndicator={false}
       >
-        {/* User Info / Task Title as User for now */}
+        {/* User Info / Task Title */}
         <View style={styles.userRow}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} // Placeholder avatar
+          <SafeImageBackground 
+            source={customerImage ? { uri: customerImage } : null}
+            name={customerName}
             style={styles.avatar}
           />
-          <Text style={styles.userName}>{task?.title || "Task Detail"}</Text>
-          <Text style={styles.status}>{task?.status || "Pending"}</Text>
+          <Text style={styles.userName}>{taskTitle}</Text>
+          <Text style={[styles.status, { textTransform: "capitalize" }]}>{status}</Text>
         </View>
 
         {/* Site Map */}
         <Text style={styles.sectionTitle}>Site Map</Text>
-        <Image
-          source={appImages.jobMap}
-          style={styles.siteMap}
-          resizeMode="cover"
-        />
+        {siteMapUrl ? (
+          <Image
+            source={{ uri: siteMapUrl }}
+            style={styles.siteMap}
+            resizeMode="cover"
+          />
+        ) : (
+          <Image
+            source={appImages.jobMap}
+            style={styles.siteMap}
+            resizeMode="cover"
+          />
+        )}
 
         {/* Date & Time */}
         <Text style={styles.sectionTitle}>Date & Time</Text>
-        <View style={styles.rowBox}>
-          <View style={styles.iconText}>
-            <Image source={appIcons.calandar} style={styles.icon} />
-            <Text style={styles.rowText}>{formateDate(task?.createdAt, "DD-MMM")}</Text>
+        {taskDate ? (
+          <View style={styles.rowBox}>
+            <View style={styles.iconText}>
+              <Image source={appIcons.calandar} style={styles.icon} />
+              <Text style={styles.rowText}>{formateDate(taskDate, "DD-MMM-YYYY")}</Text>
+            </View>
+            <View style={styles.iconText}>
+              <Image source={appIcons.time} style={styles.icon} />
+              <Text style={styles.rowText}>{formateDate(taskDate, "hh:mm A")}</Text>
+            </View>
           </View>
-          <View style={styles.iconText}>
-            <Image source={appIcons.time} style={styles.icon} />
-            <Text style={styles.rowText}>{formateDate(task?.createdAt, "hh:mm A")}</Text>
-          </View>
-        </View>
+        ) : (
+          <Text style={{ ...styles.rowText, color: colors.greyText }}>No date available</Text>
+        )}
 
         {/* Items */}
         <Text style={styles.sectionTitle}>Item to Deliver</Text>

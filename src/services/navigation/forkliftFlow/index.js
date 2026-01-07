@@ -27,8 +27,10 @@ export const ForkliftNavigation = () => {
             <ForkliftStack.Screen name={routes.cancelJobOther} component={Subcontractor.CancelJobOther} />
             <ForkliftStack.Screen name={routes.siteMap} component={Subcontractor.SiteMap} />
             <ForkliftStack.Screen name={routes.siteFeedback} component={Subcontractor.SiteFeedback} />
+            <ForkliftStack.Screen name={routes.siteFeedbackDetail} component={Subcontractor.SiteFeedbackDetail} />
             <ForkliftStack.Screen name={routes.addFeedback} component={Subcontractor.AddFeedback} />
             <ForkliftStack.Screen name={routes.hsLog} component={Subcontractor.HsLog} />
+            <ForkliftStack.Screen name={routes.hsLogDetail} component={Subcontractor.HsLogDetail} />
             <ForkliftStack.Screen name={routes.myComplaint} component={Subcontractor.MyComplaint} />
             <ForkliftStack.Screen name={routes.submitComplaint} component={Subcontractor.SubmitComplaint} />
             <ForkliftStack.Screen name={routes.homeDetail} component={Subcontractor.HomeDetail} />

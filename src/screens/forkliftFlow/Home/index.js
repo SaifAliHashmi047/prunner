@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,13 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Image,
-  ScrollView,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   StatusBar,
   Platform,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { routes } from "../../../services/constant";
 import { AppHeader, AppButton, TaskCard } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
@@ -23,14 +22,12 @@ import { appIcons } from "../../../services/utilities/assets";
 import { Loader } from "../../../components/Loader";
 import useTasks from "../../../hooks/useTasks";
 import { formateDate } from "../../../services/utilities/helper";
-import useSite from "../../../hooks/useSite";
-import { useDispatch } from "react-redux";
-import { setSelectedSite, setSites } from "../../../services/store/slices/siteSlice";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Home = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Pending");
-
+  const insets = useSafeAreaInsets();
   const {
     tasks,
     loading,
@@ -39,14 +36,22 @@ const Home = () => {
     onRefresh,
     loadingMore,
     fetchTasks,
+    updateTaskStatus
   } = useTasks();
-  
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-  const handleStartTask = (task) => {
+  // Fetch tasks when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks(1);
+    }, [fetchTasks])
+  );
+
+  const handleStartTask = async(task) => {
+    await updateTaskStatus(task._id, "started");
     // Navigate based on status or ID
     // navigation.navigate(routes.forkJobDetail, { task })
     // For now logging
@@ -90,11 +95,12 @@ const Home = () => {
       <TaskCard
         task={{
           ...item,
-          customerName: item.assignedTo?.name || "Unknown User",
-          customerImage: item.assignedTo?.profileImage || appIcons.dummyPic,
+          title: item.title,
+          customerName: item.assignedTo?.name  ,
+          customerImage: item.assignedTo?.image , 
           materials: materials,
-          date: formateDate(item.createdAt, "DD-MMM-YYYY"),
-          time: formateDate(item.createdAt, "hh:mm A"),
+          date: formateDate(item.createdAt || item.date, "DD-MMM-YYYY"),
+          time: formateDate(item.createdAt || item.date, "hh:mm A"),
           status: item.status, // Or map specific string if needed
         }}
         onStartPress={() => handleStartTask(item)}
@@ -103,10 +109,41 @@ const Home = () => {
     );
   };
 
+  const renderEmpty = () => {
+    if (loading) return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: heightPixel(50),
+        }}
+      >
+        <Text
+          style={{
+            fontSize: fontPixel(16),
+            color: colors.greyText,
+            fontFamily: fonts.NunitoRegular,
+          }}
+        >
+          No tasks found
+        </Text>
+      </View>
+    );
+  };
+
   const filteredData = getFilteredTasks();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
       <View
         style={{
           flexDirection: "row",
@@ -166,23 +203,21 @@ const Home = () => {
 
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item._id || item.id}
+        keyExtractor={(item) => item?._id || item?.id || `task-${Math.random()}`}
         renderItem={renderTask}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.taskList}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[colors.themeColor]}
+          />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={
-          !loading && (
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              No tasks found
-            </Text>
-          )
-        }
+        ListEmptyComponent={renderEmpty}
       />
 
       <Loader isVisible={loading} />

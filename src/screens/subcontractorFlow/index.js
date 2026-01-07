@@ -12,6 +12,7 @@ import AddFeedback from "./AddFeedback";
 import SubmitComplaint from "./SubmitComplaint";
 import HsLog from "./Hslog";
 import CreateHsLog from "./CreateHsLog";
+import HsLogDetail from "./HsLogDetail";
 import JobDetails from "./JobDetail";
 import CancelJob from "./CancelJob";
 import CancelJobOther from "./CancelJobOther";
@@ -34,4 +35,4 @@ import AccountDeleted from "./AccountDeleted";
 import LiveSound from "./LiveSound";
 import SelectInventoryForTask from "./SelectInventoryForTask";
 
-export { Home, Chat, SiteMap, Inventory, WorkPack, CreateWorkPack, SiteFeedback, SiteFeedbackDetail, MyComplaint, ChatDetail, AddFeedback, SubmitComplaint, HsLog, CreateHsLog, JobDetails, CancelJob, CancelJobOther, HomeDetail, CreateTask, LocationOnMap, SelectTask, CreateInventory, TaskUser, Settings, EditProfile, FeedBack, UpdatePassword, ContactUs, PrivacyPolicy, AboutUs, TermsOfUse, DeleteAccount, AccountDeleted, LiveSound, SelectInventoryForTask };
+export { Home, Chat, SiteMap, Inventory, WorkPack, CreateWorkPack, SiteFeedback, SiteFeedbackDetail, MyComplaint, ChatDetail, AddFeedback, SubmitComplaint, HsLog, CreateHsLog, HsLogDetail, JobDetails, CancelJob, CancelJobOther, HomeDetail, CreateTask, LocationOnMap, SelectTask, CreateInventory, TaskUser, Settings, EditProfile, FeedBack, UpdatePassword, ContactUs, PrivacyPolicy, AboutUs, TermsOfUse, DeleteAccount, AccountDeleted, LiveSound, SelectInventoryForTask };

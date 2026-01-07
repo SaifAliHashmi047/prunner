@@ -141,8 +141,10 @@ const Home = () => {
         console.log("item", item);
         return (
           <AppTaskCard
-            userName={item.title || "Task"} // Using title as header
+            userName={item?.assignedTo?.name} // Using title as header
+            taskTitle={item.title}
             status={item.status}
+            userImage={item.assignedTo?.image  }
             material1={item1?.item}
             material1Qty={
               item1 ? `${item1.quantity} ${item1.unit || ""}` : undefined

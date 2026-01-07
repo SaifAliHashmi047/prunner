@@ -8,6 +8,9 @@ const useHsLogs = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingStatusUpdate, setLoadingStatusUpdate] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -82,6 +85,66 @@ const useHsLogs = () => {
     []
   );
 
+  const updateHsLogStatus = useCallback(
+    async (hsLogId, status, notes) => {
+      try {
+        setLoadingStatusUpdate(true);
+        const payload = {
+          status,
+          notes: notes || "",
+        };
+        const response = await callApiRef.current(
+          `hs-logs/${hsLogId}/status`,
+          "PATCH",
+          payload
+        );
+        return response;
+      } catch (error) {
+        throw error;
+      } finally {
+        setLoadingStatusUpdate(false);
+      }
+    },
+    []
+  );
+
+  const updateHsLog = useCallback(
+    async (hsLogId, payload) => {
+      try {
+        setLoadingUpdate(true);
+        const response = await callApiRef.current(
+          `hs-logs/${hsLogId}`,
+          "PUT",
+          payload
+        );
+        return response;
+      } catch (error) {
+        throw error;
+      } finally {
+        setLoadingUpdate(false);
+      }
+    },
+    []
+  );
+
+  const deleteHsLog = useCallback(
+    async hsLogId => {
+      try {
+        setLoadingDelete(true);
+        const response = await callApiRef.current(
+          `hs-logs/${hsLogId}`,
+          "DELETE"
+        );
+        return response;
+      } catch (error) {
+        throw error;
+      } finally {
+        setLoadingDelete(false);
+      }
+    },
+    []
+  );
+
   const loadMore = useCallback(() => {
     if (!isLoadingRef.current && hasMore && !loading && !loadingMore) {
       fetchHsLogs(page + 1);
@@ -98,12 +161,18 @@ const useHsLogs = () => {
     refreshing,
     loadingMore,
     loadingCreate,
+    loadingUpdate,
+    loadingDelete,
+    loadingStatusUpdate,
     hasMore,
     page,
     fetchHsLogs,
     loadMore,
     onRefresh,
     createHsLog,
+    updateHsLogStatus,
+    updateHsLog,
+    deleteHsLog,
   };
 };
 

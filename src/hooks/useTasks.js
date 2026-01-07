@@ -33,42 +33,42 @@ const useTasks = () => {
 
       try {
         const response = await callApiRef.current("tasks", "GET", null, {
-          page: pageNum,
+        page: pageNum,
           limit: 10,
-        });
+      });
 
-        if (response?.success && response?.data) {
-          const newTasks = response.data.tasks || [];
-          const pagination = response.data.pagination;
+      if (response?.success && response?.data) {
+        const newTasks = response.data.tasks || [];
+        const pagination = response.data.pagination;
 
-          if (isRefresh || pageNum === 1) {
-            setTasks(newTasks);
-          } else {
+        if (isRefresh || pageNum === 1) {
+          setTasks(newTasks);
+        } else {
             setTasks((prev) => [...prev, ...newTasks]);
-          }
+        }
 
           // Logic to determine if there are more items
           if (newTasks.length < 10) {
-            setHasMore(false);
+          setHasMore(false);
           } else if (
             pagination &&
             pagination.currentPage >= pagination.totalPages
           ) {
-            setHasMore(false);
-          } else {
-            setHasMore(true);
-          }
-          setPage(pageNum);
+          setHasMore(false);
+        } else {
+          setHasMore(true);
         }
-      } catch (error) {
-        console.log("Fetch tasks error", error);
-        setHasMore(false);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-        setLoadingMore(false);
-        isLoadingRef.current = false;
+        setPage(pageNum);
       }
+    } catch (error) {
+      console.log("Fetch tasks error", error);
+        setHasMore(false);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+        isLoadingRef.current = false;
+    }
     },
     [] // Remove callApi from dependencies, using ref instead
   );
@@ -84,36 +84,42 @@ const useTasks = () => {
   }, [fetchTasks]);
 
   const updateTaskStatus = useCallback(
-    async (taskId, status, notes) => {
-      try {
-        setLoading(true);
-        const response = await callApiRef.current(`tasks/${taskId}/status`, "PATCH", {
-          status,
-          notes,
-        });
-        return response;
-      } catch (error) {
-        console.log("Update task status error", error);
-        throw error;
-      } finally {
-        setLoading(false);
+    async (taskId, status, notes = null) => {
+    try {
+      setLoading(true);
+        const payload = {
+        status,
+      };
+      
+      // Only include notes if provided
+      if (notes !== null && notes !== undefined && notes !== "") {
+        payload.notes = notes;
       }
+      
+        const response = await callApiRef.current(`tasks/${taskId}/status`, "PATCH", payload);
+      return response;
+    } catch (error) {
+      console.log("Update task status error", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
     },
     [] // Remove callApi from dependencies, using ref instead
   );
 
   const createTask = useCallback(
     async (payload) => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
         const response = await callApiRef.current("tasks", "POST", payload);
-        return response;
-      } catch (error) {
-        console.log("Create task error", error);
-        throw error;
-      } finally {
-        setLoading(false);
-      }
+      return response;
+    } catch (error) {
+      console.log("Create task error", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
     },
     [] // Remove callApi from dependencies, using ref instead
   );

@@ -48,6 +48,7 @@ export const routes = {
     submitComplaint: 'submitComplaint',
     hsLog: 'hsLog',
     createHsLog: 'createHsLog',
+    hsLogDetail: 'hsLogDetail',
     jobDetails: 'jobDetails',
     cancelJob: 'cancelJob',
     cancelJobOther: 'cancelJobOther',

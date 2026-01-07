@@ -33,6 +33,7 @@ export const SubcontractorNavigation = () => {
             <SubcontractorStack.Screen name={routes.submitComplaint} component={Subcontractor.SubmitComplaint} />
             <SubcontractorStack.Screen name={routes.hsLog} component={Subcontractor.HsLog} />
             <SubcontractorStack.Screen name={routes.createHsLog} component={Subcontractor.CreateHsLog} />
+            <SubcontractorStack.Screen name={routes.hsLogDetail} component={Subcontractor.HsLogDetail} />
             <SubcontractorStack.Screen name={routes.jobDetails} component={Subcontractor.JobDetails} />
             <SubcontractorStack.Screen name={routes.cancelJob} component={Subcontractor.CancelJob} />
             <SubcontractorStack.Screen name={routes.cancelJobOther} component={Subcontractor.CancelJobOther} />

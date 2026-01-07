@@ -85,7 +85,7 @@ const ChangePassword = ({ navigation }) => {
         toastSuccess({ text: response?.data?.message || "Password reset successfully!" });
         
         // Navigate to Login screen after password update
-        navigation.navigate(routes.auth, {
+    navigation.navigate(routes.auth, {
           screen: routes.login,
         });
       } else {

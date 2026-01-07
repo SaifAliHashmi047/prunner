@@ -23,18 +23,22 @@ const Splash = ({ navigation }) => {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         if (token) {
-          let userData = null;
+          // let userData = null;
           if (userStr) {
             userData = JSON.parse(userStr);
             dispatch(setUserData(userData));
             dispatch(setAuthenticated(true));
             if (userData?.role) {
-              dispatch(setUserRole(userData.role));
+              dispatch(setUserRole(userData?.role));
             }
           }
+console.log("user", {
+  userStr,
+  user
+});
 
-          // Navigate based on role (prefer userData from storage, fall back to Redux user if any)
-          const role = userData?.role || user?.role;
+          // // Navigate based on role (prefer userData from storage, fall back to Redux user if any)
+          const role =  userData?.role;
 
           if (role === 'forklift') {
             navigation.replace(routes.forkliftFlow);

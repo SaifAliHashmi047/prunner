@@ -35,6 +35,12 @@ const settingsOptions = [
     { id: 9, label: "Terms of Use", icon: appIcons.terms, route: routes.termsOfUse },
     { id: 10, label: "Logout", icon: appIcons.logout },
     { id: 11, label: "Delete Account", icon: appIcons.delete, route: routes.deleteAccount, isDeleteAccount: true },
+    {
+        id: 12,
+        label: "Upload License",
+        icon: appIcons.camera,
+        route: routes.uploadLicense,
+    }
 ];
 
 const Settings = ({ navigation }) => {
@@ -113,7 +119,7 @@ const Settings = ({ navigation }) => {
                 <SecondHeader onPress={() => navigation.goBack()} title="Setting" />
 
                 {/* List */}
-                {settingsOptions.map((item) => (
+                {settingsOptions.map((item) => user?.role !== "forklift" && item?.id===12 ? null : (
                     <TouchableOpacity
                         key={item.id}
                         style={styles.optionRow}
@@ -122,7 +128,14 @@ const Settings = ({ navigation }) => {
                             if (item.label === "Logout") {
                                 handleLogout();
                             } else if (item.route) {
-                                navigation.navigate(item.route);
+                                // Navigate to auth stack for uploadLicense
+                                if (item.route === routes.uploadLicense) {
+                                    navigation.navigate(routes.auth, {
+                                        screen: routes.uploadLicense,
+                                    });
+                                } else {
+                                    navigation.navigate(item.route);
+                                }
                             }
                         }}
                     >

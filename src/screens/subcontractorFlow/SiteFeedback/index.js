@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl, Platform, ScrollView } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
@@ -9,6 +9,7 @@ import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Loader } from "../../../components/Loader";
 import useFeedback from "../../../hooks/useFeedback";
+import { useFocusEffect } from "@react-navigation/native";
 
 const SiteFeedback = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -25,10 +26,10 @@ const SiteFeedback = ({ navigation }) => {
         onRefresh,
     } = useFeedback();
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         fetchFeedback(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []));
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -107,60 +108,11 @@ const SiteFeedback = ({ navigation }) => {
                                         <Text style={[styles.workPackDescription, { marginTop: heightPixel(4) }]}>
                                             {item.description || "No description"}
                                         </Text>
-                                        {item.siteId && (
-                                            <View style={{ marginTop: heightPixel(6) }}>
-                                                <Text style={[styles.siteInfo, { marginBottom: heightPixel(2) }]}>
-                                                    📍 Site: {item.siteId.name || "Unknown"}
-                                                </Text>
-                                                {item.siteId.location?.address && (
-                                                    <Text style={styles.siteInfo}>
-                                                        {item.siteId.location.address}
-                                                    </Text>
-                                                )}
-                                            </View>
-                                        )}
                                     </View>
                                     <View style={{ alignItems: "flex-end", marginLeft: widthPixel(12) }}>
-                                        <View style={[
-                                            styles.statusBadge,
-                                            { backgroundColor: item.status === 'active' ? '#E8F5E9' : '#FFEBEE' }
-                                        ]}>
-                                            <Text style={[
-                                                styles.statusText,
-                                                { color: item.status === 'active' ? '#4CAF50' : '#F44336' }
-                                            ]}>
-                                                {item.status}
-                                            </Text>
-                                        </View>
                                         <Text style={styles.time}>{formattedDate}</Text>
                                     </View>
                                 </View>
-                                
-                                {/* Rating */}
-                                <View style={{ flexDirection: "row", alignItems: "center", marginTop: heightPixel(8) }}>
-                                    <Text style={styles.ratingLabel}>Rating: </Text>
-                                    <View style={{ flexDirection: "row" }}>
-                                        {renderRating()}
-                                    </View>
-                                </View>
-
-                                {/* Media Images */}
-                                {item.media && item.media.length > 0 && (
-                                    <ScrollView 
-                                        horizontal 
-                                        showsHorizontalScrollIndicator={false}
-                                        style={{ marginTop: heightPixel(12) }}
-                                    >
-                                        {item.media.map((imageUrl, index) => (
-                                            <Image
-                                                key={index}
-                                                source={{ uri: imageUrl }}
-                                                style={styles.mediaImage}
-                                                resizeMode="cover"
-                                            />
-                                        ))}
-                                    </ScrollView>
-                                )}
                             </TouchableOpacity>
                         );
                     }}

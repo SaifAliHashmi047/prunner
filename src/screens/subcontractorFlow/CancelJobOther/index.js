@@ -6,11 +6,13 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import useTasks from "../../../hooks/useTasks";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { useSelector } from "react-redux";
 
 const CancelJobOther = ({ navigation }) => {
     const [reason, setReason] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
     const { updateTaskStatus, loading } = useTasks();
+    const userRole = useSelector((state) => state.user.userRole);
     return (
         <SafeAreaView style={styles.container}>
             {/* Header */}
@@ -57,7 +59,11 @@ const CancelJobOther = ({ navigation }) => {
                                     setReason("");
                                     setTimeout(() => {
                                         setModalVisible(false);
-                                        navigation.popToTop();
+                                        if (userRole === 'forklift') {
+                                            navigation.navigate(routes.forkliftFlow);
+                                        } else {
+                                            navigation.navigate(routes.subcontractorFlow);
+                                        }
                                     }, 2000);
                                 }
                             } catch (error) {

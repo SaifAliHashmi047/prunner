@@ -79,8 +79,8 @@ const CreateInventory = ({ navigation }) => {
             toastError({ text: "Quantity is required" });
             return;
         }
-        if (selectedItem === "custom" && !unit.trim()) {
-            toastError({ text: "Unit is required" }); // If custom, force unit?
+        if (!unit.trim()) {
+            toastError({ text: "Unit is required" });
             return;
         }
 
@@ -88,39 +88,47 @@ const CreateInventory = ({ navigation }) => {
             setLoading(true);
             let imageUrl = "";
 
-            // If custom and image selected, upload it
+            // If custom item and image selected, upload it first to get the URL
             if (selectedItem === "custom" && customImage) {
-                imageUrl = await uploadFile({
-                    uri: customImage.uri,
-                    type: customImage.type,
-                    name: customImage.name
-                });
-            } else if (selectedItem !== "custom") {
-                // For predefined items, maybe we don't send image or sending a placeholder?
-                // The API requires "image": "string".
-                // I'll leave it empty or mock it if not custom, or maybe the backend handles it.
-                // Assuming empty string is fine if utilizing existing icon on backend or not applicable.
-                imageUrl = "default_icon_url"; // or leave empty ""
+                try {
+                    imageUrl = await uploadFile({
+                        uri: customImage.uri,
+                        type: customImage.type || "image/jpeg",
+                        name: customImage.name || `inventory_${Date.now()}.jpg`
+                    });
+                    if (!imageUrl) {
+                        throw new Error("Failed to upload image");
+                    }
+                } catch (uploadError) {
+                    console.log("Image upload error", uploadError);
+                    toastError({ text: "Failed to upload image. Please try again." });
+                    return;
+                }
             }
+            // For predefined items, image is optional - send empty string
+            // The API requires "image": "string", so we send empty string if no image
 
-            const formData = new FormData();
-            formData.append("name", customName);
-            formData.append("quantity", parseInt(quantity)); // Ensure number
-            formData.append("itemUnit", unit);
-            formData.append("image", imageUrl);
+            // Prepare JSON payload (not FormData)
+            const payload = {
+                name: customName.trim(),
+                quantity: parseInt(quantity, 10) || 0,
+                itemUnit: unit.trim(),
+                image: imageUrl || "" // Empty string if no image uploaded
+            };
 
-            const response = await callApi("inventory", "POST", formData, {}, true);
+            const response = await callApi("inventory", "POST", payload);
 
             if (response?.success) {
-                toastSuccess({ text: "Inventory created successfully" });
-                navigation.goBack(); // Or navigate to List
+                toastSuccess({ text: response?.message || "Inventory created successfully" });
+                navigation.goBack();
             } else {
                 toastError({ text: response?.message || "Failed to create inventory" });
             }
 
         } catch (error) {
             console.log("Create inventory error", error);
-            toastError({ text: error?.response?.data?.message || "Failed to create inventory" });
+            const errorMessage = error?.message || error?.response?.data?.message || "Failed to create inventory";
+            toastError({ text: errorMessage });
         } finally {
             setLoading(false);
         }

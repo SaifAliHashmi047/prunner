@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
+import { useRoute } from "@react-navigation/native";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -58,20 +59,51 @@ const monthNames = [
 const weekdayShort = ["S", "M", "T", "W", "T", "F", "S"];
 
 const CreateHsLog = ({ navigation }:any) => {
+  const route = useRoute();
   const insets = useSafeAreaInsets();
   const { selectedSite } = useSelector((state: any) => state.site || {});
-console.log("selectedSite", selectedSite);
+  const params = route.params as any;
+  const { log, isEdit } = params || {};
 
-  const { createHsLog, loadingCreate } = useHsLogs();
+  const { createHsLog, updateHsLog, loadingCreate, loadingUpdate, fetchHsLogs } = useHsLogs();
 
-  const today = new Date();
-  const [month, setMonth] = useState(today.getMonth());
-  const [year, setYear] = useState(today.getFullYear());
-  const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
+  // Parse date from log if editing, otherwise use today
+  const getInitialDate = () => {
+    if (log && (log.date || log.activeDate)) {
+      const dateStr = log.date || log.activeDate;
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    return new Date();
+  };
 
-  const [title, setTitle] = useState("");
-  const [precaution, setPrecaution] = useState("");
+  const initialDate = getInitialDate();
+  const [month, setMonth] = useState(initialDate.getMonth());
+  const [year, setYear] = useState(initialDate.getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | null>(initialDate.getDate());
+
+  const [title, setTitle] = useState(log?.title || "");
+  const [precaution, setPrecaution] = useState(log?.precaution || "");
   const [submitting, setSubmitting] = useState(false);
+
+  // Update form when log changes (if editing)
+  useEffect(() => {
+    if (log && isEdit) {
+      setTitle(log.title || "");
+      setPrecaution(log.precaution || "");
+      const dateStr = log.date || log.activeDate;
+      if (dateStr) {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          setMonth(date.getMonth());
+          setYear(date.getFullYear());
+          setSelectedDay(date.getDate());
+        }
+      }
+    }
+  }, [log, isEdit]);
 
   const weeks = buildMonthDays(year, month);
 
@@ -105,14 +137,6 @@ console.log("selectedSite", selectedSite);
   };
 
   const handleSubmit = async () => {
-    console.log("title", {
-      title,
-      precaution,
-      selectedDay,
-   
-      date: getSelectedDateString(),
-    });
-    
     if (!title.trim()) {
       toastError({ text: "Title is required" });
       return;
@@ -125,32 +149,62 @@ console.log("selectedSite", selectedSite);
       toastError({ text: "Please select a date" });
       return;
     }
-    if (!selectedSite?._id) {
+    if (!selectedSite?._id && !log?.siteId?._id) {
       toastError({ text: "Please select a site first" });
       return;
     }
 
     const dateStr = getSelectedDateString();
+    const siteId = selectedSite?._id || log?.siteId?._id || log?.siteId;
 
     try {
       setSubmitting(true);
-      const payload = {
-        title: title.trim(),
-        precaution: precaution.trim(),
-        date: dateStr,
-        status: "active",
-        siteId: selectedSite._id,
-      };
-      const res = await createHsLog(payload);
-      if (res?.success) {
-        toastSuccess({ text: "H&S Log added successfully" });
-        navigation.goBack();
+
+      if (isEdit && log) {
+        // Update existing log
+        const payload: any = {
+          title: title.trim(),
+          precaution: precaution.trim(),
+          date: dateStr,
+        };
+
+        // Include optional fields if they exist in the log
+        if (log.priority) payload.priority = log.priority;
+        if (log.category) payload.category = log.category;
+        if (log.severity) payload.severity = log.severity;
+        if (log.assignedTo) payload.assignedTo = log.assignedTo;
+        if (log.resolution) payload.resolution = log.resolution;
+
+        const logId = log._id || log.id;
+        const res = await updateHsLog(logId, payload);
+        
+        if (res?.success) {
+          toastSuccess({ text: res?.message || "H&S Log updated successfully" });
+          fetchHsLogs(1, true); // Refresh the list
+          navigation.goBack();
+        } else {
+          toastError({ text: res?.message || "Failed to update log" });
+        }
       } else {
-        toastError({ text: res?.message || "Failed to create log" });
+        // Create new log
+        const payload = {
+          title: title.trim(),
+          precaution: precaution.trim(),
+          date: dateStr,
+          status: "active",
+          siteId: siteId,
+        };
+        const res = await createHsLog(payload);
+        if (res?.success) {
+          toastSuccess({ text: res?.message || "H&S Log added successfully" });
+          navigation.goBack();
+        } else {
+          toastError({ text: res?.message || "Failed to create log" });
+        }
       }
     } catch (error: any) {
       const msg =
-        error?.message || error?.response?.data?.message || "Failed to create log";
+        error?.message || error?.response?.data?.message || (isEdit ? "Failed to update log" : "Failed to create log");
       toastError({ text: msg });
     } finally {
       setSubmitting(false);
@@ -164,7 +218,7 @@ console.log("selectedSite", selectedSite);
       <View style={styles.inner}>
         <SecondHeader
           onPress={() => navigation.goBack()}
-          title="Create H&S Log"
+          title={isEdit ? "Edit H&S Log" : "Create H&S Log"}
         />
         <ScrollView
           contentContainerStyle={{ paddingBottom: heightPixel(30) }}
@@ -267,18 +321,26 @@ console.log("selectedSite", selectedSite);
           </View>
 
           <AppButton
-            title={submitting || loadingCreate ? "ADDING..." : "ADD H&S LOG"}
+            title={
+              submitting || loadingCreate || loadingUpdate
+                ? isEdit
+                  ? "UPDATING..."
+                  : "ADDING..."
+                : isEdit
+                ? "UPDATE H&S LOG"
+                : "ADD H&S LOG"
+            }
             onPress={handleSubmit}
             style={{
               backgroundColor: colors.themeColor,
               marginTop: heightPixel(24),
             }}
             textStyle={{ color: colors.white }}
-            disabled={submitting || loadingCreate}
+            disabled={submitting || loadingCreate || loadingUpdate}
           />
         </ScrollView>
       </View>
-      <Loader isVisible={submitting || loadingCreate} />
+      <Loader isVisible={submitting || loadingCreate || loadingUpdate} />
     </SafeAreaView>
   );
 };

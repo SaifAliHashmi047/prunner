@@ -3,13 +3,16 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ViewStyle } from "reac
 import { appIcons } from "../services/utilities/assets";
 import { colors } from "../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../services/constant";
+import SafeImageBackground from "./SafeImageBackground";
 
 
 
 const NAME_COL_W = widthPixel(90);
 
 const AppTaskCard = ({
+    taskTitle,
     userName,
+    userImage,
     status,
     material1,
     material1Qty,
@@ -34,9 +37,13 @@ const AppTaskCard = ({
             {/* Header */}
             <View style={styles.cardHeader}>
                 <View style={styles.userInfo}>
-                    <Image source={appIcons.dummyPic} style={styles.profileImage} />
+                    <SafeImageBackground
+                        source={{uri:userImage}}
+                        style={styles.profileImage}
+                        name={userName}
+                    />
                     <Text style={styles.userName} numberOfLines={1}>
-                        {userName}
+                        {taskTitle}
                     </Text>
                 </View>
                 <Text style={[styles.status, { color: statusColor }]}>{status}</Text>

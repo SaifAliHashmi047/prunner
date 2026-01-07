@@ -30,30 +30,8 @@ const SubmitComplaint = ({ navigation }) => {
     const { uploadFile } = useCallApi();
     const { createComplaint } = useComplaints();
 
-    const handlePickImage = async () => {
-        try {
-            const images = await ImagePicker.openPicker({
-                multiple: true,
-                mediaType: "photo",
-                maxFiles: 5 - media.length // Limit total to 5
-            });
-            const formattedImages = images.map(img => ({
-                uri: img.path,
-                type: img.mime,
-                name: img.filename || `image_${Date.now()}.jpg`
-            }));
-            setMedia([...media, ...formattedImages]);
-        } catch (error) {
-            console.log("ImagePicker error", error);
-        }
-    };
-
-    const handleRemoveImage = (index) => {
-        const newMedia = [...media];
-        newMedia.splice(index, 1);
-        setMedia(newMedia);
-    };
-
+    
+   
     const handleSubmit = async () => {
         if (!title.trim() || !details.trim()) {
             Alert.alert("Error", "Please fill in title and details");
@@ -119,25 +97,7 @@ const SubmitComplaint = ({ navigation }) => {
                     style={styles.textArea}
                 />
 
-                {/* Media Upload */}
-                <Text style={styles.label}>Attachments</Text>
-                <View style={styles.picturesRow}>
-                    <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage} disabled={media.length >= 5}>
-                        <Image source={appIcons.gallery} style={styles.uploadIcon} />
-                        <Text style={styles.uploadText}>Add Image</Text>
-                    </TouchableOpacity>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {media.map((item, index) => (
-                            <View key={index} style={styles.pictureWrapper}>
-                                <Image source={{ uri: item.uri }} style={styles.picture} />
-                                <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveImage(index)}>
-                                    <Text style={styles.removeText}>X</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </ScrollView>
-                </View>
+               
 
                 {/* Submit Button */}
                 <AppButton

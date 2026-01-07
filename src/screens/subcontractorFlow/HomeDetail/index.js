@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
     View,
     Text,
@@ -13,42 +13,48 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-    {
-        id: "1",
-        site: "Dubai Mall",
-        tasks: "3 Active Task",
-        status: "Assigned Site",
-        image: "https://picsum.photos/200/200",
-    },
-    {
-        id: "2",
-        site: "Dubai Mall",
-        tasks: "3 Active Task",
-        status: "",
-        image: "https://picsum.photos/200/201",
-    },
-    {
-        id: "3",
-        site: "Dubai Mall",
-        tasks: "3 Active Task",
-        status: "",
-        image: "https://picsum.photos/200/202",
-    },
-];
+import useSite from "../../../hooks/useSite";
+import { Loader } from "../../../components/Loader";
+import { useDispatch, useSelector } from "react-redux";
+import { setSelectedSite } from "../../../services/store/slices/siteSlice";
+import SafeImageBackground from "../../../components/SafeImageBackground";
 
 const HomeDetail = ({ navigation }) => {
-    const renderSiteCard = ({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.replace(routes.subcontractorFlow)}>
-            <Image source={{ uri: item.image }} style={styles.siteImage} />
-            <View style={{ flex: 1, marginLeft: widthPixel(12) }}>
-                <Text style={styles.siteName}>{item.site}</Text>
-                <Text style={styles.taskText}>{item.tasks}</Text>
-            </View>
-            {item.status ? <Text style={styles.status}>{item.status}</Text> : null}
-        </TouchableOpacity>
-    );
+    const dispatch = useDispatch();
+    const { sites, loading, fetchSites } = useSite();
+    const { user } = useSelector((state) => state.user);
+    useEffect(() => {
+        fetchSites(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleSitePress = (site) => {
+        dispatch(setSelectedSite(site));
+        navigation.replace(routes.subcontractorFlow);
+    };
+
+    const renderSiteCard = ({ item }) => {
+        const siteName = item?.name || item?.siteName || "Unknown Site";
+        const siteImage = item?.image || item?.imageUrl || item?.siteImage || null;
+        const taskCount = item?.taskCount || item?.tasks?.length || item?.activeTasks || 0;
+        const taskText = taskCount > 0 ? `${taskCount} Active Task${taskCount > 1 ? "s" : ""}` : "No Active Tasks";
+        const status = item?.status || (item?.isAssigned ? "Assigned Site" : "");
+
+        return (
+            <TouchableOpacity style={styles.card} onPress={() => handleSitePress(item)}>
+                 <SafeImageBackground 
+                    name={siteName}
+                     source={{uri:siteImage}} 
+                     style={styles.siteImage} 
+                     />
+                <View style={{ flex: 1, marginLeft: widthPixel(12) }}>
+                    <Text style={styles.siteName}>{siteName}</Text>
+                    <Text style={styles.taskText}>{taskText}</Text>
+                </View>
+                {status ? <Text style={styles.status}>{status}</Text> : null}
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -59,12 +65,13 @@ const HomeDetail = ({ navigation }) => {
 
             }}>
                 <View style={styles.headerRow}>
-                    <Image
-                        source={appIcons.dummyPic}
-                        style={styles.avatar}
-                    />
+                <SafeImageBackground 
+                    name={user?.name}
+                     source={{uri:user?.image}} 
+                     style={styles.avatar} 
+                     />
                     <View style={{ flex: 1, marginLeft: widthPixel(10) }}>
-                        <Text style={styles.greeting}>Hi, Rudy</Text>
+                        <Text style={styles.greeting}>Hi, {user?.name}</Text>
                         <Text style={styles.subGreeting}>Welcome back to Project Runner!</Text>
                     </View>
                     <TouchableOpacity style={styles.iconBtn}>
@@ -82,22 +89,32 @@ const HomeDetail = ({ navigation }) => {
 
                 {/* Builder Info */}
                 <View style={styles.builderRow}>
-                    <Image
-                        source={appIcons.dummyPic}
-                        style={styles.builderAvatar}
-                    />
-                    <Text style={styles.builderName}>Builder Name</Text>
+                <SafeImageBackground
+                    name={user?.name}
+                     source={{uri:user?.image}} 
+                     style={styles.avatar} 
+                     />
+                    <Text style={styles.builderName}>{user?.name}</Text>
                 </View>
 
                 {/* Site Cards */}
                 <FlatList
-                    data={DATA}
+                    data={sites}
                     renderItem={renderSiteCard}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingBottom: heightPixel(20) }}
+                    keyExtractor={(item) => item?._id || item?.id || `site-${Math.random()}`}
+                    contentContainerStyle={{padding:heightPixel(2), paddingBottom: heightPixel(20) }}
+                    ListEmptyComponent={
+                        !loading ? (
+                            <View style={{ paddingVertical: heightPixel(40), alignItems: "center" }}>
+                                <Text style={{ fontSize: fontPixel(14), color: colors.greyBg, fontFamily: fonts.NunitoRegular }}>
+                                    No sites found
+                                </Text>
+                            </View>
+                        ) : null
+                    }
                 />
             </View>
-
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };
@@ -162,6 +179,7 @@ const styles = StyleSheet.create({
         fontFamily: fonts.NunitoMedium,
         color: colors.black,
         fontWeight: "500",
+        marginLeft:widthPixel(10)
     },
     card: {
         flexDirection: "row",
