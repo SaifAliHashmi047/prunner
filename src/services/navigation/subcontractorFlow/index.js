@@ -12,6 +12,7 @@ const SubcontractorStack = createStackNavigator();
 
 
 export const SubcontractorNavigation = () => {
+    
     return (
         <SubcontractorStack.Navigator
             initialRouteName={routes.home}
@@ -25,11 +26,13 @@ export const SubcontractorNavigation = () => {
             <SubcontractorStack.Screen name={routes.createWorkPack} component={Subcontractor.CreateWorkPack} />
             <SubcontractorStack.Screen name={routes.siteMap} component={Subcontractor.SiteMap} />
             <SubcontractorStack.Screen name={routes.siteFeedback} component={Subcontractor.SiteFeedback} />
+            <SubcontractorStack.Screen name={routes.siteFeedbackDetail} component={Subcontractor.SiteFeedbackDetail} />
             <SubcontractorStack.Screen name={routes.myComplaint} component={Subcontractor.MyComplaint} />
             <SubcontractorStack.Screen name={routes.chatDetail} component={Subcontractor.ChatDetail} />
             <SubcontractorStack.Screen name={routes.addFeedback} component={Subcontractor.AddFeedback} />
             <SubcontractorStack.Screen name={routes.submitComplaint} component={Subcontractor.SubmitComplaint} />
             <SubcontractorStack.Screen name={routes.hsLog} component={Subcontractor.HsLog} />
+            <SubcontractorStack.Screen name={routes.createHsLog} component={Subcontractor.CreateHsLog} />
             <SubcontractorStack.Screen name={routes.jobDetails} component={Subcontractor.JobDetails} />
             <SubcontractorStack.Screen name={routes.cancelJob} component={Subcontractor.CancelJob} />
             <SubcontractorStack.Screen name={routes.cancelJobOther} component={Subcontractor.CancelJobOther} />

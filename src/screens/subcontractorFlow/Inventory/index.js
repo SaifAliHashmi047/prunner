@@ -4,7 +4,7 @@ import { AppInventoryRow, AppButton, SecondHeader } from "../../../components"; 
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
-import useCallApi from "../../../hooks/useCallApi";
+import useInventory from "../../../hooks/useInventory";
 import { routes } from "../../../services/constant";
 
 import { Loader } from "../../../components/Loader";
@@ -12,71 +12,32 @@ import { ActivityIndicator, RefreshControl } from "react-native";
 
 const Inventory = ({ navigation, route }) => {
   const { isSelection, previousData } = route.params || {};
-  const { callApi } = useCallApi();
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const {
+    inventory,
+    loading,
+    refreshing,
+    loadingMore,
+    hasMore,
+    page,
+    fetchInventory,
+    loadMore,
+    onRefresh,
+  } = useInventory();
 
   // Selection State: stored as object { [id]: { ...item, quantity: 1 } }
   const [selectedItems, setSelectedItems] = useState({});
 
   useEffect(() => {
     fetchInventory(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchInventory = async (pageNum, isRefresh = false) => {
-    if (loadingMore) return;
-
-    try {
-      if (pageNum === 1 && !isRefresh) setLoading(true);
-      if (pageNum > 1) setLoadingMore(true);
-
-      const response = await callApi("inventory", "GET", null, {
-        page: pageNum,
-        limit: 10
-      });
-
-      if (response?.success && response?.data) {
-        const list = response.data.inventory || [];
-        const pagination = response.data.pagination;
-
-        if (isRefresh || pageNum === 1) {
-          setInventory(list);
-        } else {
-          setInventory(prev => [...prev, ...list]);
-        }
-
-        if (pagination && pagination.currentPage >= pagination.totalPages) {
-          setHasMore(false);
-        } else if (list.length === 0) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-        setPage(pageNum);
-      }
-    } catch (error) {
-      console.log("Fetch inventory error", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  }
-
   const handleRefresh = () => {
-    setRefreshing(true);
-    setHasMore(true);
-    fetchInventory(1, true);
+    onRefresh();
   };
 
   const handleLoadMore = () => {
-    if (hasMore && !loadingMore && !loading) {
-      fetchInventory(page + 1);
-    }
+    loadMore();
   };
 
   const toggleSelection = (item) => {

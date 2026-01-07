@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
@@ -6,75 +6,25 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-import useCallApi from "../../../hooks/useCallApi";
 import { Loader } from "../../../components/Loader";
+import useHsLogs from "../../../hooks/useHsLogs";
 
 const HsLog = ({ navigation }) => {
-    const { callApi } = useCallApi();
-    const [logs, setLogs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-
-    const fetchLogs = useCallback(async (pageNum, isRefresh = false) => {
-        try {
-            if (isRefresh) {
-                setRefreshing(true);
-            } else if (pageNum === 1) {
-                setLoading(true);
-            } else {
-                setLoadingMore(true);
-            }
-
-            const response = await callApi("hs-logs", "GET", null, {
-                page: pageNum,
-                limit: 10
-            });
-
-            if (response?.success && response?.data) {
-                const newLogs = response.data.hsLogs || [];
-                const pagination = response.data.pagination;
-
-                if (isRefresh || pageNum === 1) {
-                    setLogs(newLogs);
-                } else {
-                    setLogs(prev => [...prev, ...newLogs]);
-                }
-
-                if (pagination && pagination.currentPage >= pagination.totalPages) {
-                    setHasMore(false);
-                } else if (newLogs.length === 0) {
-                    setHasMore(false);
-                } else {
-                    setHasMore(true);
-                }
-                setPage(pageNum);
-            }
-        } catch (error) {
-            console.log("Fetch HS logs error", error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-            setLoadingMore(false);
-        }
-    }, [callApi]);
+    const {
+        logs,
+        loading,
+        refreshing,
+        loadingMore,
+        hasMore,
+        fetchHsLogs,
+        loadMore,
+        onRefresh,
+    } = useHsLogs();
 
     useEffect(() => {
-        fetchLogs(1);
+        fetchHsLogs(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    const onRefresh = () => {
-        setHasMore(true);
-        fetchLogs(1, true);
-    };
-
-    const loadMore = () => {
-        if (!loadingMore && !loading && hasMore) {
-            fetchLogs(page + 1);
-        }
-    };
 
     const renderFooter = () => {
         if (!loadingMore) return null;
@@ -140,6 +90,16 @@ const HsLog = ({ navigation }) => {
                     )}
                 />
             </View>
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => navigation.navigate(routes.createHsLog)}
+            >
+                <Image
+                    source={appIcons.plus}
+                    style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }}
+                />
+            </TouchableOpacity>
+
             <Loader isVisible={loading} />
         </SafeAreaView>
     );

@@ -30,7 +30,7 @@ import {
   setSelectedSite,
   setSites,
 } from "../../../services/store/slices/siteSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import useSite from "../../../hooks/useSite";
 
 const Home = () => {
@@ -47,7 +47,12 @@ const Home = () => {
     loadingMore,
     fetchTasks,
   } = useTasks();
-
+  const { selectedSite } = useSelector((state) => state.site || {});
+  console.log("selectedSite", selectedSite);
+  const {getSites}=useSite()
+  useEffect(() => {
+      getSites()
+  },[])
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };

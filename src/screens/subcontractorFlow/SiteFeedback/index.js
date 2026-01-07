@@ -92,7 +92,15 @@ const SiteFeedback = ({ navigation }) => {
                         };
 
                         return (
-                            <View style={styles.workPackItem}>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() =>
+                                    navigation.navigate(routes.siteFeedbackDetail, {
+                                        feedback: item,
+                                    })
+                                }
+                                style={styles.workPackItem}
+                            >
                                 <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.workPackName}>{item.title || "No title"}</Text>
@@ -153,7 +161,7 @@ const SiteFeedback = ({ navigation }) => {
                                         ))}
                                     </ScrollView>
                                 )}
-                            </View>
+                            </TouchableOpacity>
                         );
                     }}
                 />

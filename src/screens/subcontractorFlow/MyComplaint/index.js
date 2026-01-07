@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
@@ -9,14 +9,15 @@ import { routes } from "../../../services/constant";
 import useComplaints from "../../../hooks/useComplaints";
 import { formateDate } from "../../../services/utilities/helper";
 import { Loader } from "../../../components/Loader";
+import { useFocusEffect } from "@react-navigation/native";
 
 const MyComplaint = ({ navigation }) => {
     const { complaints, loading, refreshing, loadMore, onRefresh, loadingMore, fetchComplaints } = useComplaints();
     const onEndReachedCalledDuringMomentum = useRef(true);
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         fetchComplaints(1);
-    }, []);
+    }, []));
 
     const renderFooter = () => {
         if (!loadingMore) return null;
