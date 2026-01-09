@@ -13,6 +13,7 @@ import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import { ChatListScreen } from "../../../components/Chats/ChatList";
 
 // Sample data for chat messages
 const chatData = [
@@ -59,6 +60,9 @@ const chatData = [
 ];
 
 const Chat = ({ navigation }) => {
+  return (
+    <ChatListScreen  />
+);
   return (
     <SafeAreaView style={styles.container}>
       {/* Chat Header */}

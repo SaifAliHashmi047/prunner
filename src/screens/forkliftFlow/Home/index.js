@@ -47,15 +47,28 @@ const Home = () => {
   useFocusEffect(
     useCallback(() => {
       fetchTasks(1);
-    }, [fetchTasks])
+    }, [ ])
   );
 
   const handleStartTask = async(task) => {
+
     await updateTaskStatus(task._id, "started");
+    await  fetchTasks(1);
+       
     // Navigate based on status or ID
     // navigation.navigate(routes.forkJobDetail, { task })
     // For now logging
     console.log("Start task", task);
+  };
+
+  const handleCompleteTask = async(task) => {
+    await updateTaskStatus(task._id, "completed");
+    await  fetchTasks(1);
+
+    // Navigate based on status or ID
+    // navigation.navigate(routes.forkJobDetail, { task })
+    // For now logging
+    console.log("Complete task", task);
   };
 
   const getFilteredTasks = () => {
@@ -64,7 +77,7 @@ const Home = () => {
       const status = task.status?.toLowerCase(); // pending, active, completed, cancelled, in_progress
       if (activeTab === "Pending") return status === "pending";
       if (activeTab === "Active")
-        return status === "active" || status === "in_progress";
+        return status === "active" || status === "in_progress" || status === "started";
       if (activeTab === "Completed") return status === "completed";
       if (activeTab === "Cancelled") return status === "cancelled";
       return false;
@@ -104,7 +117,7 @@ const Home = () => {
           status: item.status, // Or map specific string if needed
         }}
         onStartPress={() => handleStartTask(item)}
-        onCompletePress={() => handleStartTask(item)}
+        onCompletePress={() => handleCompleteTask(item)}
       />
     );
   };

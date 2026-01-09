@@ -15,6 +15,7 @@ import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
+import { ChatScreen } from "../../../components/Chats/ChatScreen";
 
 const messagesData = [
   { id: "1", text: "I’m waiting for you", time: "11:15", type: "received" },
@@ -22,14 +23,19 @@ const messagesData = [
   { id: "3", text: "?", time: "11:15", type: "received" },
 ];
 
-const ChatDetail = ({ navigation }) => {
+const ChatDetail = ({ navigation, route }) => {
+  const { chatId, receiverId, receiverName, receiverImage } = route.params || {};
   const [message, setMessage] = useState("");
+  return <ChatScreen chatId={chatId} receiverId={receiverId} receiverName={receiverName} receiverImage={receiverImage} />;
 
   return (
     <SafeAreaView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <Image source={appIcons.backArrow} style={styles.backIcon} />
         </TouchableOpacity>
         <Image source={appIcons.dummyPic} style={styles.avatar} />
@@ -102,7 +108,6 @@ const styles = StyleSheet.create({
     padding: widthPixel(14),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.greyLight,
-
   },
   backBtn: {
     paddingRight: widthPixel(8),

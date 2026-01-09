@@ -1,54 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, Text, SafeAreaView, TouchableOpacity, TextInput, Image, Alert } from "react-native";
-import { SecondHeader, AppButton } from "../../../components";
+import { View, FlatList, StyleSheet, Text, SafeAreaView, TouchableOpacity, Image, Alert, RefreshControl } from "react-native";
+import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
-import useCallApi from "../../../hooks/useCallApi";
+import useInventory from "../../../hooks/useInventory";
 import { routes } from "../../../services/constant";
 import { Loader } from "../../../components/Loader";
 import { appIcons } from "../../../services/utilities/assets";
+import { useFocusEffect } from "@react-navigation/native";
 
 const SelectInventoryForTask = ({ navigation, route }) => {
   const { previousData } = route.params || {};
-  const { callApi } = useCallApi();
   console.log("previousData", previousData);
 
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    inventory,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchInventory,
+  } = useInventory();
 
   // Selection State: { [id]: { ...item, quantity: 1 } }
   const [selectedItems, setSelectedItems] = useState({});
-
-  // Custom Logic
+  
+  // Custom inventory state
   const [isCustomSelected, setIsCustomSelected] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [customQuantity, setCustomQuantity] = useState("");
+  const [customUnit, setCustomUnit] = useState("");
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
-
-  const fetchInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await callApi("inventory", "GET", null, { page: 1, limit: 100 }); // Fetch all or implement paging
-      if (response?.success && response?.data) {
-        setInventory(response.data.inventory || []);
-      }
-    } catch (error) {
-      console.log("Fetch inventory error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Refresh inventory when screen comes into focus (after creating new inventory)
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchInventory(1);
+    }, [ ])
+  );
 
   const toggleSelection = (item) => {
-    // If custom is selected, we might want to deselect it? 
-    // User requirement says "custom use the logic of createInventory".
-    // Image shows Custom as a radio button option at the top. 
-    // But text says "multiple select".
-    // If multiple select, Custom can be one of the selected items.
-
     setSelectedItems(prev => {
       const newState = { ...prev };
       if (newState[item._id]) {
@@ -60,22 +52,31 @@ const SelectInventoryForTask = ({ navigation, route }) => {
     });
   };
 
+  const toggleCustom = () => {
+    setIsCustomSelected(prev => !prev);
+    if (!isCustomSelected) {
+      // Clear custom inputs when deselecting
+      setCustomName("");
+      setCustomQuantity("");
+      setCustomUnit("");
+    }
+  };
+
   const handleNext = () => {
     let finalInventory = Object.values(selectedItems).map(i => ({
       item: i.name,
-      quantity: i.quantity,
+      quantity: i.quantity || 1,
+      unit: i.itemUnit || "",
       notes: ""
     }));
 
-    if (isCustomSelected) {
-      if (!customName.trim()) {
-        Alert.alert("Error", "Please enter a name for the custom item");
-        return;
-      }
+    // Add custom inventory if selected and filled
+    if (isCustomSelected && customName.trim() && customQuantity.trim()) {
       finalInventory.push({
-        item: customName,
-        quantity: 1, // Default or add input? Image showing only name.
-        notes: "Custom Item"
+        item: customName.trim(),
+        quantity: parseInt(customQuantity, 10) || 1,
+        unit: customUnit.trim() || "",
+        notes: ""
       });
     }
 
@@ -120,36 +121,55 @@ const SelectInventoryForTask = ({ navigation, route }) => {
       <View style={{ flex: 1, paddingHorizontal: widthPixel(20) }}>
 
         {/* Custom Section */}
-        <View style={styles.card}>
+        <TouchableOpacity
+          style={[styles.card, isCustomSelected && styles.activeCard]}
+          onPress={toggleCustom}
+        >
           <View style={styles.customHeaderRow}>
             <Text style={styles.cardTitle}>Custom</Text>
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => setIsCustomSelected(!isCustomSelected)}
-            >
-              <View style={[styles.radioOuter, isCustomSelected && { borderColor: colors.themeColor }]}>
-                {isCustomSelected && <View style={styles.radioInner} />}
-              </View>
-            </TouchableOpacity>
+            <View style={[styles.radioOuter, isCustomSelected && styles.radioOuterActive]}>
+              {isCustomSelected && <View style={styles.radioInner} />}
+            </View>
           </View>
-          <TextInput
-            style={styles.customInput}
-            placeholder="Enter name"
-            placeholderTextColor={colors.grey}
-            value={customName}
-            onChangeText={setCustomName}
-            editable={isCustomSelected} // Only editable if checked? Or auto-check if typing?
-            // Let's make it auto-check if typing
-            onFocus={() => setIsCustomSelected(true)}
-          />
-        </View>
+          
+          {isCustomSelected && (
+            <View style={styles.customInputsContainer}>
+              <AppTextInput
+                placeholder="Enter custom inventory name"
+                value={customName}
+                onChangeText={setCustomName}
+                keyboardType="default"
+                style={styles.customInput}
+              />
+              <AppTextInput
+                placeholder="Enter quantity"
+                value={customQuantity}
+                onChangeText={setCustomQuantity}
+                keyboardType="numeric"
+                style={styles.customInput}
+              />
+              <AppTextInput
+                placeholder="Enter unit (e.g., Bags, Kg)"
+                value={customUnit}
+                onChangeText={setCustomUnit}
+                keyboardType="default"
+                style={styles.customInput}
+              />
+            </View>
+          )}
+        </TouchableOpacity>
 
         <FlatList
           data={inventory}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => item._id || item.id}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: heightPixel(100) }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={!loading && <Text style={{ textAlign: 'center', marginTop: 20 }}>No inventory found</Text>}
         />
       </View>
@@ -163,7 +183,7 @@ const SelectInventoryForTask = ({ navigation, route }) => {
         />
       </View>
 
-      <Loader isVisible={loading} />
+      <Loader isVisible={loading || loadingMore} />
     </SafeAreaView>
   );
 };
@@ -184,6 +204,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2
   },
+  activeCard: {
+    borderWidth: 1,
+    borderColor: colors.themeColor,
+    backgroundColor: "#F7F1FF",
+  },
   customHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -195,14 +220,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.NunitoSemiBold,
     color: colors.black
   },
+  customInputsContainer: {
+    marginTop: heightPixel(12),
+  },
   customInput: {
-    backgroundColor: '#EAEAEA',
-    borderRadius: widthPixel(8),
-    paddingVertical: heightPixel(12),
-    paddingHorizontal: widthPixel(14),
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.black
+    marginBottom: heightPixel(10),
   },
   itemRow: {
     flexDirection: 'row',

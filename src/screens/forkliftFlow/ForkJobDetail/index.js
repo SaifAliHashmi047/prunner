@@ -16,8 +16,10 @@ import { routes } from "../../../services/constant";
 import { formateDate } from "../../../services/utilities/helper";
 import SafeImageBackground from "../../../components/SafeImageBackground";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import useTasks from "../../../hooks/useTasks";
 const ForkJobDetail = ({ navigation, route }) => {
   const { task } = route.params || {};
+  const { updateTaskStatus } = useTasks();
   const insets = useSafeAreaInsets();
   if (!task) {
     return (
@@ -33,7 +35,10 @@ const ForkJobDetail = ({ navigation, route }) => {
       </SafeAreaView>
     );
   }
-
+const handleCompleteJob = async() => {
+  await updateTaskStatus(task._id, "completed");
+  navigation.goBack()
+}
   const taskTitle = task.title || "Task";
   const customerName =
     task.assignedTo?.name || task.createdBy?.name || "Unknown User";
@@ -159,7 +164,7 @@ const ForkJobDetail = ({ navigation, route }) => {
       </ScrollView>
 
       {/* Button pinned at bottom */}
-
+{status !== "completed" && (
       <View
         style={{
           paddingHorizontal: heightPixel(16),
@@ -167,10 +172,18 @@ const ForkJobDetail = ({ navigation, route }) => {
         }}
       >
         <AppButton
-          title="Start Now"
-          onPress={() => navigation.navigate(routes.materialPicked,{
-            task
-          })}
+          title={status === "started" || status === "in_progress" ? "Complete Job" : "Start Now"}
+          onPress={() =>{
+            if (status === "pending") {
+                navigation.navigate(routes.materialPicked,{
+                    task
+                  })
+            }
+            else if (status === "started" || status === "in_progress") {
+                handleCompleteJob()
+            }
+
+           }}
           style={{
             marginTop: heightPixel(20),
             borderWidth: 1,
@@ -182,6 +195,7 @@ const ForkJobDetail = ({ navigation, route }) => {
           }}
         />
       </View>
+      )}
     </SafeAreaView>
   );
 };

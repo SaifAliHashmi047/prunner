@@ -30,7 +30,7 @@ const navigation = useNavigation();
         />
       );
     }
-    if (status === "active") {
+    if (status === "active"||status === "in_progress"||status === "started") {
       return (
         <AppButton
           title="Mark as Complete"

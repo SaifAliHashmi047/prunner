@@ -9,8 +9,10 @@ import { routes } from "../../../services/constant";
 
 import { Loader } from "../../../components/Loader";
 import { ActivityIndicator, RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Inventory = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { isSelection, previousData } = route.params || {};
   const {
     inventory,
@@ -108,7 +110,10 @@ const Inventory = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={ {
+      flex: 1,  
+      paddingTop: insets.top 
+    }}>
       <View style={styles.screen}>
         {isSelection ? (
           <SecondHeader onPress={() => navigation.goBack()} title="Select Inventory" />

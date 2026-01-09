@@ -13,11 +13,12 @@ import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CreateTask = ({ navigation }) => {
   const [showPlotInput, setShowPlotInput] = useState(false);
   const [plotNumber, setPlotNumber] = useState("");
-
+  const insets = useSafeAreaInsets();
   const handleNext = () => {
     if (showPlotInput) {
       if (!plotNumber.trim()) {
@@ -39,7 +40,9 @@ const CreateTask = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top 
+    }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Create Task" />
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}

@@ -21,8 +21,10 @@ import { Loader } from "../../../components/Loader";
 import useCallApi from "../../../hooks/useCallApi";
 import { useSelector } from "react-redux";
 import { toastError } from "../../../services/utilities/toast/toast";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SelectTask = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { materialLocation, dropOffLocation } = route.params || {};
   const { selectedSite } = useSelector((state) => state.site);
   const [title, setTitle] = useState("");
@@ -33,7 +35,8 @@ const SelectTask = ({ navigation, route }) => {
   const [dropAddress, setDropAddress] = useState("");
   const [siteId, setSiteId] = useState("");
   const [duration, setDuration] = useState("");
-console.log(selectedSite);
+  const [scheduledDate, setScheduledDate] = useState("");
+  console.log(selectedSite);
 
   // Pictures
   const [pictures, setPictures] = useState([]);
@@ -87,9 +90,7 @@ console.log(selectedSite);
       taskType,
       priority,
       scheduledDate:
-        taskType === "scheduled"
-          ? new Date().toISOString()
-          : new Date().toISOString(), // Mocking date logic if 'time' not fully parsed
+        taskType === "scheduled" ? new Date(scheduledDate).toISOString() : null, // Mocking date logic if 'time' not fully parsed
       estimatedDuration: parseInt(duration) || 60,
       siteId: siteId,
       pictures: pictures,
@@ -119,7 +120,14 @@ console.log(selectedSite);
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: widthPixel(20),
@@ -184,8 +192,8 @@ console.log(selectedSite);
         {taskType === "scheduled" && (
           <AppTextInput
             placeholder="Scheduled Date/Time"
-            value={time}
-            onChangeText={setTime}
+            value={scheduledDate}
+            onChangeText={setScheduledDate}
           />
         )}
 

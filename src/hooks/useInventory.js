@@ -80,6 +80,19 @@ const useInventory = () => {
     fetchInventory(1, true);
   }, [fetchInventory]);
 
+  const createInventory = useCallback(
+    async (payload) => {
+      try {
+        const response = await callApiRef.current("inventory", "POST", payload);
+        return response;
+      } catch (error) {
+        console.log("Create inventory error", error);
+        throw error;
+      }
+    },
+    []
+  );
+
   return {
     inventory,
     loading,
@@ -90,6 +103,7 @@ const useInventory = () => {
     fetchInventory,
     loadMore,
     onRefresh,
+    createInventory,
   };
 };
 

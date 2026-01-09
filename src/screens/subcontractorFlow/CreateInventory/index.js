@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -7,6 +7,8 @@ import {
     Image,
     SafeAreaView,
     ScrollView,
+    RefreshControl,
+    ActivityIndicator,
 } from "react-native";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
@@ -15,21 +17,15 @@ import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
 import useCallApi from "../../../hooks/useCallApi";
+import useInventory from "../../../hooks/useInventory";
 import { Image_Picker } from "../../../services/utilities/Image_Picker";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import SafeImageBackground from "../../../components/SafeImageBackground";
 
-const inventoryData = [
-    { id: "1", name: "Sand", unit: "Cubic m", icon: appIcons.sand },
-    { id: "2", name: "Cement Bags", unit: "Bags", icon: appIcons.cement },
-    { id: "3", name: "Steel Rods", unit: "Tons", icon: appIcons.steel },
-    { id: "4", name: "Bricks", unit: "Units", icon: appIcons.bricks },
-    { id: "5", name: "Gravel", unit: "Cubic m", icon: appIcons.gravel },
-    { id: "6", name: "Paint Buckets (20L)", unit: "Buckets", icon: appIcons.paint },
-];
-
-const CreateInventory = ({ navigation }) => {
-    const { callApi, uploadFile } = useCallApi();
+const CreateInventory = ({ navigation, route }) => {
+    const { uploadFile } = useCallApi();
+    const { createInventory, inventory, loading: loadingInventory, refreshing, onRefresh, fetchInventory } = useInventory();
     const [selectedItem, setSelectedItem] = useState(null);
     const [customName, setCustomName] = useState("");
     const [quantity, setQuantity] = useState("");
@@ -37,17 +33,24 @@ const CreateInventory = ({ navigation }) => {
     const [customImage, setCustomImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const handleSelect = (id) => {
+    useEffect(() => {
+        fetchInventory(1);
+    }, []);
+
+    const handleSelect = (id, item = null) => {
         setSelectedItem(id);
-        if (id !== "custom") {
-            const item = inventoryData.find(i => i.id === id);
-            setCustomName(item.name);
-            setUnit(item.unit);
-            setCustomImage(null); // Use default icon logic or ignore
+        if (id !== "custom" && item) {
+            // Pre-fill form with selected inventory item data
+            setCustomName(item.name || "");
+            setUnit(item.itemUnit || "");
+            setCustomImage(null);
+            setQuantity(item.quantity?.toString() || "");
         } else {
+            // Custom item - clear form
             setCustomName("");
             setUnit("");
             setCustomImage(null);
+            setQuantity("");
         }
     };
 
@@ -116,10 +119,11 @@ const CreateInventory = ({ navigation }) => {
                 image: imageUrl || "" // Empty string if no image uploaded
             };
 
-            const response = await callApi("inventory", "POST", payload);
+            const response = await createInventory(payload);
 
             if (response?.success) {
                 toastSuccess({ text: response?.message || "Inventory created successfully" });
+                // Navigate back - the SelectInventoryForTask will refresh on focus
                 navigation.goBack();
             } else {
                 toastError({ text: response?.message || "Failed to create inventory" });
@@ -139,6 +143,9 @@ const CreateInventory = ({ navigation }) => {
             <ScrollView
                 contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
             >
                 {/* Header */}
                 <SecondHeader onPress={() => navigation.goBack()} title="Create Inventory" />
@@ -183,28 +190,58 @@ const CreateInventory = ({ navigation }) => {
                 </TouchableOpacity>
 
                 {/* Inventory List */}
-                {inventoryData.map((item) => (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={[styles.card, selectedItem === item.id]}
-                        onPress={() => handleSelect(item.id)}
-                    >
-                        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                            <Image source={item.icon} style={styles.icon} />
-                            <View style={{ marginLeft: widthPixel(12), flex: 1 }}>
-                                <Text style={styles.itemName}>{item.name}</Text>
-                            </View>
-                        </View>
-                        <View
-                            style={[
-                                styles.radioOuter,
-                                selectedItem === item.id && styles.radioOuterActive,
-                            ]}
-                        >
-                            {selectedItem === item.id && <View style={styles.radioInner} />}
-                        </View>
-                    </TouchableOpacity>
-                ))}
+                {loadingInventory && inventory.length === 0 ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color={colors.themeColor} />
+                        <Text style={styles.loadingText}>Loading inventory...</Text>
+                    </View>
+                ) : (
+                    inventory.map((item) => {
+                        const isSelected = selectedItem === item._id || selectedItem === item.id;
+                        const iconSource = item.image ? { uri: item.image } : null;
+                        
+                        return (
+                            <TouchableOpacity
+                                key={item._id || item.id}
+                                style={[styles.card, isSelected && styles.activeCard]}
+                                onPress={() => handleSelect(item._id || item.id, item)}
+                            >
+                                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                    <SafeImageBackground
+                                        source={iconSource}
+                                        name={item.name || "Item"}
+                                        style={styles.icon}
+                                    />
+                                    <View style={{ marginLeft: widthPixel(12), flex: 1 }}>
+                                        <Text style={styles.itemName}>{item.name}</Text>
+                                        {item.itemUnit && (
+                                            <Text style={styles.itemUnit}>{item.itemUnit}</Text>
+                                        )}
+                                        {item.quantity !== undefined && (
+                                            <Text style={styles.itemQty}>
+                                                Qty: {item.quantity} {item.itemUnit || ""}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </View>
+                                <View
+                                    style={[
+                                        styles.radioOuter,
+                                        isSelected && styles.radioOuterActive,
+                                    ]}
+                                >
+                                    {isSelected && <View style={styles.radioInner} />}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })
+                )}
+
+                {!loadingInventory && inventory.length === 0 && (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No inventory items found</Text>
+                    </View>
+                )}
 
                 {/* Common Inputs */}
                 {selectedItem && (
@@ -237,7 +274,7 @@ const CreateInventory = ({ navigation }) => {
                     />
                 </View>
             </ScrollView>
-            <Loader isVisible={loading} />
+            <Loader isVisible={loading || loadingInventory} />
         </SafeAreaView>
     );
 };
@@ -338,5 +375,37 @@ const styles = StyleSheet.create({
     },
     button: {
         backgroundColor: colors.themeColor,
-    }
+    },
+    loadingContainer: {
+        paddingVertical: heightPixel(40),
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    loadingText: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
+        marginTop: heightPixel(10),
+    },
+    emptyContainer: {
+        paddingVertical: heightPixel(40),
+        alignItems: "center",
+    },
+    emptyText: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
+    },
+    itemUnit: {
+        fontSize: fontPixel(12),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
+        marginTop: heightPixel(2),
+    },
+    itemQty: {
+        fontSize: fontPixel(11),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
+        marginTop: heightPixel(2),
+    },
 });
