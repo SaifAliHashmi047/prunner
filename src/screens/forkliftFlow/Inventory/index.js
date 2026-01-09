@@ -11,8 +11,10 @@ import { AppHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Inventory = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const inventory = [
     {
       id: "1",
@@ -57,7 +59,9 @@ const Inventory = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top 
+    }]}>
       <AppHeader title="Inventory" />
       
       <View style={styles.content}>

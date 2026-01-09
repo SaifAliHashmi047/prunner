@@ -1,41 +1,54 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useCallback, useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl, Platform, ScrollView } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-
-    {
-        id: "1",
-        name: "Lorem ipum dolor coctetur...",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "2",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "3",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-    {
-        id: "4",
-        name: "Work Pack Name",
-        description: "Aliquam et quam porta, dignissim leo vitae, convallis nunc. Nullam condimentum vitae ex et mollis. Proin nec dui get metus dignissim consect..",
-        time: "12-Dec-2023",
-    },
-];
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Loader } from "../../../components/Loader";
+import useFeedback from "../../../hooks/useFeedback";
+import { useFocusEffect } from "@react-navigation/native";
 
 const SiteFeedback = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
+    
+    // Use the feedback hook with "site" endpoint
+    const {
+        feedback: data,
+        loading,
+        refreshing,
+        loadingMore,
+        hasMore,
+        fetchFeedback,
+        loadMore,
+        onRefresh,
+    } = useFeedback();
+
+    useFocusEffect(useCallback(() => {
+        fetchFeedback(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []));
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.themeColor} />
+            </View>
+        );
+    };
+
+    const renderEmpty = () => {
+        if (loading) return null; // Loader covers this
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.emptyText}>No feedback found</Text>
+            </View>
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -45,20 +58,64 @@ const SiteFeedback = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={DATA}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={styles.workPackItem}>
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
-                                    <Text style={styles.workPackName}>{item.name}</Text>
+                    data={data}
+                    keyExtractor={(item) => item._id}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+                    }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={renderEmpty}
+                    contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
+                    renderItem={({ item }) => {
+                        // Format date
+                        const date = new Date(item.createdAt || item.created_at || Date.now());
+                        const formattedDate = date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        });
+
+                        // Render rating stars
+                        const renderRating = () => {
+                            const stars = [];
+                            const rating = item.rating || 0;
+                            for (let i = 1; i <= 5; i++) {
+                                stars.push(
+                                    <Text key={i} style={styles.star}>
+                                        {i <= rating ? '★' : '☆'}
+                                    </Text>
+                                );
+                            }
+                            return stars;
+                        };
+
+                        return (
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() =>
+                                    navigation.navigate(routes.siteFeedbackDetail, {
+                                        feedback: item,
+                                    })
+                                }
+                                style={styles.workPackItem}
+                            >
+                                <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.workPackName}>{item.title || "No title"}</Text>
+                                        <Text style={[styles.workPackDescription, { marginTop: heightPixel(4) }]}>
+                                            {item.description || "No description"}
+                                        </Text>
+                                    </View>
+                                    <View style={{ alignItems: "flex-end", marginLeft: widthPixel(12) }}>
+                                        <Text style={styles.time}>{formattedDate}</Text>
+                                    </View>
                                 </View>
-                                <Text style={styles.time}>{item.time}</Text>
-                            </View>
-                            <Text style={styles.workPackDescription}>{item.description}</Text>
-                            {/* Adding a line under each item */}
-                        </View>
-                    )}
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
             <TouchableOpacity style={styles.fab} onPress={() => {
@@ -66,6 +123,7 @@ const SiteFeedback = ({ navigation }) => {
             }}>
                 <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
             </TouchableOpacity>
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };
@@ -146,6 +204,71 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         elevation: 6,
+    },
+    footerLoader: {
+        paddingVertical: heightPixel(20),
+        alignItems: "center",
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyText: {
+        fontSize: fontPixel(16),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    statusBadge: {
+        paddingHorizontal: widthPixel(8),
+        paddingVertical: heightPixel(4),
+        borderRadius: widthPixel(4),
+        marginBottom: heightPixel(4),
+    },
+    statusText: {
+        fontSize: fontPixel(12),
+        fontWeight: "600",
+        fontFamily: fonts.NunitoSemiBold,
+        textTransform: "capitalize",
+    },
+    createdByLabel: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    createdByName: {
+        fontSize: fontPixel(12),
+        color: colors.grey300,
+        fontFamily: fonts.NunitoSemiBold,
+        fontWeight: "600",
+    },
+    employeeCount: {
+        fontSize: fontPixel(12),
+        color: colors.grey300,
+        fontFamily: fonts.NunitoRegular,
+    },
+    ratingLabel: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+        marginRight: widthPixel(4),
+    },
+    star: {
+        fontSize: fontPixel(16),
+        color: '#FFD700',
+        marginRight: widthPixel(2),
+    },
+    siteInfo: {
+        fontSize: fontPixel(12),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    },
+    mediaImage: {
+        width: widthPixel(80),
+        height: widthPixel(80),
+        borderRadius: widthPixel(8),
+        marginRight: widthPixel(8),
+        backgroundColor: colors.greyBg,
     },
 });
 

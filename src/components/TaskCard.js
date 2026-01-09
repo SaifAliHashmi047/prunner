@@ -5,19 +5,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Pressable,
 } from "react-native";
 import { colors } from "../services/utilities/colors";
-import { widthPixel, heightPixel, fontPixel } from "../services/constant";
+import { widthPixel, heightPixel, fontPixel, routes } from "../services/constant";
 import { fonts } from "../services/utilities/fonts";
 import { appIcons } from "../services/utilities/assets";
 import { AppButton } from "./index";
+import SafeImageBackground from "./SafeImageBackground";
+import { useNavigation } from "@react-navigation/native";
 
 const TaskCard = ({ task, onStartPress , onCompletePress }) => {
-  const { customerName, customerImage, materials, date, time , status } = task;
+  const {title, customerName, customerImage, materials, date, time , status } = task;
 
-
+const navigation = useNavigation();
   const renderButton = () => {
-    if (status === "Pending") {
+    if (status === "pending") {
       return (
         <AppButton
           title="START NOW"
@@ -27,7 +30,7 @@ const TaskCard = ({ task, onStartPress , onCompletePress }) => {
         />
       );
     }
-    if (status === "Active") {
+    if (status === "active"||status === "in_progress"||status === "started") {
       return (
         <AppButton
           title="Mark as Complete"
@@ -49,12 +52,18 @@ const TaskCard = ({ task, onStartPress , onCompletePress }) => {
   };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity activeOpacity={0.9} onPress={()=>{
+      navigation.navigate(routes.forkJobDetail, { task: task });
+    }} style={styles.card}>
       {/* Customer Info */}
       <View style={{ padding: widthPixel(15) }}>
         <View style={styles.customerSection}>
-          <Image source={customerImage} style={styles.customerImage} />
-          <Text style={styles.customerName}>{customerName}</Text>
+          <SafeImageBackground
+          source={{uri:customerImage}}
+          style={styles.customerImage}
+          name={customerName}
+            />
+          <Text style={styles.customerName}>{title}</Text>
         </View>
 
         {/* Divider */}
@@ -93,7 +102,7 @@ const TaskCard = ({ task, onStartPress , onCompletePress }) => {
 
       </View>
       {renderButton()}
-    </View>
+    </TouchableOpacity>
   );
 };
 

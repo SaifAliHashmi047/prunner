@@ -1,50 +1,48 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useCallback, useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
-
-const DATA = [
-    {
-        id: "1",
-        name: "Work Pack Name",
-        adminName: "Admin",
-        description: "Nunc mauris arcu, auctor sit amet ante porta cursus....",
-        time: "8:25 PM",
-        count: 4,
-    },
-    {
-        id: "2",
-        name: "Work Pack Name",
-        adminName: "Admin",
-        description: "Nunc mauris arcu, auctor sit amet ante porta cursus....",
-        time: "8:25 PM",
-        count: 4,
-    },
-    {
-        id: "3",
-        name: "Work Pack Name",
-        adminName: "Admin",
-        description: "Nunc mauris arcu, auctor sit amet ante porta cursus....",
-        time: "8:25 PM",
-        count: 4,
-    },
-    {
-        id: "4",
-        name: "Work Pack Name",
-        adminName: "Admin",
-        description: "Nunc mauris arcu, auctor sit amet ante porta cursus....",
-        time: "8:25 PM",
-        count: 4,
-    },
-];
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Loader } from "../../../components/Loader";
+import useWorkpacks from "../../../hooks/useWorkpacks";
+import { useFocusEffect } from "@react-navigation/native";
 
 const WorkPack = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
+
+    const { workpacks, loading, refreshing, loadingMore, loadMore, onRefresh, fetchWorkPacks } = useWorkpacks();
+    console.log("workpacks,", workpacks);
+
+    useFocusEffect(useCallback(() => {
+        fetchWorkPacks(1);
+    }, [fetchWorkPacks]));
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.themeColor} />
+            </View>
+        );
+    };
+
+    const renderEmpty = () => {
+        if (loading) return null; // Loader covers this
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.emptyText}>No work packs found</Text>
+            </View>
+        );
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, {
+            paddingTop: insets.top
+        }]}>
             <View style={styles.content}>
                 <SecondHeader
                     onPress={() => navigation.goBack()}
@@ -52,20 +50,32 @@ const WorkPack = ({ navigation }) => {
                 />
 
                 <FlatList
-                    data={DATA}
-                    keyExtractor={(item) => item.id}
+                    data={workpacks}
+                    keyExtractor={(item) => item._id}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.themeColor]} />
+                    }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={renderEmpty}
+                    contentContainerStyle={workpacks.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
                     renderItem={({ item }) => (
                         <View style={styles.workPackItem}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
-                                    <Text style={styles.workPackName}>{item.name}</Text>
-                                    <View style={styles.countContainer}>
-                                        <Text style={styles.count}>{item.count}</Text>
-                                    </View>
+                                    <Text style={styles.workPackName}>{item.title}</Text>
+                                    {/* Count is not in API response, omitting or using placeholder if needed */}
+                                    {/* <View style={styles.countContainer}>
+                                        <Text style={styles.count}>0</Text>
+                                    </View> */}
                                 </View>
-                                <Text style={styles.time}>{item.time}</Text>
+                                <Text style={styles.time}>{item?.createdAt}</Text>
                             </View>
-                            <Text style={styles.workPackDescription}>{item.adminName}: {item.description}</Text>
+                            <Text style={styles.workPackDescription} numberOfLines={2}>
+                                {item?.createdBy?.email || "Admin"}: {item.description}
+                            </Text>
                             {/* Adding a line under each item */}
                             <View style={styles.separator} />
                         </View>
@@ -77,6 +87,7 @@ const WorkPack = ({ navigation }) => {
             }}>
                 <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
             </TouchableOpacity>
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };
@@ -147,6 +158,20 @@ const styles = StyleSheet.create({
         alignItems: "center",
         elevation: 6,
     },
+    footerLoader: {
+        paddingVertical: heightPixel(20),
+        alignItems: "center",
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyText: {
+        fontSize: fontPixel(16),
+        color: colors.greyBg,
+        fontFamily: fonts.NunitoRegular,
+    }
 });
 
 export default WorkPack;

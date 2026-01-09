@@ -17,8 +17,12 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import useForkliftDocs from "../../../hooks/useForkliftDocs";
+import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { Loader } from "../../../components/Loader";
 
 const TellAboutVehicle = ({ navigation }) => {
+    const { registerVehicle, loading, uploading } = useForkliftDocs();
     const [vehicleNumber, setVehicleNumber] = useState("");
     const [registrationNumber, setRegistrationNumber] = useState("");
     const [vehicleImages, setVehicleImages] = useState([]);
@@ -32,9 +36,13 @@ const TellAboutVehicle = ({ navigation }) => {
                     text: "Take Photo",
                     onPress: () => launchCamera({ mediaType: 'photo' }, (response) => {
                         if (response.assets && response.assets.length > 0) {
+                            const asset = response.assets[0];
                             const newPic = {
                                 id: String(vehicleImages.length + 1),
-                                uri: response.assets[0].uri,
+                                uri: asset.uri,
+                                type: asset.type || "image/jpeg",
+                                name: asset.fileName || `vehicle_${Date.now()}.jpg`,
+                                size: asset.fileSize || 0,
                             };
                             setVehicleImages([...vehicleImages, newPic]);
                         }
@@ -44,9 +52,13 @@ const TellAboutVehicle = ({ navigation }) => {
                     text: "Choose from Gallery",
                     onPress: () => launchImageLibrary({ mediaType: 'photo' }, (response) => {
                         if (response.assets && response.assets.length > 0) {
+                            const asset = response.assets[0];
                             const newPic = {
                                 id: String(vehicleImages.length + 1),
-                                uri: response.assets[0].uri,
+                                uri: asset.uri,
+                                type: asset.type || "image/jpeg",
+                                name: asset.fileName || `vehicle_${Date.now()}.jpg`,
+                                size: asset.fileSize || 0,
                             };
                             setVehicleImages([...vehicleImages, newPic]);
                         }
@@ -65,23 +77,34 @@ const TellAboutVehicle = ({ navigation }) => {
         setVehicleImages(vehicleImages.filter((pic) => pic.id !== id));
     };
 
-    const handleNext = () => {
-        // if (!vehicleNumber.trim()) {
-        //     Alert.alert("Required Field", "Please enter vehicle number.");
-        //     return;
-        // }
-        // if (!registrationNumber.trim()) {
-        //     Alert.alert("Required Field", "Please enter vehicle registration number.");
-        //     return;
-        // }
-        // console.log("Vehicle Info:", {
-        //     vehicleNumber,
-        //     registrationNumber,
-        //     images: vehicleImages.length
-        // });
+    const handleNext = async () => {
+        if (!vehicleNumber.trim()) {
+            toastError({ text: "Please enter vehicle number" });
+            return;
+        }
+        if (!registrationNumber.trim()) {
+            toastError({ text: "Please enter vehicle registration number" });
+            return;
+        }
 
-        // TODO: Save vehicle information and navigate to next screen
-        navigation.navigate(routes.auth, { screen: routes.uploadVehicleRegistration });
+        try {
+            const response = await registerVehicle(
+                vehicleNumber,
+                registrationNumber,
+                vehicleImages
+            );
+
+            if (response?.success) {
+                toastSuccess({ text: response?.message || "Vehicle information saved successfully" });
+                navigation.navigate(routes.auth, { screen: routes.uploadVehicleRegistration });
+            } else {
+                toastError({ text: response?.message || "Failed to save vehicle information" });
+            }
+        } catch (error) {
+            const msg =
+                error?.message || error?.response?.data?.message || "Failed to save vehicle information";
+            toastError({ text: msg });
+        }
     };
 
     return (
@@ -147,13 +170,15 @@ const TellAboutVehicle = ({ navigation }) => {
                 {/* Next Button */}
                 <View style={styles.buttonContainer}>
                     <AppButton
-                        title="NEXT"
+                        title={loading || uploading ? "SUBMITTING..." : "NEXT"}
                         onPress={handleNext}
                         style={{ backgroundColor: colors.themeColor }}
                         textStyle={{ color: colors.white }}
+                        disabled={loading || uploading}
                     />
                 </View>
             </View>
+            <Loader isVisible={loading || uploading} />
         </SafeAreaView>
     );
 };

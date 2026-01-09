@@ -13,6 +13,8 @@ import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import { ChatListScreen } from "../../../components/Chats/ChatList";
+import { useSelector } from "react-redux";
 
 // Sample data for chat messages
 const chatData = [
@@ -59,6 +61,10 @@ const chatData = [
 ];
 
 const Chat = ({ navigation }) => {
+
+  return (
+      <ChatListScreen  />
+  );
   return (
     <SafeAreaView style={styles.container}>
       {/* Chat Header */}
@@ -72,7 +78,10 @@ const Chat = ({ navigation }) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chatList}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.chatItem} onPress={() => navigation.navigate(routes.chatDetail)}>
+          <TouchableOpacity
+            style={styles.chatItem}
+            onPress={() => navigation.navigate(routes.chatDetail)}
+          >
             <Image source={item.avatar} style={styles.avatar} />
             <View style={styles.chatDetails}>
               <Text style={styles.chatName}>{item.name}</Text>
@@ -135,13 +144,13 @@ const styles = StyleSheet.create({
     fontSize: fontPixel(16),
     fontWeight: "600",
     color: colors.greyBg,
-    fontFamily : fonts.NunitoSemiBold,
+    fontFamily: fonts.NunitoSemiBold,
   },
   chatMessage: {
     fontSize: fontPixel(14),
     color: colors.greyBg,
     marginTop: heightPixel(4),
-    fontFamily : fonts.NunitoRegular,
+    fontFamily: fonts.NunitoRegular,
   },
   rightSection: {
     alignItems: "flex-end",
@@ -149,7 +158,7 @@ const styles = StyleSheet.create({
   chatTime: {
     fontSize: widthPixel(12),
     color: colors.greyLight,
-    fontFamily : fonts.NunitoRegular,
+    fontFamily: fonts.NunitoRegular,
     marginBottom: heightPixel(4),
   },
   unreadCountContainer: {
@@ -166,6 +175,7 @@ const styles = StyleSheet.create({
     fontSize: widthPixel(12),
     fontWeight: "600",
   },
+ 
 });
 
 export default Chat;

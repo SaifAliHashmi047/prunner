@@ -99,22 +99,7 @@ const SignUp = ({ navigation }) => {
             toastSuccess({ text: "Registration successful! Please verify your email." });
             console.log("response===>>>", JSON.stringify(response , null, 2));
             if(response.data.success){
-              const accessToken = response.data.data?.token
-              const refreshToken = response.data.data?.refreshToken;
-              const user = response.data.data?.user;
-              if(accessToken && refreshToken){
-                await AsyncStorage.setItem("Token", accessToken);
-            
-                await AsyncStorage.setItem("refreshToken", refreshToken);
-                
-                // Store user data in Redux
-                dispatch(
-                  setUserData(user)
-                );
-                
-                navigation.navigate(routes.auth, { screen: routes.verifyOtp  , params: { email: email } });
-              }
-
+              navigation.navigate(routes.auth, { screen: routes.verifyOtp  , params: { email: email } });
             }
 
          

@@ -1,47 +1,112 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+  FlatList,
+  Platform,
+} from "react-native";
 import { appIcons, appImages } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import useCallApi from "../../../hooks/useCallApi";
+import { Loader } from "../../../components/Loader";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import useSite from "../../../hooks/useSite";
 
-const SiteMap = ({ navigation }) => {
-    return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <SecondHeader
-                    onPress={() => navigation.goBack()}
-                    title="Site Map"
-                />
-            </View>
+const SiteMap = ({ navigation, route }) => {
+  const { callApi } = useCallApi();
+  const [loading, setLoading] = useState(false);
+  const [siteMapUrl, setSiteMapUrl] = useState(null);
+  const siteId = route?.params?.siteId;
+  
+  // Use pagination hook
+  const {
+    sites,
+    loading: sitesLoading,
+    refreshing,
+    loadingMore,
+    hasMore,
+    fetchSites,
+    loadMore,
+    onRefresh,
+  } = useSite();
+console.log("sites",sites);
 
-            {/* Image shown on full width */}
-            <Image
-                source={appImages.siteImage}
-                style={styles.image}
-                resizeMode="contain"
-            />
-        </SafeAreaView>
-    )
-}
+  useEffect(() => {
+    // Fetch sites with pagination on mount
+    fetchSites(1);
+    
+    if (siteId) {
+      getSiteDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteId]);
+
+  const getSiteDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await callApi(`site/${siteId}`, "GET");
+      if (response?.success && response?.data) {
+        // Assuming the key is siteMap or image.
+        // We'll prioritize siteMap, then image, then null.
+        const url = response.data.siteMap || response.data.image;
+        if (url) {
+          setSiteMapUrl(url);
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching site details", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const insets = useSafeAreaInsets();
+  return (
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
+      <View style={styles.content}>
+        <SecondHeader onPress={() => navigation.goBack()} title="Site Map" />
+      </View>
+
+      {/* Image shown on full width */}
+      <Image
+        source={siteMapUrl ? { uri: siteMapUrl } : appImages.siteImage}
+        style={styles.image}
+        resizeMode="contain"
+      />
+      <Loader isVisible={loading || sitesLoading} />
+    </SafeAreaView>
+  );
+};
 
 export default SiteMap;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.white || "#F4F4F4",
-        paddingTop: Platform.OS === 'android' ? heightPixel(10) : 0,
-    },
-    content: {
-        paddingHorizontal: widthPixel(10),
-    },
-    image: {
-        flex: 1,
-        width: "100%",
-        height: heightPixel(500),
-        marginTop: heightPixel(20),
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white || "#F4F4F4",
+    paddingTop: Platform.OS === "android" ? heightPixel(10) : 0,
+  },
+  content: {
+    paddingHorizontal: widthPixel(10),
+  },
+  image: {
+    flex: 1,
+    width: "100%",
+    height: heightPixel(500),
+    marginTop: heightPixel(20),
+  },
 });

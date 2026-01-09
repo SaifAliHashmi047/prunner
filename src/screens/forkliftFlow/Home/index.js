@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,214 +6,191 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Image,
-  ScrollView,
   FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  StatusBar,
+  Platform,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { routes } from "../../../services/constant";
 import { AppHeader, AppButton, TaskCard } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
+import { Loader } from "../../../components/Loader";
+import useTasks from "../../../hooks/useTasks";
+import { formateDate } from "../../../services/utilities/helper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Home = () => {
-
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Pending");
-
-  const PendingTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Pending",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Pending",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Pending",
-    },
-  ];
-
-  const ActiveTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Active",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Active",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Active",
-    },
-  ];
-
-
-  const CompleteTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Completed",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Completed",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Completed",
-    },
-  ];
-
-  const CancelledTasks = [
-    {
-      id: "1",
-      customerName: "Alex Johnson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Cancelled",
-    },
-    {
-      id: "2",
-      customerName: "Jordan Smith",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Sand", quantity: "1 Ton", icon: appIcons.sand },
-        { name: "Bricks", quantity: "200 unit", icon: appIcons.bricks },
-      ],
-      date: "12-Dec-2023",
-      time: "02:30 PM",
-      status: "Cancelled",
-    },
-    {
-      id: "3",
-      customerName: "Taylor Wilson",
-      customerImage: appIcons.dummyPic,
-      materials: [
-        { name: "Cement", quantity: "500 kg", icon: appIcons.cement },
-        { name: "Steel", quantity: "50 pieces", icon: appIcons.steel },
-      ],
-      date: "13-Dec-2023",
-      time: "10:00 AM",
-      status: "Cancelled",
-    },
-  ];
+  const insets = useSafeAreaInsets();
+  const {
+    tasks,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchTasks,
+    updateTaskStatus
+  } = useTasks();
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-
-  const handleStartTask = (task) => {
-    console.log("Starting task:", task);
-    if (task?.status === "Pending") {
-      navigation.navigate(routes.forkJobDetail)
-    } else if (task?.status === "Active") {
-      navigation.navigate(routes.materialPicked)
-    }
-
-    // TODO: Implement task start logic
-  };
-
-  const renderTask = ({ item }) => (
-    <TaskCard task={item} 
-    onStartPress={() => handleStartTask(item)} 
-    onCompletePress={() => handleStartTask(item)} 
-    />
+  // Fetch tasks when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks(1);
+    }, [ ])
   );
 
+  const handleStartTask = async(task) => {
+
+    await updateTaskStatus(task._id, "started");
+    await  fetchTasks(1);
+       
+    // Navigate based on status or ID
+    // navigation.navigate(routes.forkJobDetail, { task })
+    // For now logging
+    console.log("Start task", task);
+  };
+
+  const handleCompleteTask = async(task) => {
+    await updateTaskStatus(task._id, "completed");
+    await  fetchTasks(1);
+
+    // Navigate based on status or ID
+    // navigation.navigate(routes.forkJobDetail, { task })
+    // For now logging
+    console.log("Complete task", task);
+  };
+
+  const getFilteredTasks = () => {
+    // Filter logic
+    return tasks.filter((task) => {
+      const status = task.status?.toLowerCase(); // pending, active, completed, cancelled, in_progress
+      if (activeTab === "Pending") return status === "pending";
+      if (activeTab === "Active")
+        return status === "active" || status === "in_progress" || status === "started";
+      if (activeTab === "Completed") return status === "completed";
+      if (activeTab === "Cancelled") return status === "cancelled";
+      return false;
+    });
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <ActivityIndicator
+        style={{ marginVertical: 20 }}
+        size="small"
+        color={colors.themeColor}
+      />
+    );
+  };
+
+  const renderTask = ({ item }) => {
+    // Adapter for TaskCard
+    const materials =
+      item.inventory?.map((i) => ({
+        name: i.item,
+        quantity: `${i.quantity} ${i.unit || ""}`,
+        icon: appIcons.sand, // Default icon?
+      })) || [];
+
+    return (
+      <TaskCard
+        task={{
+          ...item,
+          title: item.title,
+          customerName: item.assignedTo?.name  ,
+          customerImage: item.assignedTo?.image , 
+          materials: materials,
+          date: formateDate(item.createdAt || item.date, "DD-MMM-YYYY"),
+          time: formateDate(item.createdAt || item.date, "hh:mm A"),
+          status: item.status, // Or map specific string if needed
+        }}
+        onStartPress={() => handleStartTask(item)}
+        onCompletePress={() => handleCompleteTask(item)}
+      />
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: heightPixel(50),
+        }}
+      >
+        <Text
+          style={{
+            fontSize: fontPixel(16),
+            color: colors.greyText,
+            fontFamily: fonts.NunitoRegular,
+          }}
+        >
+          No tasks found
+        </Text>
+      </View>
+    );
+  };
+
+  const filteredData = getFilteredTasks();
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: widthPixel(16) }}>
-        <TouchableOpacity onPress={openDrawer} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.drawer} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: widthPixel(16),
+        }}
+      >
+        <TouchableOpacity
+          onPress={openDrawer}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.drawer}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
         <View style={{ flexDirection: "row" }}>
-          <TouchableOpacity onPress={() => navigation.navigate(routes.forkHomeDetail)} style={{ padding: heightPixel(12) }}>
-            <Image source={appIcons.building} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate(routes.forkHomeDetail)}
+            style={{ padding: heightPixel(12) }}
+          >
+            <Image
+              source={appIcons.building}
+              style={{ width: widthPixel(24), height: widthPixel(24) }}
+            />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate(routes.chat)} style={{ padding: heightPixel(12) }}>
-            <Image source={appIcons.blackChat} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate(routes.chat)}
+            style={{ padding: heightPixel(12) }}
+          >
+            <Image
+              source={appIcons.blackChat}
+              style={{ width: widthPixel(24), height: widthPixel(24) }}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -223,10 +200,7 @@ const Home = () => {
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTab,
-            ]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
           >
             <Text
               style={[
@@ -239,45 +213,27 @@ const Home = () => {
           </TouchableOpacity>
         ))}
       </View>
-      {activeTab === "Pending" && (
-        <FlatList
-          data={PendingTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
-      {activeTab === "Active" && (
-        <FlatList
-          data={ActiveTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
-      {activeTab === "Completed" && (
-        <FlatList
-          data={CompleteTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
 
-      {activeTab === "Cancelled" && (
-        <FlatList
-          data={CancelledTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.taskList}
-        />
-      )}
+      <FlatList
+        data={filteredData}
+        keyExtractor={(item) => item?._id || item?.id || `task-${Math.random()}`}
+        renderItem={renderTask}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.taskList}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[colors.themeColor]}
+          />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+      />
 
-
+      <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };

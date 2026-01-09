@@ -9,7 +9,7 @@ export const useUserRole = () => {
   return {
     userRole,
     selectedAccountType,
-    isSubcontractor: userRole === 'subcontractor',
+    isSubcontractor: userRole === 'subConstructor',
     isForklift: userRole === 'forklift',
   };
 };

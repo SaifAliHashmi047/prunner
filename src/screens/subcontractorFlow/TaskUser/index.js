@@ -1,125 +1,220 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    SafeAreaView,
-    ScrollView,
-    Image,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SecondHeader, AppButton, AppModal } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
+import useCallApi from "../../../hooks/useCallApi";
+import useUsers from "../../../hooks/useUsers";
+import { Loader } from "../../../components/Loader";
+import {
+  toastSuccess,
+  toastError,
+} from "../../../services/utilities/toast/toast";
+import useTasks from "../../../hooks/useTasks";
 
-const users = [
-    { id: "1", name: "Alex Rivers", avatar: "https://randomuser.me/api/portraits/men/1.jpg" },
-    { id: "2", name: "Jordan Blake", avatar: "https://randomuser.me/api/portraits/men/2.jpg" },
-    { id: "3", name: "Morgan Lee", avatar: "https://randomuser.me/api/portraits/women/3.jpg" },
-    { id: "4", name: "Taylor Quinn", avatar: "https://randomuser.me/api/portraits/men/4.jpg" },
-    { id: "5", name: "Alex Rivers", avatar: "https://randomuser.me/api/portraits/men/5.jpg" },
-];
+const TaskUser = ({ navigation, route }) => {
+  const { previousData, selectedInventory } = route.params || {};
 
-const TaskUser = ({ navigation }) => {
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
+  // User Hook
+  const {
+    users,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchUsers,
+  } = useUsers();
 
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
+  const { callApi, uploadFile } = useCallApi();
+  const { createTask } = useTasks();
+  const onEndReachedCalledDuringMomentum = useRef(true);
+
+  useEffect(() => {
+    fetchUsers(1);
+  }, []);
+
+  const handleCreateTask = async () => {
+    if (!selectedUser) return;
+    setSubmitting(true);
+
+    try {
+      let uploadedPictures = [];
+
+      if (previousData.pictures && previousData.pictures.length > 0) {
+        const uploadPromises = previousData.pictures.map((file) =>
+          uploadFile(file)
+        );
+        const urls = await Promise.all(uploadPromises);
+        uploadedPictures = urls.map((url) => ({ url }));
+      }
+
+      const payload = {
+        ...previousData,
+        pictures: uploadedPictures,
+        assignedTo: selectedUser,
+        inventory: selectedInventory,
+        dropOffLocation: {
+          address: "456 Construction Ave, City",
+          coordinates: {
+            latitude: 40.7589,
+            longitude: -73.9851,
+          },
+        },
+      };
+
+      const response = await createTask(payload);
+
+      if (response?.success) {
+        setModalVisible(true);
+        setTimeout(() => {
+          setModalVisible(false);
+          navigation.popToTop();
+        }, 2000);
+      } else {
+        toastError({ text: "Failed to create task" });
+      }
+    } catch (error) {
+      console.log("Create task error", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView
-                contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header */}
-                <SecondHeader onPress={() => navigation.goBack()} title="Create Task" />
-
-                {/* Subtitle */}
-                <Text style={styles.subtitle}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor lectus augue
-                </Text>
-
-                {/* Users List */}
-                {users.map((user) => (
-                    <TouchableOpacity
-                        key={user.id}
-                        style={[
-                            styles.userCard,
-                            selectedUser === user.id && styles.activeCard,
-                        ]}
-                        onPress={() => setSelectedUser(user.id)}
-                    >
-                        <Image source={{ uri: user.avatar }} style={styles.avatar} />
-                        <Text style={styles.userName}>{user.name}</Text>
-                    </TouchableOpacity>
-                ))}
-
-                {/* Bottom Button */}
-                <View style={{ flex: 1, justifyContent: "flex-end", marginBottom: heightPixel(20) }}>
-                    <AppButton
-                        title="CREATE TASK"
-                        style={{ backgroundColor: colors.themeColor }}
-                        textStyle={{ color: colors.white }}
-                        onPress={() => {
-                            setModalVisible(true);
-                            setTimeout(() => {
-                                setModalVisible(false);
-                                navigation.popToTop();
-                            }, 2000);
-                        }}
-                    />
-                </View>
-            </ScrollView>
-            <AppModal
-                title="Task Created"
-                subtitle="Sed dignissim nisl a vehicula fringilla. Nulla faucibus dui tellus, ut dignissim"
-                visible={modalVisible}
-            // onClose={() => setModalVisible(false)}
-            />
-        </SafeAreaView>
+      <ActivityIndicator
+        style={{ marginVertical: 20 }}
+        size="small"
+        color={colors.themeColor}
+      />
     );
+  };
+
+  const renderUser = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.userCard, selectedUser === item._id && styles.activeCard]}
+      onPress={() => setSelectedUser(item._id)}
+    >
+      <Image
+        source={item?.image ? { uri: item.image } : null}
+        style={styles.avatar}
+      />
+      <Text style={styles.userName}>{item?.name || item?.email}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <SecondHeader onPress={() => navigation.goBack()} title="Select User" />
+      <View style={{ flex: 1, paddingHorizontal: widthPixel(20) }}>
+        <Text style={styles.subtitle}>Assign this task to a user.</Text>
+
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item._id || item.id}
+          renderItem={renderUser}
+          contentContainerStyle={{ paddingBottom: heightPixel(100) }}
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: "center", marginTop: 20 }}>
+                No users found
+              </Text>
+            )
+          }
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+        />
+      </View>
+
+      <View style={styles.footer}>
+        <AppButton
+          title="CREATE TASK"
+          style={{ backgroundColor: colors.themeColor }}
+          textStyle={{ color: colors.white }}
+          disabled={!selectedUser || submitting}
+          onPress={handleCreateTask}
+        />
+      </View>
+
+      <AppModal
+        title="Task Created"
+        subtitle="Your task has been successfully created and assigned."
+        visible={modalVisible}
+      />
+      <Loader isVisible={loading || submitting} />
+    </SafeAreaView>
+  );
 };
 
 export default TaskUser;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.white,
-    },
-    subtitle: {
-        fontSize: fontPixel(14),
-        color: "#777",
-        fontFamily: fonts.NunitoRegular,
-        marginVertical: heightPixel(10),
-    },
-    userCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.white,
-        borderRadius: widthPixel(10),
-        paddingVertical: heightPixel(14),
-        paddingHorizontal: widthPixel(14),
-        marginBottom: heightPixel(12),
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-    },
-    activeCard: {
-        borderColor: colors.themeColor,
-        backgroundColor: "#F7F1FF",
-    },
-    avatar: {
-        width: widthPixel(40),
-        height: widthPixel(40),
-        borderRadius: widthPixel(20),
-        marginRight: widthPixel(12),
-    },
-    userName: {
-        fontSize: fontPixel(15),
-        fontFamily: fonts.NunitoSemiBold,
-        color: colors.black,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  subtitle: {
+    fontSize: fontPixel(14),
+    color: "#777",
+    fontFamily: fonts.NunitoRegular,
+    marginVertical: heightPixel(10),
+  },
+  userCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(10),
+    paddingVertical: heightPixel(14),
+    paddingHorizontal: widthPixel(14),
+    marginBottom: heightPixel(12),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  activeCard: {
+    borderColor: colors.themeColor,
+    backgroundColor: "#F7F1FF",
+  },
+  avatar: {
+    width: widthPixel(40),
+    height: widthPixel(40),
+    borderRadius: widthPixel(20),
+    marginRight: widthPixel(12),
+  },
+  userName: {
+    fontSize: fontPixel(15),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.black,
+  },
+  footer: {
+    position: "absolute",
+    bottom: heightPixel(20),
+    left: widthPixel(20),
+    right: widthPixel(20),
+  },
 });

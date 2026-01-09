@@ -4,22 +4,25 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
-import { routes, emailFormat } from "../../../services/constant";
+import { routes, emailFormat, widthPixel, heightPixel } from "../../../services/constant";
 import { useAppDispatch, useAppSelector } from "../../../services/store/hooks";
-import { loginSuccess, loginFailure, setLoading } from "../../../services/store/slices/userSlice";
+import {
+  setUserData,
+  setAuthenticated,
+  setUserRole,
+} from "../../../services/store/slices/userSlice";
 import axiosInstance from "../../../api/axiosInstance";
 import styles from "./styles";
 import { toastError } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 
-const Login = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Login = ({ navigation }: { navigation: any }) => {
+  const [email, setEmail] = useState("testing1@yopmail.com");
+  const [password, setPassword] = useState("mM@12345");
   const [errors, setErrors] = useState({ email: "", password: "" });
-
+  const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const loading = useAppSelector((state) => state.user.loading);
-
+  const [role, setRole] = useState("subConstructor");
   // Validation function
   const validateForm = () => {
     const newErrors = { email: "", password: "" };
@@ -58,7 +61,7 @@ const Login = ({ navigation }) => {
     }
 
     try {
-      dispatch(setLoading(true));
+      setLoading(true);
 
       // Call login API
       const response = await axiosInstance.post(
@@ -66,51 +69,63 @@ const Login = ({ navigation }) => {
         {
           email: email.trim(),
           password: password,
+          role: role,
+          device: {
+            id: "1234567890",
+            deviceToken: "1234567890",
+          },
         },
         { skipAuth: true }
       );
+      console.log("response login", response);
 
       // Extract token and user data from response
-      const token = response?.data?.accessToken || response?.data?.token || response?.data?.data?.accessToken || response?.data?.data?.token;
-      const refreshToken = response?.data?.refreshToken || response?.data?.data?.refreshToken;
-      const user = response?.data?.user || response?.data?.data?.user || response?.data?.data;
+      const token = response?.data?.data?.token;
+      const refreshToken = response?.data?.data?.refreshToken;
+      const user = response?.data?.data?.user;
+      console.log("user", user);
 
       if (token) {
         // Store token in AsyncStorage
-        await AsyncStorage.setItem("Token", token);
+        await AsyncStorage.setItem("token", token);
 
         // Store refresh token if available
         if (refreshToken) {
           await AsyncStorage.setItem("refreshToken", refreshToken);
         }
 
-        // Store user data in Redux
-        dispatch(
-          loginSuccess({
-            user: user || { email: email.trim() },
-            token: token,
-          })
-        );
+        // Store user in AsyncStorage for persistence
+        if (user) {
+          await AsyncStorage.setItem("user", JSON.stringify(user));
+        }
 
-        // Navigate to subcontractor flow
-        navigation.replace(routes.subcontractorFlow);
+        // Store user data in Redux
+        dispatch(setUserData(user));
+        dispatch(setAuthenticated(true));
+
+        if (user?.role) {
+          dispatch(setUserRole(user.role));
+          if (user.role === "forklift") {
+            navigation.replace(routes.forkliftFlow);
+          } else {
+            navigation.replace(routes.subcontractorFlow);
+          }
+        } else {
+          navigation.replace(routes.subcontractorFlow);
+        }
       } else {
         throw new Error("Token not received from server");
       }
-    } catch (error) {
-      dispatch(loginFailure());
-      
+    } catch (error: any) {
       // Show error message
       const errorMessage =
         error?.error ||
         error?.message ||
         error?.response?.data?.message ||
         "Login failed. Please check your credentials and try again.";
-        toastError({text: errorMessage});
-
-      // Alert.alert("Login Failed", errorMessage, [{ text: "OK" }]);
+      toastError({ text: errorMessage });
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
     }
   };
 
@@ -126,7 +141,23 @@ const Login = ({ navigation }) => {
         <Text style={styles.subtitle}>
           Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit.
         </Text>
+        <View style={{flexDirection:"row",gap:widthPixel(10),marginVertical:heightPixel(10)}}>
+          <AppButton
+            title={"Subconstructor"}
+            onPress={()=>setRole("subConstructor")}
+            style={{ backgroundColor: role === "subConstructor" ? colors.themeColor : colors.gray }}
+            textStyle={{ color: colors.white }}
+            disabled={false}
+          />
+          <AppButton
+            title={"Forklift"}
+            onPress={()=>setRole("forklift")}
+            style={{ backgroundColor: role === "forklift" ? colors.themeColor : colors.gray }}
+            textStyle={{ color: colors.white }}
+            disabled={false}
 
+          />
+        </View>
         {/* Email Input */}
         <AppTextInput
           placeholder="Enter your email address"
@@ -139,7 +170,9 @@ const Login = ({ navigation }) => {
           }}
           keyboardType="email-address"
         />
-        {/* {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null} */}
+        {errors.email ? (
+          <Text style={styles.errorText}>{errors.email}</Text>
+        ) : null}
 
         {/* Password Input */}
         <AppTextInput
@@ -153,10 +186,17 @@ const Login = ({ navigation }) => {
           }}
           secureTextEntry={true}
         />
-        {/* {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null} */}
+        {errors.password ? (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        ) : null}
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => navigation.navigate(routes.auth, { screen: routes.forgot })}>
+        <TouchableOpacity
+          style={styles.forgotPasswordButton}
+          onPress={() =>
+            navigation.navigate(routes.auth, { screen: routes.forgot })
+          }
+        >
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
@@ -170,7 +210,11 @@ const Login = ({ navigation }) => {
           />
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate(routes.auth, { screen: routes.signUp })}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate(routes.auth, { screen: routes.signUp })
+              }
+            >
               <Text style={styles.registerLink}>Register</Text>
             </TouchableOpacity>
           </View>

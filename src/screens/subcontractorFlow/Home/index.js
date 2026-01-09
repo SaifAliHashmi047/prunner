@@ -1,122 +1,197 @@
-import React, { useState } from "react";
-import { View, FlatList, StatusBar, TouchableOpacity, Text, StyleSheet, Image, SafeAreaView, ScrollView } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  FlatList,
+  StatusBar,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  Platform,
+} from "react-native";
 import { routes } from "../../../services/constant";
 import { AppTaskCard } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
-import { heightPixel, widthPixel } from "../../../services/constant"; // Using Pixel methods
+import { heightPixel, widthPixel } from "../../../services/constant";
 import { appIcons } from "../../../services/utilities/assets";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  DrawerActions,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { fonts } from "../../../services/utilities/fonts";
-
-const taskData = [
-  {
-    id: "1",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Completed",
-  },
-  {
-    id: "2",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Pending",
-  },
-  {
-    id: "3",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Cancelled",
-  },
-  {
-    id: "4",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Completed",
-  },
-  {
-    id: "5",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Pending",
-  },
-  {
-    id: "6",
-    userName: "Dummy user name",
-    material1: "Sand",
-    material1Qty: "1 Ton",
-    material2: "Bricks",
-    material2Qty: "200 unit",
-    date: "12-Dec-2023",
-    time: "02:30 PM",
-    status: "Cancelled",
-  },
-];
-
-// Tab Screen Content
-
+import { Loader } from "../../../components/Loader";
+import { formateDate } from "../../../services/utilities/helper";
+import useTasks from "../../../hooks/useTasks";
+import {
+  setSelectedSite,
+  setSites,
+} from "../../../services/store/slices/siteSlice";
+import { useDispatch, useSelector } from "react-redux";
+import useSite from "../../../hooks/useSite";
 
 const Home = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState("Active"); // Active, Completed, Canceled
+  const [activeTab, setActiveTab] = useState("Active"); // Active, Completed, Cancelled
 
+  // Use useTasks hook
+  const {
+    tasks,
+    loading,
+    refreshing,
+    loadMore,
+    onRefresh,
+    loadingMore,
+    fetchTasks,
+  } = useTasks();
+  const { selectedSite } = useSelector((state) => state.site || {});
+  console.log("selectedSite", selectedSite);
+  const {getSites}=useSite()
+  useEffect(() => {
+      getSites()
+  },[])
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-  const TabContent = ({ status }) => (
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks(1);
+    },
+    [])
+  );
+
+  // loadMore and onRefresh are now handled by the hook and passed directly
+
+  const getFilteredTasks = () => {
+    return tasks.filter((task) => {
+      const status = task.status?.toLowerCase();
+      if (activeTab === "Active") {
+        return (
+          status === "pending" ||
+          status === "in_progress" ||
+          status === "active"
+        );
+      } else if (activeTab === "Completed") {
+        return status === "completed";
+      } else if (activeTab === "Cancelled") {
+        return status === "cancelled";
+      }
+      return false;
+    });
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color={colors.themeColor} />
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 50,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 16,
+            color: colors.greyText,
+            fontFamily: fonts.NunitoRegular,
+          }}
+        >
+          No tasks found
+        </Text>
+      </View>
+    );
+  };
+
+  const filteredData = getFilteredTasks();
+
+  const TabContent = () => (
     <FlatList
-      data={taskData.filter((task) => task.status === status)}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <AppTaskCard
-          userName={item.userName}
-          status={item.status}
-          material1={item.material1}
-          material1Qty={item.material1Qty}
-          material2={item.material2}
-          material2Qty={item.material2Qty}
-          date={item.date}
-          time={item.time}
-          onPress={() => { navigation.navigate(routes.jobDetails) }}
+      data={filteredData}
+      keyExtractor={(item) => item._id}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.themeColor]}
         />
-      )}
+      }
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={renderFooter}
+      ListEmptyComponent={renderEmpty}
+      renderItem={({ item }) => {
+        const item1 = item.inventory?.[0];
+        const item2 = item.inventory?.[1];
+        console.log("item", item);
+        return (
+          <AppTaskCard
+            userName={item?.assignedTo?.name} // Using title as header
+            taskTitle={item.title}
+            status={item.status}
+            userImage={item.assignedTo?.image  }
+            inventory={item?.inventory}
+            material1={item1?.item}
+            material1Qty={
+              item1 ? `${item1.quantity} ${item1.unit || ""}` : undefined
+            }
+            material2={item2?.item}
+            material2Qty={
+              item2 ? `${item2.quantity} ${item2.unit || ""}` : undefined
+            }
+            date={formateDate(item?.createdAt, "DD-MMM-YYYY")}
+            time={formateDate(item?.createdAt, "hh:mm A")}
+            onPress={() => {
+              navigation.navigate(routes.jobDetails, { task: item });
+            }}
+          />
+        );
+      }}
     />
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Drawer Toggle Button */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: widthPixel(16) }}>
-        <TouchableOpacity onPress={openDrawer} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.drawer} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: widthPixel(16),
+        }}
+      >
+        <TouchableOpacity
+          onPress={openDrawer}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.drawer}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate(routes.homeDetail)} style={{ padding: heightPixel(12) }}>
-          <Image source={appIcons.building} style={{ width: widthPixel(24), height: widthPixel(24) }} />
+        <TouchableOpacity
+          onPress={() => navigation.navigate(routes.homeDetail)}
+          style={{ padding: heightPixel(12) }}
+        >
+          <Image
+            source={appIcons.building}
+            style={{ width: widthPixel(24), height: widthPixel(24) }}
+          />
         </TouchableOpacity>
       </View>
 
@@ -126,10 +201,7 @@ const Home = () => {
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTab,
-            ]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
           >
             <Text
               style={[
@@ -144,22 +216,29 @@ const Home = () => {
       </View>
 
       {/* Tab Content */}
-      <View style={{ flex: 1, paddingHorizontal: widthPixel(15), marginTop: heightPixel(10) }}>
-        {activeTab === "Active" && <TabContent status="Pending" />}
-        {activeTab === "Completed" && <TabContent status="Completed" />}
-        {activeTab == "Cancelled" && <TabContent status="Cancelled" />}
+      <View
+        style={{
+          flex: 1,
+          paddingHorizontal: widthPixel(15),
+          marginTop: heightPixel(10),
+        }}
+      >
+        <TabContent />
       </View>
 
       {/* Floating Action Button (FAB) */}
-      <TouchableOpacity style={styles.fab} onPress={() => {
-        navigation.navigate(routes.createTask)
-      }}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => {
+          navigation.navigate(routes.createTask);
+        }}
+      >
         <Text style={styles.fabPlus}>+</Text>
       </TouchableOpacity>
+      <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeArea: {

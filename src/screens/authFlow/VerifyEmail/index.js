@@ -12,21 +12,71 @@ import { AppHeader, AppOtp, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { routes } from "../../../services/constant";
+import { useRoute } from "@react-navigation/native";
+import axiosInstance from "../../../api/axiosInstance";
+import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { Loader } from "../../../components/Loader";
 
 const VerifyEmail = ({ navigation }) => {
+  const route = useRoute();
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(60);
+  const [loading, setLoading] = useState(false);
 
-  const handleVerify = () => {
-    console.log("Entered OTP:", otp);
-    navigation.navigate(routes.auth , {
-      screen: routes.changePassword
-    });
+  // Get email from route params
+  const email = route?.params?.email || "";
+
+  const handleVerify = async () => {
+    if (!otp || otp.length < 4) {
+      toastError({ text: "Please enter a valid OTP" });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Call verify OTP API for reset password
+      const response = await axiosInstance.post(
+        "auth/verifyOTPResetPassword",
+        {
+          email: email.trim(),
+          otp: otp,
+        },
+        { skipAuth: true }
+      );
+
+      // Check success and navigate
+      if (response?.data?.success) {
+        const resetToken = response?.data?.data?.resetToken;
+        toastSuccess({ text: "OTP Verified Successfully" });
+
+        navigation.navigate(routes.auth, {
+          screen: routes.changePassword,
+          params: {
+            email: email,
+            resetToken: resetToken
+          },
+        });
+      } else {
+        throw new Error(response?.data?.message || "Verification failed");
+      }
+
+    } catch (error) {
+      const errorMessage =
+        error?.error ||
+        error?.message ||
+        error?.response?.data?.message ||
+        "Verification failed. Please check your OTP and try again.";
+      toastError({ text: errorMessage });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResend = () => {
     console.log("Resend OTP");
     setTimer(60); // reset timer
+    // TODO: Implement Resend API if needed
   };
 
   useEffect(() => {
@@ -74,13 +124,15 @@ const VerifyEmail = ({ navigation }) => {
         {/* Footer Button */}
         <View style={styles.footer}>
           <AppButton
-            title="Verify"
+            title={loading ? "Verifying..." : "Verify"}
             onPress={handleVerify}
             style={{ backgroundColor: colors.themeColor }}
             textStyle={{ color: colors.white }}
+            disabled={loading}
           />
         </View>
       </KeyboardAvoidingView>
+      <Loader isVisible={loading} />
     </SafeAreaView>
   );
 };
@@ -117,6 +169,7 @@ const styles = StyleSheet.create({
     fontSize: fontPixel(14),
     color: colors.darkGray,
     fontWeight: "600",
+    marginTop: 10,
   },
   footer: {
     paddingBottom: 20,

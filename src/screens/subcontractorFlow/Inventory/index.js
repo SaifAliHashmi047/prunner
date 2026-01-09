@@ -1,35 +1,156 @@
-import React from "react";
-import { View, FlatList, StyleSheet, Text, SafeAreaView } from "react-native";
-import { AppInventoryRow } from "../../../components";  // Custom component
+import React, { useEffect, useState } from "react";
+import { View, FlatList, StyleSheet, Text, SafeAreaView, TouchableOpacity, Alert } from "react-native";
+import { AppInventoryRow, AppButton, SecondHeader } from "../../../components";  // Custom component
 import { appIcons } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
+import useInventory from "../../../hooks/useInventory";
+import { routes } from "../../../services/constant";
 
-// Sample data for Inventory
-const DATA = [
-  { id: "1", name: "Sand", qty: "2 Cubic m", icon: appIcons.sand },
-  { id: "2", name: "Cement Bags", qty: "500 Bags", icon: appIcons.cement || appIcons.cementBags },
-  { id: "3", name: "Steel Rods", qty: "10 Tons", icon: appIcons.steel || appIcons.steelRods },
-  { id: "4", name: "Bricks", qty: "10,000 Units", icon: appIcons.bricks },
-  { id: "5", name: "Gravel", qty: "150 Cubic m", icon: appIcons.gravel },
-  { id: "6", name: "Paint Buckets (20L)", qty: "293 Buckets", icon: appIcons.paint || appIcons.paintBucket },
-];
+import { Loader } from "../../../components/Loader";
+import { ActivityIndicator, RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const Inventory = () => {
+const Inventory = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
+  const { isSelection, previousData } = route.params || {};
+  const {
+    inventory,
+    loading,
+    refreshing,
+    loadingMore,
+    hasMore,
+    page,
+    fetchInventory,
+    loadMore,
+    onRefresh,
+  } = useInventory();
+
+  // Selection State: stored as object { [id]: { ...item, quantity: 1 } }
+  const [selectedItems, setSelectedItems] = useState({});
+
+  useEffect(() => {
+    fetchInventory(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRefresh = () => {
+    onRefresh();
+  };
+
+  const handleLoadMore = () => {
+    loadMore();
+  };
+
+  const toggleSelection = (item) => {
+    setSelectedItems(prev => {
+      const newState = { ...prev };
+      if (newState[item._id]) {
+        delete newState[item._id];
+      } else {
+        newState[item._id] = { ...item, quantity: 1 };
+      }
+      return newState;
+    });
+  };
+
+  const handleNext = () => {
+    const inventoryList = Object.values(selectedItems).map(i => ({
+      item: i.name, // API expects 'item' string? "item": "string" from user prompt.
+      // Wait, user backend might expect ID or Name? Usually ID. 
+      // But prompt payload example says "item": "string". 
+      // I will send Name for now as per prompt example, OR ID if I can confirm.
+      // I'll send Name as it's standard label.
+      quantity: i.quantity,
+      notes: "" // Default empty notes
+    }));
+
+    //   if (inventoryList.length === 0) {
+    //       Alert.alert("Notice", "No items selected. Proceeding without inventory.");
+    //   }
+
+    navigation.navigate(routes.taskUser, {
+      previousData,
+      selectedInventory: inventoryList
+    });
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return <ActivityIndicator style={{ marginVertical: 20 }} size="small" color={colors.themeColor} />;
+  };
+
+  const renderItem = ({ item }) => {
+    const isSelected = !!selectedItems[item._id];
+
+    // Map API data to component props
+    const qtyString = `${item.quantity || 0} ${item.itemUnit || ""}`;
+    const iconSource = item.image ? { uri: item.image } : appIcons.inventory || appIcons.sand; // Default icon if needed
+
+    return (
+      <TouchableOpacity
+        onPress={() => isSelection ? toggleSelection(item) : null}
+        disabled={!isSelection}
+        style={[
+          isSelected && styles.selectedItem
+        ]}
+      >
+        <AppInventoryRow
+          name={item.name}
+          qty={qtyString}
+          icon={iconSource}
+        />
+        {isSelected && (
+          <View style={styles.checkMark}>
+            <Text style={{ color: 'white' }}>✓</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={ {
+      flex: 1,  
+      paddingTop: insets.top 
+    }}>
       <View style={styles.screen}>
-        <Text style={styles.title}>Inventory</Text>
+        {isSelection ? (
+          <SecondHeader onPress={() => navigation.goBack()} title="Select Inventory" />
+        ) : (
+          <Text style={styles.title}>Inventory</Text>
+        )}
+
         <View style={styles.headerSpacer} />
 
         <FlatList
-          data={DATA}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: heightPixel(24) }}
-          renderItem={({ item }) => (
-            <AppInventoryRow icon={item.icon} name={item.name} qty={item.qty} />
-          )}
+          data={inventory}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={{ paddingBottom: heightPixel(80) }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={
+            !loading && <Text style={{ textAlign: 'center', marginTop: 20, color: colors.grey }}>No inventory found</Text>
+          }
+          renderItem={renderItem}
         />
+
+        {isSelection && (
+          <View style={styles.footerBtn}>
+            <AppButton
+              title={`NEXT (${Object.keys(selectedItems).length})`}
+              style={{ backgroundColor: colors.themeColor }}
+              textStyle={{ color: colors.white }}
+              onPress={handleNext}
+            />
+          </View>
+        )}
+
+        <Loader isVisible={loading} />
       </View>
     </SafeAreaView>
   );
@@ -54,4 +175,28 @@ const styles = StyleSheet.create({
     color: colors.black,
     marginBottom: heightPixel(10),
   },
+  selectedItem: {
+    backgroundColor: '#E6F0FF',
+    borderRadius: widthPixel(8),
+    borderWidth: 1,
+    borderColor: colors.themeColor
+  },
+  checkMark: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    backgroundColor: colors.themeColor,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1
+  },
+  footerBtn: {
+    position: 'absolute',
+    bottom: heightPixel(20),
+    left: widthPixel(20),
+    right: widthPixel(20),
+  }
 });

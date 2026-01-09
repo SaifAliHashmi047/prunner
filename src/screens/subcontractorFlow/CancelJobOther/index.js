@@ -4,11 +4,15 @@ import { SecondHeader, AppButton, AppTextInput, AppModal } from "../../../compon
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
+import useTasks from "../../../hooks/useTasks";
+import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { useSelector } from "react-redux";
 
 const CancelJobOther = ({ navigation }) => {
     const [reason, setReason] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
-
+    const { updateTaskStatus, loading } = useTasks();
+    const userRole = useSelector((state) => state.user.userRole);
     return (
         <SafeAreaView style={styles.container}>
             {/* Header */}
@@ -44,16 +48,31 @@ const CancelJobOther = ({ navigation }) => {
                         textStyle={{
                             color: colors.white,
                         }}
-                        disabled={!reason}
-                        onPress={() => {
+                        disabled={!reason || loading}
+                        onPress={async () => {
                             // console.log("Job cancelled with reason:", reason);
                             // navigation.goBack();
-                            setModalVisible(true);
-                            setReason("");
-                            setTimeout(() => {
-                                setModalVisible(false);
-                                navigation.popToTop();
-                            }, 2000);
+                            try {
+                                const response = await updateTaskStatus(taskId, "cancelled", reason);
+                                if (response?.success) {
+                                    setModalVisible(true);
+                                    setReason("");
+                                    setTimeout(() => {
+                                        setModalVisible(false);
+                                        if (userRole === 'forklift') {
+                                            navigation.navigate(routes.forkliftFlow);
+                                        } else {
+                                            navigation.navigate(routes.subcontractorFlow);
+                                        }
+                                    }, 2000);
+                                }
+                            } catch (error) {
+                                console.log("Cancel job error", error);
+                                toastError({ message: "Failed to cancel task" })
+                            } finally {
+                                navigation.goBack();
+                            }
+
                         }}
                     />
                 </View>
@@ -64,6 +83,7 @@ const CancelJobOther = ({ navigation }) => {
                 visible={modalVisible}
             // onClose={() => setModalVisible(false)}
             />
+            <Loader isVisible={loading} />
         </SafeAreaView>
     );
 };

@@ -15,11 +15,16 @@ import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import { useSelector } from "react-redux";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LocationOnMap = ({ navigation }) => {
-
+const {sites} = useSelector(state => state.site);
+const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container,{
+          paddingTop: insets.top 
+        }]}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
@@ -56,7 +61,10 @@ const LocationOnMap = ({ navigation }) => {
             style={{ backgroundColor: colors.themeColor }}
             textStyle={{ color: colors.white }}
             onPress={() => {
-              navigation.navigate(routes.selectTask)
+              navigation.navigate(routes.selectTask, {
+                "materialLocation":sites[0]?.location,
+                "dropOffLocation":sites[1]?.location
+              })
             }}
           />
         </View>

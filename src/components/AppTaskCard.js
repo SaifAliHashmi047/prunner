@@ -3,18 +3,22 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ViewStyle } from "reac
 import { appIcons } from "../services/utilities/assets";
 import { colors } from "../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../services/constant";
+import SafeImageBackground from "./SafeImageBackground";
 
 
 
 const NAME_COL_W = widthPixel(90);
 
 const AppTaskCard = ({
+    taskTitle,
     userName,
+    userImage,
     status,
     material1,
     material1Qty,
     material2,
     material2Qty,
+    inventory,
     date,
     time,
     onPress,
@@ -34,9 +38,13 @@ const AppTaskCard = ({
             {/* Header */}
             <View style={styles.cardHeader}>
                 <View style={styles.userInfo}>
-                    <Image source={appIcons.dummyPic} style={styles.profileImage} />
+                    <SafeImageBackground
+                        source={{uri:userImage}}
+                        style={styles.profileImage}
+                        name={userName}
+                    />
                     <Text style={styles.userName} numberOfLines={1}>
-                        {userName}
+                        {taskTitle}
                     </Text>
                 </View>
                 <Text style={[styles.status, { color: statusColor }]}>{status}</Text>
@@ -49,19 +57,15 @@ const AppTaskCard = ({
             <View style={styles.cardContent}>
                 {/* Material */}
                 <Text style={styles.sectionTitle}>Material</Text>
-
-                <View style={styles.row}>
-                    <Image source={appIcons.sand} style={styles.icon} />
-                    <Text style={styles.materialName}>{material1}</Text>
-                    <Text style={styles.materialQty}>{material1Qty}</Text>
-                </View>
-
-                <View style={styles.row}>
-                    <Image source={appIcons.bricks} style={styles.icon} />
-                    <Text style={styles.materialName}>{material2}</Text>
-                    <Text style={styles.materialQty}>{material2Qty}</Text>
-                </View>
-
+{
+    inventory?.map((item) => (
+        <View style={styles.row}>
+            <SafeImageBackground source={{uri:item?.icon||item?.image}} name={item?.item} style={styles.icon} />
+                <Text style={styles.materialName}>{item?.item}</Text>
+                <Text style={styles.materialQty}>{item.quantity}</Text>
+            </View>
+        ))
+    }
                 {/* Date & Time */}
                 <Text style={[styles.sectionTitle, { marginTop: heightPixel(12) }]}>Date & Time</Text>
 
@@ -140,9 +144,11 @@ const styles = StyleSheet.create({
         marginBottom: heightPixel(8),
     },
     icon: {
-        width: widthPixel(20),
-        height: widthPixel(20),
-        marginRight: widthPixel(8),
+        width: heightPixel(25),
+        height: heightPixel(25),
+        marginRight: heightPixel(8),
+        justifyContent: "center",
+        alignItems: "center",
         resizeMode: "contain",
     },
     materialName: {
