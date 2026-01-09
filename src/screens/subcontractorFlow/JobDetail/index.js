@@ -96,7 +96,7 @@ const JobDetail = ({ navigation, route }) => {
           task.inventory.map((item, index) => (
             <View key={index} style={styles.rowBox}>
               <View style={styles.iconText}>
-                <Image source={appIcons.steel} style={styles.itemIcon} />
+                <SafeImageBackground source={{uri:item?.icon||item?.image}} name={item.item} style={styles.itemIcon} />
                 <Text style={styles.rowText}>{item?.item || "Item"}</Text>
               </View>
               <Text style={styles.rowText}>{item?.quantity} {item?.unit || "Units"}</Text>

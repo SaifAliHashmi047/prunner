@@ -1,24 +1,43 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView, StyleSheet, Image } from 'react-native';
-import { useChat } from '../../hooks/useChat';
-import { useNavigation } from '@react-navigation/native';
-import { fontPixel, heightPixel, routes, widthPixel } from '../../services/constant';
-import NoData from '../NoData';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
-import { colors } from '../../services/utilities/colors';
-import { fonts } from '../../services/utilities/fonts';
-import { appIcons } from '../../services/utilities/assets';
-import UserSelectionModal from './UserSelectionModal';
-import SafeImageBackground from '../SafeImageBackground';
-import { formateDate } from '../../services/utilities/helper';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Image,
+} from "react-native";
+import { useChat } from "../../hooks/useChat";
+import { useNavigation } from "@react-navigation/native";
+import {
+  fontPixel,
+  heightPixel,
+  routes,
+  widthPixel,
+} from "../../services/constant";
+import NoData from "../NoData";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
+import { colors } from "../../services/utilities/colors";
+import { fonts } from "../../services/utilities/fonts";
+import { appIcons } from "../../services/utilities/assets";
+import UserSelectionModal from "./UserSelectionModal";
+import SafeImageBackground from "../SafeImageBackground";
+import { formateDate } from "../../services/utilities/helper";
 
-export const ChatListScreen = ( ) => {
+export const ChatListScreen = () => {
   const { user } = useSelector((state) => state.user);
   const userId = user?._id;
   const navigation = useNavigation();
-  const [usersSelectionModalVisible, setUsersSelectionModalVisible] = useState(false);
-  const { chats, loadingChats, openChat } = useChat({ userId  });
+  const [usersSelectionModalVisible, setUsersSelectionModalVisible] =
+    useState(false);
+  const {
+    chats,
+    loadingChats,
+     
+  } = useChat({ userId });
   const insets = useSafeAreaInsets();
 
   const handleSelectUser = (selectedUser) => {
@@ -32,89 +51,98 @@ export const ChatListScreen = ( ) => {
   };
 
   if (loadingChats) return <ActivityIndicator />;
- console.log("chats",chats);
- 
+  console.log("chats", chats);
   return   (
-    <SafeAreaView style={[styles.container,{
-        paddingTop:insets.top
-    }]}>
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Chats</Text>
-    </View>
-    <FlatList
-      data={chats}
-      keyExtractor={item => item._id}
-      contentContainerStyle={styles.chatList}
-      renderItem={({ item }) => {
-        const participant = item.participants?.find(p => p._id !== userId);
-        const participantName = participant?.name || participant?.email || 'Chat';
-        const participantImage = participant?.profileImage || participant?.image || null;
-        const lastMessage = item.lastMessage?.content ||  "";
-        const lastMessageTime = item.lastMessage?.createdAt || item.updatedAt || item.createdAt;
-        const unreadCount = item.unreadCount || 0;
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Chats</Text>
+      </View>
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.chatList}
+        renderItem={({ item }) => {
+          const participant = item.participants?.find((p) => p._id !== userId);
+          const participantName =
+            participant?.name || participant?.email || "Chat";
+          const participantImage =
+            participant?.profileImage || participant?.image || null;
+          const lastMessage = item.lastMessage?.content || "";
+          const lastMessageTime =
+            item.lastMessage?.createdAt || item.updatedAt || item.createdAt;
+          const unreadCount = item.unreadCount || 0;
 
-        return (
-          <TouchableOpacity
-            style={styles.chatItem}
-            onPress={() =>
-            navigation.navigate(routes.chatDetail, {
-              chatId: item._id,
-              receiverId: participant?._id,
-              receiverName: participantName,
-              receiverImage: participantImage,
-            })
-            }
-          >
-            <SafeImageBackground
-              source={participantImage ? { uri: participantImage } : null}
-              name={participantName}
-              style={styles.avatar}
-            />
-            <View style={styles.chatDetails}>
-              <Text style={styles.chatName}>{participantName}</Text>
-              <Text style={styles.chatMessage} numberOfLines={1}>
-                {lastMessage}
-              </Text>
-            </View>
-            <View style={styles.rightSection}>
-              {lastMessageTime && (
-                <Text style={styles.chatTime}>
-                  {formateDate(lastMessageTime, 'hh:mm A')}
+          return (
+            <TouchableOpacity
+              style={styles.chatItem}
+              onPress={() => 
+                navigation.navigate(routes.chatDetail, {
+                  chatId: item._id,
+                  receiverId: participant?._id,
+                  receiverName: participantName,
+                  receiverImage: participantImage,
+                })
+              }
+            >
+              <SafeImageBackground
+                source={participantImage ? { uri: participantImage } : null}
+                name={participantName}
+                style={styles.avatar}
+              />
+              <View style={styles.chatDetails}>
+                <Text style={styles.chatName}>{participantName}</Text>
+                <Text style={styles.chatMessage} numberOfLines={1}>
+                  {lastMessage}
                 </Text>
-              )}
-              {unreadCount > 0 && (
-                <View style={styles.unreadCountContainer}>
-                  <Text style={styles.unreadCount}>{unreadCount}</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        );
-      }}
-      ListEmptyComponent={()=>!loadingChats&&<NoData text='No chats found'/>}
-    />
-    <TouchableOpacity
-    style={styles.fab}
-    onPress={() => {
-      setUsersSelectionModalVisible(true);
-    }}
-  >
-    <Image
-      source={appIcons.plus}
-      style={{
-        width: heightPixel(24),
-        height: heightPixel(24),
-        tintColor: colors.white,
-      }}
-    />
-  </TouchableOpacity>
-  <UserSelectionModal
-    visible={usersSelectionModalVisible}
-    onClose={() => setUsersSelectionModalVisible(false)}
-    onSelectUser={handleSelectUser}
-    currentUserId={userId}
-    />
-  </SafeAreaView>
+              </View>
+              <View style={styles.rightSection}>
+                {lastMessageTime && (
+                  <Text style={styles.chatTime}>
+                    {formateDate(lastMessageTime, "hh:mm A")}
+                  </Text>
+                )}
+                {unreadCount > 0 && (
+                  <View style={styles.unreadCountContainer}>
+                    <Text style={styles.unreadCount}>{unreadCount}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={() =>
+          !loadingChats && <NoData text="No chats found" />
+        }
+      />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => {
+          setUsersSelectionModalVisible(true);
+        }}
+      >
+        <Image
+          source={appIcons.plus}
+          style={{
+            width: heightPixel(24),
+            height: heightPixel(24),
+            tintColor: colors.white,
+          }}
+        />
+      </TouchableOpacity>
+      <UserSelectionModal
+        visible={usersSelectionModalVisible}
+        onClose={() => setUsersSelectionModalVisible(false)}
+        onSelectUser={handleSelectUser}
+        currentUserId={userId}
+      />
+    </SafeAreaView>
   );
 };
 const styles = StyleSheet.create({
@@ -203,4 +231,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 6,
   },
-})
+});

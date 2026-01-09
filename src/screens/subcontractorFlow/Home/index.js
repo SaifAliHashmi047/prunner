@@ -145,6 +145,7 @@ const Home = () => {
             taskTitle={item.title}
             status={item.status}
             userImage={item.assignedTo?.image  }
+            inventory={item?.inventory}
             material1={item1?.item}
             material1Qty={
               item1 ? `${item1.quantity} ${item1.unit || ""}` : undefined
