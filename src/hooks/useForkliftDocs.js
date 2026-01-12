@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import useCallApi from "./useCallApi";
+import { useAppSelector } from "../services/store/hooks";
 
 const useForkliftDocs = () => {
   const { callApi, uploadFile } = useCallApi();
@@ -9,64 +10,76 @@ const useForkliftDocs = () => {
   const callApiRef = useRef(callApi);
   callApiRef.current = callApi;
 
+  // Helper function to safely convert date string to ISO string
+  const formatDateToISO = (dateString) => {
+    if (!dateString || !dateString.trim()) {
+      return "";
+    }
+
+    try {
+      // Try parsing the date string
+      // Support formats: YYYY-MM-DD, YYYY/MM/DD, etc.
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.log("Invalid date string:", dateString);
+        return "";
+      }
+
+      // Check if date is within valid range (not too far in past/future)
+      const minDate = new Date("1900-01-01");
+      const maxDate = new Date("2100-12-31");
+      
+      if (date < minDate || date > maxDate) {
+        console.log("Date out of valid range:", dateString);
+        return "";
+      }
+
+      return date.toISOString();
+    } catch (error) {
+      console.log("Error formatting date:", error, dateString);
+      return "";
+    }
+  };
+
   const uploadLicense = useCallback(
-    async (fileUrl, fileData = null, frontImage = null, backImage = null) => {
+    async (licenseNumber, expiryDate, frontImage = null, fileData = null) => {
       try {
         setLoading(true);
         
-        let licenseUrl = fileUrl;
-        let frontLicenseUrl = null;
-        let backLicenseUrl = null;
+        let licenseImageUrl = null;
 
-        // If scanning mode (front and back images)
-        if (frontImage && backImage) {
+        // If front image is provided (scanning mode)
+        if (frontImage) {
           setUploading(true);
           try {
-            // Upload front image
-            frontLicenseUrl = await uploadFile({
+            licenseImageUrl = await uploadFile({
               uri: frontImage.uri || frontImage.path,
               type: frontImage.type || "image/jpeg",
               name: frontImage.name || `license_front_${Date.now()}.jpg`,
             });
-            if (!frontLicenseUrl) {
-              throw new Error("Failed to upload front license image");
-            }
-
-            // Upload back image
-            backLicenseUrl = await uploadFile({
-              uri: backImage.uri || backImage.path,
-              type: backImage.type || "image/jpeg",
-              name: backImage.name || `license_back_${Date.now()}.jpg`,
-            });
-            if (!backLicenseUrl) {
-              throw new Error("Failed to upload back license image");
+            if (!licenseImageUrl) {
+              throw new Error("Failed to upload license image");
             }
           } catch (uploadError) {
-            console.log("License images upload error", uploadError);
-            throw new Error("Failed to upload license images");
+            console.log("License image upload error", uploadError);
+            throw new Error("Failed to upload license image");
           } finally {
             setUploading(false);
           }
-
-          // Submit both front and back images to API
-          const response = await callApiRef.current("forklift-docs/upload-license", "POST", {
-            driverLicenseFront: frontLicenseUrl,
-            driverLicenseBack: backLicenseUrl,
-          });
-
-          return response;
         }
         
         // If fileData is provided, upload the file first to get URL
-        if (fileData && !fileUrl) {
+        if (fileData && !licenseImageUrl) {
           setUploading(true);
           try {
-            licenseUrl = await uploadFile({
+            licenseImageUrl = await uploadFile({
               uri: fileData.uri || fileData.path,
               type: fileData.type || "application/pdf",
               name: fileData.name || `license_${Date.now()}.${fileData.type?.includes('image') ? 'jpg' : 'pdf'}`,
             });
-            if (!licenseUrl) {
+            if (!licenseImageUrl) {
               throw new Error("Failed to upload license file");
             }
           } catch (uploadError) {
@@ -77,14 +90,31 @@ const useForkliftDocs = () => {
           }
         }
 
-        if (!licenseUrl) {
-          throw new Error("No license file or URL provided");
+        if (!licenseImageUrl) {
+          throw new Error("No license file or image provided");
         }
 
-        // Submit license URL to API
-        const response = await callApiRef.current("forklift-docs/upload-license", "POST", {
-          licenseUrl: licenseUrl,
-        });
+        // Build payload for PATCH user/update-me - only send changed values
+        const payload = {
+          driverInfo: {},
+        };
+
+        // Only include fields that are being updated
+        if (licenseNumber?.trim()) {
+          payload.driverInfo.drivingLicenseNumber = licenseNumber.trim();
+        }
+        
+        const formattedExpiryDate = formatDateToISO(expiryDate);
+        if (formattedExpiryDate) {
+          payload.driverInfo.drivingLicenseExpiryDate = formattedExpiryDate;
+        }
+        
+        if (licenseImageUrl) {
+          payload.driverInfo.drivingLicenseImage = licenseImageUrl;
+        }
+
+        // Submit to PATCH API - only send driverInfo with changed values
+        const response = await callApiRef.current("user/update-me", "PATCH", payload);
 
         return response;
       } catch (error) {
@@ -98,9 +128,30 @@ const useForkliftDocs = () => {
   );
 
   const registerVehicle = useCallback(
-    async (vehicleNumber, registrationNumber, vehicleImages = []) => {
+    async (vehiclePlateNumber, registrationExpiryDate, vehicleImages = [], registrationCardImage = null) => {
       try {
         setLoading(true);
+        
+        // Upload registration card image if provided
+        let registrationCardUrl = null;
+        if (registrationCardImage) {
+          setUploading(true);
+          try {
+            registrationCardUrl = await uploadFile({
+              uri: registrationCardImage.uri || registrationCardImage.path,
+              type: registrationCardImage.type || "image/jpeg",
+              name: registrationCardImage.name || `registration_card_${Date.now()}.jpg`,
+            });
+            if (!registrationCardUrl) {
+              throw new Error("Failed to upload registration card image");
+            }
+          } catch (uploadError) {
+            console.log("Registration card upload error", uploadError);
+            throw new Error("Failed to upload registration card image");
+          } finally {
+            setUploading(false);
+          }
+        }
         
         // Upload vehicle images first to get URLs
         const imageUrls = [];
@@ -125,18 +176,84 @@ const useForkliftDocs = () => {
           }
         }
 
-        // Submit vehicle information to API
+        // Build payload for PATCH user/update-me - only send changed values
         const payload = {
-          vehicleNumber: vehicleNumber.trim(),
-          registrationNumber: registrationNumber.trim(),
-          images: imageUrls,
+          vehicleInfo: {},
         };
 
-        const response = await callApiRef.current("forklift-docs/register-vehicle", "POST", payload);
+        // Only include fields that are being updated
+        if (vehiclePlateNumber?.trim()) {
+          payload.vehicleInfo.vehiclePlateNumber = vehiclePlateNumber.trim();
+        }
+        
+        const formattedRegistrationDate = formatDateToISO(registrationExpiryDate);
+        if (formattedRegistrationDate) {
+          payload.vehicleInfo.registrationNumber = formattedRegistrationDate;
+        }
+        
+        if (registrationCardUrl) {
+          payload.vehicleInfo.registrationCardImage = registrationCardUrl;
+        }
+        
+        if (imageUrls && imageUrls.length > 0) {
+          payload.vehicleInfo.images = imageUrls;
+        }
+
+        // Submit to PATCH API - only send vehicleInfo with changed values
+        const response = await callApiRef.current("user/update-me", "PATCH", payload);
 
         return response;
       } catch (error) {
         console.log("Register vehicle error", error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [uploadFile]
+  );
+
+  const uploadRegistrationCard = useCallback(
+    async (registrationCardImage) => {
+      try {
+        setLoading(true);
+        
+        if (!registrationCardImage) {
+          throw new Error("No registration card image provided");
+        }
+
+        // Upload registration card image
+        setUploading(true);
+        let registrationCardUrl = null;
+        try {
+          registrationCardUrl = await uploadFile({
+            uri: registrationCardImage.uri || registrationCardImage.path,
+            type: registrationCardImage.type || "image/jpeg",
+            name: registrationCardImage.name || `registration_card_${Date.now()}.jpg`,
+          });
+          if (!registrationCardUrl) {
+            throw new Error("Failed to upload registration card image");
+          }
+        } catch (uploadError) {
+          console.log("Registration card upload error", uploadError);
+          throw new Error("Failed to upload registration card image");
+        } finally {
+          setUploading(false);
+        }
+
+        // Build payload for PATCH user/update-me - only send registrationCardImage
+        const payload = {
+          vehicleInfo: {
+            registrationCardImage: registrationCardUrl,
+          },
+        };
+
+        // Submit to PATCH API - only send vehicleInfo with registrationCardImage
+        const response = await callApiRef.current("user/update-me", "PATCH", payload);
+
+        return response;
+      } catch (error) {
+        console.log("Upload registration card error", error);
         throw error;
       } finally {
         setLoading(false);
@@ -150,6 +267,7 @@ const useForkliftDocs = () => {
     uploading,
     uploadLicense,
     registerVehicle,
+    uploadRegistrationCard,
   };
 };
 

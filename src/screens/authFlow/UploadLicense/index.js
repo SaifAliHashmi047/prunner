@@ -12,7 +12,7 @@ import {
   PermissionsAndroid,
   Linking,
 } from "react-native";
-import { SecondHeader, AppButton, ForkLiftHeader } from "../../../components";
+import { SecondHeader, AppButton, ForkLiftHeader, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
@@ -22,6 +22,10 @@ import { Image_Picker } from "../../../services/utilities/Image_Picker";
 import useForkliftDocs from "../../../hooks/useForkliftDocs";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../../../services/store/slices/userSlice";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import UploadButton from "../../../components/UploadButton";
 
 // Optional DocumentPicker - will use image picker as fallback
 let DocumentPicker = null;
@@ -40,12 +44,14 @@ try {
 }
 
 const UploadLicense = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { uploadLicense, loading, uploading } = useForkliftDocs();
+  const dispatch = useDispatch();
   const [file, setFile] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [frontImage, setFrontImage] = useState(null);
-  const [backImage, setBackImage] = useState(null);
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const formatFileSize = (bytes) => {
     if (!bytes) return "0 B";
@@ -116,8 +122,6 @@ const UploadLicense = ({ navigation }) => {
 
   const handleRemoveScannedImages = () => {
     setFrontImage(null);
-    setBackImage(null);
-    setCurrentStep(1);
     setIsScanning(false);
   };
 
@@ -182,15 +186,10 @@ const UploadLicense = ({ navigation }) => {
           size: undefined,
           width: undefined,
           type: "image/jpeg",
-          name: `license_${currentStep === 1 ? 'front' : 'back'}_${Date.now()}.jpg`,
+          name: `license_front_${Date.now()}.jpg`,
         };
 
-        if (currentStep === 1) {
-          setFrontImage(customImageObject);
-          setCurrentStep(2);
-        } else if (currentStep === 2) {
-          setBackImage(customImageObject);
-        }
+        setFrontImage(customImageObject);
       }
     } catch (error) {
       console.log("Scan document error", error);
@@ -206,30 +205,39 @@ const UploadLicense = ({ navigation }) => {
       return;
     }
     setIsScanning(true);
-    setCurrentStep(1);
     setFrontImage(null);
-    setBackImage(null);
   };
 
   const handleNext = async () => {
-    // If scanning mode, check if both images are scanned
+    // Validate license number and expiry date
+    if (!licenseNumber.trim()) {
+      toastError({ text: "Please enter your license number" });
+      return;
+    }
+
+    if (!expiryDate.trim()) {
+      toastError({ text: "Please enter your license expiry date" });
+      return;
+    }
+
+    // If scanning mode, check if front image is scanned
     if (isScanning) {
-      if (!frontImage || !backImage) {
-        if (currentStep === 1) {
-          toastError({ text: "Please scan the front side of your license" });
-        } else {
-          toastError({ text: "Please scan the back side of your license" });
-        }
+      if (!frontImage) {
+        toastError({ text: "Please scan the front side of your license" });
         return;
       }
 
-      // Upload scanned images
+      // Upload scanned image
       try {
-        const response = await uploadLicense(null, null, frontImage, backImage);
+        const response = await uploadLicense(licenseNumber, expiryDate, frontImage);
+        console.log("license upload success", response);
         
         if (response?.success) {
+          if (response?.data?.user) {
+            dispatch(setUserData(response.data.user));
+          }
           toastSuccess({ text: response?.message || "License uploaded successfully" });
-          navigation.navigate(routes.scanLicense);
+          navigation.navigate(routes.tellAboutVehicle);
         } else {
           toastError({ text: response?.message || "Failed to upload license" });
         }
@@ -242,17 +250,20 @@ const UploadLicense = ({ navigation }) => {
     }
 
     // Regular file upload
-    if (!file) {
+    if (!file && !frontImage) {
       toastError({ text: "Please upload or scan your driving license" });
       return;
     }
 
     try {
-      const response = await uploadLicense(null, file);
+      const response = await uploadLicense(licenseNumber, expiryDate, frontImage, file);
       
       if (response?.success) {
+        if (response?.data?.user) {
+          dispatch(setUserData(response.data.user));
+        }
         toastSuccess({ text: response?.message || "License uploaded successfully" });
-        navigation.navigate(routes.scanLicense);
+        navigation.navigate(routes.tellAboutVehicle);
       } else {
         toastError({ text: response?.message || "Failed to upload license" });
       }
@@ -265,13 +276,9 @@ const UploadLicense = ({ navigation }) => {
 
   // Scanning UI
   if (isScanning) {
-    const scanningText =
-      currentStep === 1
-        ? "Please tap on the blue box to start scanning your document front side"
-        : "Please tap on the blue box again to start scanning your document back side";
+    const scanningText = "Please tap on the blue box to start scanning your document front side";
 
-    const currentImage = currentStep === 1 ? frontImage : backImage;
-    const imageSource = currentImage?.path || currentImage?.uri || appImages.lic;
+    const imageSource = frontImage?.path || frontImage?.uri || appImages.lic;
 
     return (
       <ImageBackground
@@ -282,9 +289,7 @@ const UploadLicense = ({ navigation }) => {
           <TouchableOpacity
             onPress={() => {
               setIsScanning(false);
-              setCurrentStep(1);
               setFrontImage(null);
-              setBackImage(null);
             }}
             style={styles.backButton}
           >
@@ -296,9 +301,6 @@ const UploadLicense = ({ navigation }) => {
               Scan Your Driving License or ID card
             </Text>
             <Text style={styles.scanText}>{scanningText}</Text>
-            <Text style={[styles.scanText, { textAlign: "center", marginTop: heightPixel(10) }]}>
-              {currentStep}/2
-            </Text>
           </View>
 
           <TouchableOpacity
@@ -321,15 +323,6 @@ const UploadLicense = ({ navigation }) => {
                 />
               </View>
             )}
-            {backImage && (
-              <View style={styles.scannedImagePreview}>
-                <Text style={styles.previewLabel}>Back</Text>
-                <Image
-                  source={{ uri: backImage.path || backImage.uri }}
-                  style={styles.previewImage}
-                />
-              </View>
-            )}
           </View>
 
           <View style={styles.scanButtonContainer}>
@@ -338,7 +331,7 @@ const UploadLicense = ({ navigation }) => {
               style={styles.scanNextBtn}
               textStyle={{ color: colors.white }}
               onPress={handleNext}
-              disabled={!frontImage || !backImage || loading || uploading}
+              disabled={!frontImage || loading || uploading}
             />
           </View>
         </View>
@@ -347,13 +340,14 @@ const UploadLicense = ({ navigation }) => {
     );
   }
 
-  // Regular upload UI
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop:insets.top
+    }]}>
       {/* Header */}
       <View style={{
         flex: 1,
-        paddingHorizontal: widthPixel(20)
+        paddingHorizontal: widthPixel(20),
       }}>
         {/* Title & Subtitle */}
         <ForkLiftHeader 
@@ -366,14 +360,13 @@ const UploadLicense = ({ navigation }) => {
         {!file && (
           <View style={styles.uploadOptions}>
             {DocumentPicker && (
-              <AppButton
+              <UploadButton
                 title="UPLOAD DOCUMENT"
                 style={styles.uploadBtn}
-                textStyle={{ color: colors.themeColor }}
                 onPress={handlePickDocument}
               />
             )}
-            <AppButton
+            <UploadButton
               title="UPLOAD IMAGE"
               style={styles.uploadBtn}
               textStyle={{ color: colors.themeColor }}
@@ -410,6 +403,22 @@ const UploadLicense = ({ navigation }) => {
             </View>
           </View>
         )}
+
+        {/* License Number Input */}
+        <AppTextInput
+          placeholder="Enter license number"
+          value={licenseNumber}
+          onChangeText={setLicenseNumber}
+          style={{ marginTop: heightPixel(20) }}
+        />
+
+        {/* Expiry Date Input */}
+        <AppTextInput
+          placeholder="Enter expiry date (YYYY-MM-DD)"
+          value={expiryDate}
+          onChangeText={setExpiryDate}
+          style={{ marginTop: heightPixel(15) }}
+        />
 
         {/* Bottom Buttons */}
         <View style={styles.bottom}>

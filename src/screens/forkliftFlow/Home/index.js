@@ -23,11 +23,13 @@ import { Loader } from "../../../components/Loader";
 import useTasks from "../../../hooks/useTasks";
 import { formateDate } from "../../../services/utilities/helper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppSelector } from "../../../services/store/hooks";
 
 const Home = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("Pending");
   const insets = useSafeAreaInsets();
+  const { user } = useAppSelector((state) => state.user);
   const {
     tasks,
     loading,
@@ -38,6 +40,18 @@ const Home = () => {
     fetchTasks,
     updateTaskStatus
   } = useTasks();
+
+  // Check for missing license details
+  const isLicenseIncomplete = !user?.driverInfo?.drivingLicenseNumber || 
+                              !user?.driverInfo?.drivingLicenseExpiryDate || 
+                              !user?.driverInfo?.drivingLicenseImage;
+
+  // Check for missing vehicle details
+  const isVehicleIncomplete = !user?.vehicleInfo?.vehiclePlateNumber || 
+                              !user?.vehicleInfo?.registrationNumber;
+
+  // Check for missing registration card
+  const isRegistrationCardMissing = !user?.vehicleInfo?.registrationCardImage;
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
@@ -101,7 +115,7 @@ const Home = () => {
       item.inventory?.map((i) => ({
         name: i.item,
         quantity: `${i.quantity} ${i.unit || ""}`,
-        icon: appIcons.sand, // Default icon?
+        icon: i?.icon||i?.image, // Default icon?
       })) || [];
 
     return (
@@ -195,6 +209,57 @@ const Home = () => {
         </View>
       </View>
 
+      {/* Missing License Details Ribbon */}
+      {isLicenseIncomplete && (
+        <TouchableOpacity
+          style={styles.ribbon}
+          onPress={() => {
+            navigation.navigate(routes.auth, { screen: routes.uploadLicense });
+          }}
+        >
+          <View style={styles.ribbonContent}>
+            <Text style={styles.ribbonText}>
+              ⚠️ Please complete your driving license details
+            </Text>
+            <Text style={styles.ribbonAction}>Tap to complete →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Missing Vehicle Details Ribbon */}
+      {!isLicenseIncomplete && isVehicleIncomplete && (
+        <TouchableOpacity
+          style={styles.ribbon}
+          onPress={() => {
+            navigation.navigate(routes.auth, { screen: routes.tellAboutVehicle });
+          }}
+        >
+          <View style={styles.ribbonContent}>
+            <Text style={styles.ribbonText}>
+              ⚠️ Please complete your vehicle information
+            </Text>
+            <Text style={styles.ribbonAction}>Tap to complete →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Missing Registration Card Ribbon */}
+      {!isLicenseIncomplete && !isVehicleIncomplete && isRegistrationCardMissing && (
+        <TouchableOpacity
+          style={styles.ribbon}
+          onPress={() => {
+            navigation.navigate(routes.auth, { screen: routes.scanVehicleRegistration });
+          }}
+        >
+          <View style={styles.ribbonContent}>
+            <Text style={styles.ribbonText}>
+              ⚠️ Please upload your vehicle registration card
+            </Text>
+            <Text style={styles.ribbonAction}>Tap to complete →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.tabs}>
         {["Pending", "Active", "Completed", "Cancelled"].map((tab) => (
           <TouchableOpacity
@@ -275,5 +340,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: widthPixel(20),
     paddingTop: heightPixel(20),
     paddingBottom: heightPixel(20),
+  },
+  ribbon: {
+    backgroundColor: "#FFF3CD",
+    borderLeftWidth: 4,
+    borderLeftColor: "#FFC107",
+    marginHorizontal: widthPixel(16),
+    marginTop: heightPixel(10),
+    marginBottom: heightPixel(5),
+    borderRadius: widthPixel(8),
+    padding: widthPixel(12),
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  ribbonContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  ribbonText: {
+    flex: 1,
+    fontSize: fontPixel(13),
+    fontFamily: fonts.NunitoSemiBold,
+    color: "#856404",
+  },
+  ribbonAction: {
+    fontSize: fontPixel(12),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.themeColor,
+    marginLeft: widthPixel(8),
   },
 });

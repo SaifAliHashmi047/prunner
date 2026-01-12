@@ -25,9 +25,12 @@ import {
 } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setUserData } from "../../../services/store/slices/userSlice";
+import { useDispatch } from "react-redux";
 
 const VerifyOTP = ({ navigation }) => {
   const route = useRoute();
+  const dispatch = useDispatch();
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
@@ -83,6 +86,8 @@ const VerifyOTP = ({ navigation }) => {
       const refreshToken = response?.data?.data?.refreshToken;
       if (token) {
         await AsyncStorage.setItem("token", token);
+        await AsyncStorage.setItem("user", JSON.stringify(response?.data?.data?.user));
+        dispatch(setUserData(response?.data?.data?.user));
       }
       if (refreshToken) {
         await AsyncStorage.setItem("refreshToken", refreshToken);
