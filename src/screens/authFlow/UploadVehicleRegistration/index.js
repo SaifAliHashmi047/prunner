@@ -16,26 +16,105 @@ import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
+import useForkliftDocs from "../../../hooks/useForkliftDocs";
+import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import { Loader } from "../../../components/Loader";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../../../services/store/slices/userSlice";
+import { useAppSelector } from "../../../services/store/hooks";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import UploadButton from "../../../components/UploadButton";
 
 const UploadVehicleRegistration = ({ navigation }) => {
-    const [file, setFile] = useState({
-      name: "User Vehicle Registration.pdf",
-      size: "867 Kb",
-      type: "pdf",
-    });
+    const { registerVehicle, loading, uploading } = useForkliftDocs();
+    const dispatch = useDispatch();
+    const { user } = useAppSelector((state) => state.user);
+    const [registrationCardImage, setRegistrationCardImage] = useState(null);
+    const insets = useSafeAreaInsets();
   
-    const handleRemoveFile = () => {
-      setFile(null);
+    const handlePickImage = () => {
+      Alert.alert(
+        "Add Registration Card",
+        "Choose an option",
+        [
+          {
+            text: "Take Photo",
+            onPress: () => launchCamera({ mediaType: 'photo' }, (response) => {
+              if (response.assets && response.assets.length > 0) {
+                const asset = response.assets[0];
+                setRegistrationCardImage({
+                  uri: asset.uri,
+                  type: asset.type || "image/jpeg",
+                  name: asset.fileName || `registration_card_${Date.now()}.jpg`,
+                });
+              }
+            }),
+          },
+          {
+            text: "Choose from Gallery",
+            onPress: () => launchImageLibrary({ mediaType: 'photo' }, (response) => {
+              if (response.assets && response.assets.length > 0) {
+                const asset = response.assets[0];
+                setRegistrationCardImage({
+                  uri: asset.uri,
+                  type: asset.type || "image/jpeg",
+                  name: asset.fileName || `registration_card_${Date.now()}.jpg`,
+                });
+              }
+            }),
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
     };
   
-    const handleScan = () => {
-      // TODO: open document picker / scanner
-      console.log("Scan button pressed");
-      navigation.navigate(routes.scanVehicleRegistration);
+    const handleRemoveFile = () => {
+      setRegistrationCardImage(null);
+    };
+
+    const handleNext = async () => {
+      if (!registrationCardImage) {
+        toastError({ text: "Please upload registration card image" });
+        return;
+      }
+
+      try {
+        // Get existing vehicle info from user
+        const vehiclePlateNumber = user?.vehicleInfo?.vehiclePlateNumber || "";
+        const registrationNumber = user?.vehicleInfo?.registrationNumber || "";
+        const vehicleImages = user?.vehicleInfo?.images || [];
+
+        const response = await registerVehicle(
+          vehiclePlateNumber,
+          registrationNumber,
+          vehicleImages,
+          registrationCardImage
+        );
+
+        if (response?.success) {
+          if (response?.data?.user) {
+            dispatch(setUserData(response.data.user));
+          }
+          toastSuccess({ text: response?.message || "Registration card uploaded successfully" });
+          navigation.goBack();
+        } else {
+          toastError({ text: response?.message || "Failed to upload registration card" });
+        }
+      } catch (error) {
+        const msg =
+          error?.message || error?.response?.data?.message || "Failed to upload registration card";
+        toastError({ text: msg });
+      }
     };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop:insets.top   
+    }]}>
          {/* Header */}
          <View style={{
            flex: 1,
@@ -53,19 +132,28 @@ const UploadVehicleRegistration = ({ navigation }) => {
            </Text> */}
    
            {/* File Card */}
-           {file && (
+           {registrationCardImage ? (
              <View style={styles.fileCard}>
                <View style={styles.fileRow}>
-                 <Image source={appIcons.pdf} style={styles.fileIcon} />
+                 <Image source={{ uri: registrationCardImage.uri }} style={styles.fileIcon} />
                  <View style={{ flex: 1 }}>
-                   <Text style={styles.fileName}>{file.name}</Text>
-                   <Text style={styles.fileSize}>{file.size}</Text>
+                   <Text style={styles.fileName} numberOfLines={1}>
+                     {registrationCardImage.name || "Registration Card"}
+                   </Text>
+                   <Text style={styles.fileSize}>Image</Text>
                  </View>
                  <TouchableOpacity onPress={handleRemoveFile}>
                    <Image source={appIcons.cross} style={styles.deleteIcon} />
                  </TouchableOpacity>
                </View>
              </View>
+           ) : (
+             <UploadButton
+              title="Upload Registration Card"
+              onPress={handlePickImage}
+              style={styles.uploadBox}
+              disabled={loading || uploading}
+             />
            )}
    
            {/* Bottom Buttons */}
@@ -74,15 +162,18 @@ const UploadVehicleRegistration = ({ navigation }) => {
                title="SCAN"
                style={styles.scanBtn}
                textStyle={{ color: colors.themeColor }}
-               onPress={handleScan}
+               onPress={() => navigation.navigate(routes.auth, { screen: routes.scanVehicleRegistration })}
+               disabled={loading || uploading}
              />
              <AppButton
-               title="NEXT"
+               title={loading || uploading ? "UPLOADING..." : "NEXT"}
                style={styles.nextBtn}
                textStyle={{ color: colors.white }}
-               onPress={() => navigation.navigate(routes.scanVehicleRegistration)}
+               onPress={handleNext}
+               disabled={!registrationCardImage || loading || uploading}
              />
            </View>
+           <Loader isVisible={loading || uploading} />
          </View>
    
    
@@ -158,5 +249,26 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     backgroundColor: colors.themeColor,
+  },
+  uploadBox: {
+    width: "100%",
+    height: heightPixel(150),
+    borderRadius: widthPixel(10),
+    borderWidth: 1,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: heightPixel(20),
+  },
+  uploadIcon: {
+    width: widthPixel(40),
+    height: widthPixel(40),
+    tintColor: colors.themeColor,
+    marginBottom: heightPixel(10),
+  },
+  uploadText: {
+    fontSize: fontPixel(14),
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoSemiBold,
   },
 });

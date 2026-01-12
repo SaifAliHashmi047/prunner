@@ -165,7 +165,7 @@ const CreateHsLog = ({ navigation }:any) => {
         const payload: any = {
           title: title.trim(),
           precaution: precaution.trim(),
-          date: dateStr,
+          activeDate: dateStr,
         };
 
         // Include optional fields if they exist in the log
@@ -190,7 +190,7 @@ const CreateHsLog = ({ navigation }:any) => {
         const payload = {
           title: title.trim(),
           precaution: precaution.trim(),
-          date: dateStr,
+          activeDate: dateStr,
           status: "active",
           siteId: siteId,
         };

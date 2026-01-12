@@ -60,6 +60,7 @@ const appIcons = {
     blackChat  : require(`${iconUrl}/blackChat.png`),
     trash : require(`${iconUrl}/trash.png`),
     liveSound : require(`${iconUrl}/liveSound.png`),
+    upload : require(`${iconUrl}/upload.png`),
 };
 
 const appImages = {

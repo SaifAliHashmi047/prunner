@@ -20,10 +20,15 @@ import { routes } from "../../../services/constant";
 import useForkliftDocs from "../../../hooks/useForkliftDocs";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../../../services/store/slices/userSlice";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TellAboutVehicle = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { registerVehicle, loading, uploading } = useForkliftDocs();
-    const [vehicleNumber, setVehicleNumber] = useState("");
+    const dispatch = useDispatch();
+    const [vehiclePlateNumber, setVehiclePlateNumber] = useState("");
     const [registrationNumber, setRegistrationNumber] = useState("");
     const [vehicleImages, setVehicleImages] = useState([]);
 
@@ -78,25 +83,30 @@ const TellAboutVehicle = ({ navigation }) => {
     };
 
     const handleNext = async () => {
-        if (!vehicleNumber.trim()) {
-            toastError({ text: "Please enter vehicle number" });
+        if (!vehiclePlateNumber.trim()) {
+            toastError({ text: "Please enter vehicle plate number" });
             return;
         }
         if (!registrationNumber.trim()) {
-            toastError({ text: "Please enter vehicle registration number" });
+            toastError({ text: "Please enter vehicle registration numbeere" });
             return;
         }
 
         try {
             const response = await registerVehicle(
-                vehicleNumber,
+                vehiclePlateNumber,
                 registrationNumber,
-                vehicleImages
+                vehicleImages,
+                null // registrationCardImage - can be added later if needed
             );
 
             if (response?.success) {
+                if (response?.data?.user) {
+                    dispatch(setUserData(response.data.user));
+                }
                 toastSuccess({ text: response?.message || "Vehicle information saved successfully" });
-                navigation.navigate(routes.auth, { screen: routes.uploadVehicleRegistration });
+                // Navigate to next screen or back
+                navigation.navigate(routes.uploadVehicleRegistration);
             } else {
                 toastError({ text: response?.message || "Failed to save vehicle information" });
             }
@@ -108,7 +118,9 @@ const TellAboutVehicle = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container,{
+            paddingTop:insets.top   
+        }]}>
             <View style={styles.content}>
                 <ForkLiftHeader
                     title="Tell About your Vehicle"
@@ -120,13 +132,13 @@ const TellAboutVehicle = ({ navigation }) => {
                     {/* Input Fields */}
                     <View style={styles.inputContainer}>
                         <AppTextInput
-                            placeholder="Enter vehicle number"
-                            value={vehicleNumber}
-                            onChangeText={setVehicleNumber}
+                            placeholder="Enter vehicle plate number"
+                            value={vehiclePlateNumber}
+                            onChangeText={setVehiclePlateNumber}
                         />
 
                         <AppTextInput
-                            placeholder="Enter vehicle registration number"
+                            placeholder="Enter registration number"
                             value={registrationNumber}
                             onChangeText={setRegistrationNumber}
                         />

@@ -16,11 +16,12 @@ import { appIcons } from "../../../services/utilities/assets";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { routes } from "../../../services/constant";
 import { Image_Picker } from "../../../services/utilities/Image_Picker";
-import axiosInstance from "../../../api/axiosInstance";
+import useCallApi from "../../../hooks/useCallApi";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 
 const CreateProfile = ({ navigation }) => {
+  const { callApi, uploadFile } = useCallApi();
   const [name, setName] = useState("");
   const [profileImage, setProfileImage] = useState(null);
   const [imageUri, setImageUri] = useState(null);
@@ -90,37 +91,58 @@ const CreateProfile = ({ navigation }) => {
     try {
       setLoading(true);
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("profileImage", {
-        uri: profileImage.uri,
-        type: profileImage.type,
-        name: profileImage.name,
-      });
+      let imageUrl = null;
 
-      // Call create profile API
-      const response = await axiosInstance.post(
-        "profile/create",
-        formData,
-        {
-          isFormData: true,
+      // Upload image first if profile image is selected
+      if (profileImage) {
+        try {
+          imageUrl = await uploadFile({
+            uri: profileImage.uri,
+            type: profileImage.type,
+            name: profileImage.name,
+          });
+
+          if (!imageUrl) {
+            throw new Error("Failed to upload image");
+          }
+        } catch (uploadError) {
+          console.log("Image upload error", uploadError);
+          toastError({ text: "Failed to upload image. Please try again." });
+          setLoading(false);
+          return;
         }
-      );
+      }
 
-      // Show success message
-      toastSuccess({ text: "Profile created successfully!" });
+      // Payload with name and image URL
+      const payload = {
+        name: name.trim(),
+        image: imageUrl, // Include image URL in the update
+      };
 
-      // Navigate to profile created screen
-      navigation.navigate(routes.auth, { screen: routes.profileCreated });
+      // Call update profile API (PATCH)
+      const response = await callApi("user/update-me", "PATCH", payload);
+
+      if (response?.success) {
+        // Show success message
+        toastSuccess({ text: "Profile created successfully!" });
+
+        // Navigate to profile created screen
+        navigation.navigate(routes.auth, { screen: routes.profileCreated });
+      } else {
+        if (response?.message) {
+          toastError({ text: response.message });
+        } else {
+          toastError({ text: "Failed to create profile. Please try again." });
+        }
+      }
     } catch (error) {
-      // Show error message
+      // Error handling
+      console.log("Create profile error", error);
       const errorMessage =
-        error?.error ||
         error?.message ||
         error?.response?.data?.message ||
+        error?.error?.message ||
         "Failed to create profile. Please try again.";
-
       toastError({ text: errorMessage });
     } finally {
       setLoading(false);
@@ -238,10 +260,9 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
   cameraIcon: {
-    width: widthPixel(20),
-    height: widthPixel(20),
-    tintColor: colors.white,
-    resizeMode: "contain",
+    width: heightPixel(25),
+    height: heightPixel(25),
+     resizeMode: "contain",
   },
   input: {
     borderWidth: 1,
