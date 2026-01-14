@@ -39,7 +39,7 @@ const UploadVehicleRegistration = ({ navigation }) => {
         [
           {
             text: "Take Photo",
-            onPress: () => launchCamera({ mediaType: 'photo' }, (response) => {
+            onPress: () => launchCamera({ mediaType: 'photo' , maxHeight: 1000 , maxWidth: 1000 }, (response) => {
               if (response.assets && response.assets.length > 0) {
                 const asset = response.assets[0];
                 setRegistrationCardImage({
@@ -52,7 +52,7 @@ const UploadVehicleRegistration = ({ navigation }) => {
           },
           {
             text: "Choose from Gallery",
-            onPress: () => launchImageLibrary({ mediaType: 'photo' }, (response) => {
+            onPress: () => launchImageLibrary({ mediaType: 'photo' , maxHeight: 1000 , maxWidth: 1000 }, (response) => {
               if (response.assets && response.assets.length > 0) {
                 const asset = response.assets[0];
                 setRegistrationCardImage({
@@ -100,7 +100,9 @@ const UploadVehicleRegistration = ({ navigation }) => {
             dispatch(setUserData(response.data.user));
           }
           toastSuccess({ text: response?.message || "Registration card uploaded successfully" });
-          navigation.goBack();
+          navigation.navigate(routes.verificationProcess);
+
+          // navigation.goBack();
         } else {
           toastError({ text: response?.message || "Failed to upload registration card" });
         }

@@ -39,7 +39,7 @@ const TellAboutVehicle = ({ navigation }) => {
             [
                 {
                     text: "Take Photo",
-                    onPress: () => launchCamera({ mediaType: 'photo' }, (response) => {
+                    onPress: () => launchCamera({ mediaType: 'photo' , maxHeight: 1000 , maxWidth: 1000 }, (response) => {
                         if (response.assets && response.assets.length > 0) {
                             const asset = response.assets[0];
                             const newPic = {
@@ -55,7 +55,7 @@ const TellAboutVehicle = ({ navigation }) => {
                 },
                 {
                     text: "Choose from Gallery",
-                    onPress: () => launchImageLibrary({ mediaType: 'photo' }, (response) => {
+                    onPress: () => launchImageLibrary({ mediaType: 'photo' , maxHeight: 1000 , maxWidth: 1000 }, (response) => {
                         if (response.assets && response.assets.length > 0) {
                             const asset = response.assets[0];
                             const newPic = {
@@ -163,6 +163,7 @@ const TellAboutVehicle = ({ navigation }) => {
                                 horizontal
                                 data={vehicleImages}
                                 keyExtractor={(item) => item.id}
+                                contentContainerStyle={{ padding: widthPixel(10) }}
                                 renderItem={({ item }) => (
                                     <View style={styles.pictureWrapper}>
                                         <Image source={{ uri: item.uri }} style={styles.picture} />
@@ -251,6 +252,7 @@ const styles = StyleSheet.create({
     pictureWrapper: {
         position: "relative",
         marginRight: widthPixel(10),
+        overflow: "visible",
     },
     picture: {
         width: widthPixel(100),
