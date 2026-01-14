@@ -20,10 +20,10 @@ const useSite = () => {
       dispatch(setSitesInRedux(sites))
     }
   }, [sites]);
-  useEffect(() => {
-  fetchSites(1)
-  }, [ ]);
-  const fetchSites = useCallback(
+  // useEffect(() => {
+  // fetchSites(1)
+  // }, [ ]);
+  const fetchSites =  
     async (pageNum = 1, isRefresh = false) => {
       if (isLoadingRef.current && !isRefresh) return;
 
@@ -42,7 +42,7 @@ const useSite = () => {
         const response = await callApi(
           "site",
           "GET",
-          {},
+          null,
           {
             page: pageNum,
             limit: 10,
@@ -81,9 +81,8 @@ const useSite = () => {
         setLoadingMore(false);
         isLoadingRef.current = false;
       }
-    },
-    [callApi]
-  );
+    }
+    
 
   const loadMore = useCallback(() => {
     if (!isLoadingRef.current && hasMore && !loading && !loadingMore) {
@@ -96,7 +95,7 @@ const useSite = () => {
   }, [fetchSites]);
 
   // Legacy function for backward compatibility
-  const getSites = useCallback(async () => {
+  const getSites =  async () => {
     try {
       const response = await callApi("site", "GET");
       if (response?.success && response?.data) {
@@ -107,7 +106,7 @@ const useSite = () => {
       console.log("Error fetching sites", error);
       return null;
     }
-  }, [callApi]);
+  } 
 
   return {
     sites,

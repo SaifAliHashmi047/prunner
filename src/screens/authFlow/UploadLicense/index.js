@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { useDispatch } from "react-redux";
 import { setUserData } from "../../../services/store/slices/userSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UploadButton from "../../../components/UploadButton";
+import { useAppSelector } from "../../../services/store/hooks";
 
 // Optional DocumentPicker - will use image picker as fallback
 let DocumentPicker = null;
@@ -52,7 +53,29 @@ const UploadLicense = ({ navigation }) => {
   const [frontImage, setFrontImage] = useState(null);
   const [licenseNumber, setLicenseNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
+  const { user } = useAppSelector((state) => state.user);
 
+  // Prefill fields from existing driverInfo if available (edit mode)
+  useEffect(() => {
+    if (user?.driverInfo) {
+      setLicenseNumber(user.driverInfo.drivingLicenseNumber || "");
+      // driverInfo stores ISO date – convert to YYYY-MM-DD for input
+      if (user.driverInfo.drivingLicenseExpiryDate) {
+        try {
+          const d = new Date(user.driverInfo.drivingLicenseExpiryDate);
+          if (!isNaN(d.getTime())) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            setExpiryDate(`${yyyy}-${mm}-${dd}`);
+          }
+        } catch (e) {
+          // ignore parse errors, keep default empty
+        }
+      }
+      // Do NOT set file/frontImage from existing URL so we only send image if user changes it
+    }
+  }, [user]);
   const formatFileSize = (bytes) => {
     if (!bytes) return "0 B";
     const k = 1024;
