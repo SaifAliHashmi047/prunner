@@ -32,6 +32,7 @@ import {
 } from "../../../services/store/slices/siteSlice";
 import { useDispatch, useSelector } from "react-redux";
 import useSite from "../../../hooks/useSite";
+import useUsers from "../../../hooks/useUsers";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -49,11 +50,16 @@ const Home = () => {
   } = useTasks();
   const { selectedSite } = useSelector((state) => state.site || {});
   console.log("selectedSite", selectedSite);
-  const { getSites } = useSite();
-
+    const { getSites } = useSite();
+    const { getLoggedInUser } = useUsers();
+    useEffect(()=>{
+      getLoggedInUser();
+    },[])
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
+
+
 
   useFocusEffect(
     useCallback(() => {
@@ -141,6 +147,7 @@ const Home = () => {
         console.log("item", item);
         return (
           <AppTaskCard
+          key={item?._id}
             userName={item?.assignedTo?.name} // Using title as header
             taskTitle={item.title}
             status={item.status}
@@ -154,8 +161,9 @@ const Home = () => {
             material2Qty={
               item2 ? `${item2.quantity} ${item2.unit || ""}` : undefined
             }
-            date={formateDate(item?.createdAt, "DD-MMM-YYYY")}
-            time={formateDate(item?.createdAt, "hh:mm A")}
+            date={formateDate(item?.scheduledDate, "DD-MMM-YYYY")}
+            taskType={item?.taskType}
+            time={formateDate(item?.scheduledDate, "hh:mm A")}
             onPress={() => {
               navigation.navigate(routes.jobDetails, { task: item });
             }}

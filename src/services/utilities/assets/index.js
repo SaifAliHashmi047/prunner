@@ -61,6 +61,7 @@ const appIcons = {
     trash : require(`${iconUrl}/trash.png`),
     liveSound : require(`${iconUrl}/liveSound.png`),
     upload : require(`${iconUrl}/upload.png`),
+    markerIcon : require(`${iconUrl}/markerIcon.png`),
 };
 
 const appImages = {

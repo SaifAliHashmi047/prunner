@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -25,12 +26,24 @@ import { useAppSelector } from "../../../services/store/hooks";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UploadButton from "../../../components/UploadButton";
 
-const UploadVehicleRegistration = ({ navigation }) => {
-    const { registerVehicle, loading, uploading } = useForkliftDocs();
+const UploadVehicleRegistration = ({ navigation, route }) => {
+    const { uploadRegistrationCard, loading, uploading } = useForkliftDocs();
     const dispatch = useDispatch();
     const { user } = useAppSelector((state) => state.user);
     const [registrationCardImage, setRegistrationCardImage] = useState(null);
     const insets = useSafeAreaInsets();
+
+    // Check for scanned image from route params
+    useFocusEffect(
+      useCallback(() => {
+        const scannedImage = route?.params?.scannedImage;
+        if (scannedImage) {
+          setRegistrationCardImage(scannedImage);
+          // Clear params to avoid re-setting on subsequent focuses
+          navigation.setParams({ scannedImage: undefined });
+        }
+      }, [route?.params?.scannedImage, navigation])
+    );
   
     const handlePickImage = () => {
       Alert.alert(
@@ -83,17 +96,7 @@ const UploadVehicleRegistration = ({ navigation }) => {
       }
 
       try {
-        // Get existing vehicle info from user
-        const vehiclePlateNumber = user?.vehicleInfo?.vehiclePlateNumber || "";
-        const registrationNumber = user?.vehicleInfo?.registrationNumber || "";
-        const vehicleImages = user?.vehicleInfo?.images || [];
-
-        const response = await registerVehicle(
-          vehiclePlateNumber,
-          registrationNumber,
-          vehicleImages,
-          registrationCardImage
-        );
+        const response = await uploadRegistrationCard(registrationCardImage);
 
         if (response?.success) {
           if (response?.data?.user) {
@@ -101,8 +104,6 @@ const UploadVehicleRegistration = ({ navigation }) => {
           }
           toastSuccess({ text: response?.message || "Registration card uploaded successfully" });
           navigation.navigate(routes.verificationProcess);
-
-          // navigation.goBack();
         } else {
           toastError({ text: response?.message || "Failed to upload registration card" });
         }
@@ -137,12 +138,25 @@ const UploadVehicleRegistration = ({ navigation }) => {
            {registrationCardImage ? (
              <View style={styles.fileCard}>
                <View style={styles.fileRow}>
-                 <Image source={{ uri: registrationCardImage.uri }} style={styles.fileIcon} />
+                 {registrationCardImage.type?.includes("image") && registrationCardImage.uri ? (
+                   <Image
+                     source={{ uri: registrationCardImage.uri }}
+                     style={styles.fileImagePreview}
+                   />
+                 ) : (
+                   <Image source={appIcons.pdf} style={styles.fileIcon} />
+                 )}
                  <View style={{ flex: 1 }}>
                    <Text style={styles.fileName} numberOfLines={1}>
                      {registrationCardImage.name || "Registration Card"}
                    </Text>
-                   <Text style={styles.fileSize}>Image</Text>
+                   <Text style={styles.fileSize}>
+                     {registrationCardImage.size
+                       ? typeof registrationCardImage.size === "number"
+                         ? `${Math.round(registrationCardImage.size / 1024)} KB`
+                         : registrationCardImage.size
+                       : "Scanned image"}
+                   </Text>
                  </View>
                  <TouchableOpacity onPress={handleRemoveFile}>
                    <Image source={appIcons.cross} style={styles.deleteIcon} />
@@ -222,6 +236,13 @@ const styles = StyleSheet.create({
     height: widthPixel(35),
     marginRight: widthPixel(10),
     resizeMode: "contain",
+  },
+  fileImagePreview: {
+    width: widthPixel(50),
+    height: widthPixel(50),
+    marginRight: widthPixel(10),
+    borderRadius: widthPixel(8),
+    resizeMode: "cover",
   },
   fileName: {
     fontSize: fontPixel(15),

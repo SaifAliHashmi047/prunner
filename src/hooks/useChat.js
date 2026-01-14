@@ -390,14 +390,18 @@ export const useChat = ({ userId }) => {
 
   /* ------------------ API METHODS ------------------ */
 
-  const fetchChats = () => {
+  const fetchChats = useCallback(() => {
     console.log("[useChat] fetchChats called", { userId });
+    if (!socketRef.current || !isConnectedRef.current) {
+      console.log("[useChat] Socket not connected, skipping fetchChats");
+      return;
+    }
     setLoadingChats(true);
     console.log("[useChat] Emitting fetch_all_chats event", { userId });
     socketRef.current.emit("fetch_all_chats", { userId });
     setLoadingChats(false);
     console.log("[useChat] fetchChats completed");
-  };
+  }, [userId]);
 
   const fetchOrCreateChat = (receiverId) => {
     console.log("[useChat] fetchOrCreateChat called", {
@@ -604,6 +608,7 @@ export const useChat = ({ userId }) => {
     typingUser,
     openChat,
     fetchOrCreateChat,
+    fetchChats,
     loadMoreMessages,
     sendMessage,
     deleteMessage,

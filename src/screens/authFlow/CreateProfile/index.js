@@ -17,11 +17,17 @@ import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { routes } from "../../../services/constant";
 import { Image_Picker } from "../../../services/utilities/Image_Picker";
 import useCallApi from "../../../hooks/useCallApi";
-import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
+import {
+  toastError,
+  toastSuccess,
+} from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../../../services/store/slices/userSlice";
 
 const CreateProfile = ({ navigation }) => {
   const { callApi, uploadFile } = useCallApi();
+  const dispatch = useDispatch();
   const [name, setName] = useState("");
   const [profileImage, setProfileImage] = useState(null);
   const [imageUri, setImageUri] = useState(null);
@@ -125,7 +131,7 @@ const CreateProfile = ({ navigation }) => {
       if (response?.success) {
         // Show success message
         toastSuccess({ text: "Profile created successfully!" });
-
+        dispatch(setUserData(response?.data?.user));
         // Navigate to profile created screen
         navigation.navigate(routes.auth, { screen: routes.profileCreated });
       } else {
@@ -199,7 +205,9 @@ const CreateProfile = ({ navigation }) => {
             }
           }}
         />
-        {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+        {errors.name ? (
+          <Text style={styles.errorText}>{errors.name}</Text>
+        ) : null}
 
         {/* Footer Button */}
         <View style={styles.footer}>
@@ -262,7 +270,7 @@ const styles = StyleSheet.create({
   cameraIcon: {
     width: heightPixel(25),
     height: heightPixel(25),
-     resizeMode: "contain",
+    resizeMode: "contain",
   },
   input: {
     borderWidth: 1,

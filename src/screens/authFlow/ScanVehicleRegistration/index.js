@@ -18,11 +18,7 @@ import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { appIcons, appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
-import useForkliftDocs from "../../../hooks/useForkliftDocs";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
-import { Loader } from "../../../components/Loader";
-import { useDispatch } from "react-redux";
-import { setUserData } from "../../../services/store/slices/userSlice";
 
 // Optional DocumentScanner - will show error if not available
 let DocumentScanner = null;
@@ -33,9 +29,6 @@ try {
 }
 
 const ScanVehicleRegistration = ({ navigation }) => {
-  const { uploadRegistrationCard, loading, uploading } = useForkliftDocs();
-  const dispatch = useDispatch();
-  const [registrationCardImage, setRegistrationCardImage] = useState(null);
 
   const scanDocument = async () => {
     if (!DocumentScanner) {
@@ -89,19 +82,21 @@ const ScanVehicleRegistration = ({ navigation }) => {
       
       if (scannedImages && scannedImages.length > 0) {
         const scannedImage = scannedImages[0];
-        const customImageObject = {
-          height: undefined,
-          mime: "image/jpeg",
-          modificationDate: new Date().getTime(),
-          path: scannedImage,
-          uri: scannedImage,
+        const fileName = `registration_card_${Date.now()}.jpg`;
+        const fileObject = {
+          name: fileName,
           size: undefined,
-          width: undefined,
           type: "image/jpeg",
-          name: `registration_card_${Date.now()}.jpg`,
+          uri: scannedImage,
+          path: scannedImage,
         };
 
-        setRegistrationCardImage(customImageObject);
+        // Navigate back with scanned image data
+        navigation.navigate(routes.auth, {
+          screen: routes.uploadVehicleRegistration,
+          params: { scannedImage: fileObject },
+        });
+        toastSuccess({ text: "Document scanned successfully" });
       }
     } catch (error) {
       console.log("Scan document error", error);
@@ -111,33 +106,9 @@ const ScanVehicleRegistration = ({ navigation }) => {
     }
   };
 
-  const handleNext = async () => {
-    if (!registrationCardImage) {
-      toastError({ text: "Please scan the vehicle registration card" });
-      return;
-    }
-
-    try {
-      const response = await uploadRegistrationCard(registrationCardImage);
-      
-      if (response?.success) {
-        if (response?.data?.user) {
-          dispatch(setUserData(response.data.user));
-        }
-        toastSuccess({ text: response?.message || "Registration card uploaded successfully" });
-        navigation.navigate(routes.forkliftFlow );
-      } else {
-        toastError({ text: response?.message || "Failed to upload registration card" });
-      }
-    } catch (error) {
-      const msg =
-        error?.message || error?.response?.data?.message || "Failed to upload registration card";
-      toastError({ text: msg });
-    }
-  };
 
   const scanningText = "Please tap on the blue box to start scanning your vehicle registration card";
-  const imageSource = registrationCardImage?.path || registrationCardImage?.uri || appImages.lic;
+  const imageSource = appImages.lic;
 
   return (
     <ImageBackground
@@ -172,29 +143,7 @@ const ScanVehicleRegistration = ({ navigation }) => {
           />
         </TouchableOpacity>
 
-        <View style={styles.scanBottom}>
-          {registrationCardImage && (
-            <View style={styles.scannedImagePreview}>
-              <Text style={styles.previewLabel}>Registration Card</Text>
-              <Image
-                source={{ uri: registrationCardImage.path || registrationCardImage.uri }}
-                style={styles.previewImage}
-              />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.scanButtonContainer}>
-          <AppButton
-            title={loading || uploading ? "UPLOADING..." : "NEXT"}
-            style={styles.scanNextBtn}
-            textStyle={{ color: colors.white }}
-            onPress={handleNext}
-            disabled={!registrationCardImage || loading || uploading}
-          />
-        </View>
       </View>
-      <Loader isVisible={loading || uploading} />
     </ImageBackground>
   );
 };

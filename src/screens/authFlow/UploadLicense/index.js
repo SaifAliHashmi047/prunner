@@ -218,6 +218,7 @@ const UploadLicense = ({ navigation }) => {
 
   const handleRemoveFile = () => {
     setFile(null);
+    setFrontImage(null);
   };
 
   const handleRemoveScannedImages = () => {
@@ -354,7 +355,18 @@ const UploadLicense = ({ navigation }) => {
       
       if (scannedImages && scannedImages.length > 0) {
         const scannedImage = scannedImages[0];
-        const customImageObject = {
+        const fileName = `license_front_${Date.now()}.jpg`;
+        const fileObject = {
+          name: fileName,
+          size: undefined,
+          type: "image/jpeg",
+          uri: scannedImage,
+          path: scannedImage,
+        };
+
+        // Set both file (for display) and frontImage (for upload)
+        setFile(fileObject);
+        setFrontImage({
           height: undefined,
           mime: "image/jpeg",
           modificationDate: new Date().getTime(),
@@ -363,10 +375,12 @@ const UploadLicense = ({ navigation }) => {
           size: undefined,
           width: undefined,
           type: "image/jpeg",
-          name: `license_front_${Date.now()}.jpg`,
-        };
+          name: fileName,
+        });
 
-        setFrontImage(customImageObject);
+        // Return to main view after scanning
+        setIsScanning(false);
+        toastSuccess({ text: "Document scanned successfully" });
       }
     } catch (error) {
       console.log("Scan document error", error);
@@ -397,43 +411,16 @@ const UploadLicense = ({ navigation }) => {
       return;
     }
 
-    // If scanning mode, check if front image is scanned
-    if (isScanning) {
-      if (!frontImage) {
-        toastError({ text: "Please scan the front side of your license" });
-        return;
-      }
-
-      // Upload scanned image
-      try {
-        const response = await uploadLicense(licenseNumber, expiryDate, frontImage);
-        console.log("license upload success", response);
-        
-        if (response?.success) {
-          if (response?.data?.user) {
-            dispatch(setUserData(response.data.user));
-          }
-          toastSuccess({ text: response?.message || "License uploaded successfully" });
-          navigation.navigate(routes.tellAboutVehicle);
-        } else {
-          toastError({ text: response?.message || "Failed to upload license" });
-        }
-      } catch (error) {
-        const msg =
-          error?.message || error?.response?.data?.message || "Failed to upload license";
-        toastError({ text: msg });
-      }
-      return;
-    }
-
-    // Regular file upload
+    // Check if file or scanned image exists
     if (!file && !frontImage) {
       toastError({ text: "Please upload or scan your driving license" });
       return;
     }
 
     try {
-      const response = await uploadLicense(licenseNumber, expiryDate, frontImage, file);
+      // Use frontImage if available (from scanning), otherwise use file
+      const imageToUpload = frontImage || file;
+      const response = await uploadLicense(licenseNumber, expiryDate, imageToUpload, file);
       
       if (response?.success) {
         if (response?.data?.user) {
@@ -556,14 +543,17 @@ const UploadLicense = ({ navigation }) => {
         {file && (
           <View style={styles.fileCard}>
             <View style={styles.fileRow}>
-              <Image
-                source={
-                  file.type?.includes("image")
-                    ? appIcons.pdf
-                    : appIcons.pdf
-                }
-                style={styles.fileIcon}
-              />
+              {file.type?.includes("image") && file.uri ? (
+                <Image
+                  source={{ uri: file.uri }}
+                  style={styles.fileImagePreview}
+                />
+              ) : (
+                <Image
+                  source={appIcons.pdf}
+                  style={styles.fileIcon}
+                />
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.fileName} numberOfLines={1}>
                   {file.name}
@@ -571,7 +561,7 @@ const UploadLicense = ({ navigation }) => {
                 <Text style={styles.fileSize}>
                   {typeof file.size === "number"
                     ? formatFileSize(file.size)
-                    : file.size || "Unknown size"}
+                    : file.size || "Scanned image"}
                 </Text>
               </View>
               <TouchableOpacity onPress={handleRemoveFile}>
@@ -595,13 +585,13 @@ const UploadLicense = ({ navigation }) => {
             onPress={() => setShowCalendar(true)}
             // style={styles.dateButton}
           >
-             <AppTextInput
-          placeholder="Enter expiry date"
-          value={formatDisplayDate(expiryDate)}
-          onChangeText={setLicenseNumber}
-          editable={false}
-          style={{ }}
-        />
+             <View style={{ backgroundColor: "#f5f5f5",borderRadius:widthPixel(10),padding:widthPixel(10),
+              height:heightPixel(50),
+             }}>
+              <Text>
+                {formatDisplayDate(expiryDate)}
+              </Text>
+              </View>
            
            
           </TouchableOpacity>
@@ -824,7 +814,7 @@ const UploadLicense = ({ navigation }) => {
             style={styles.nextBtn}
             textStyle={{ color: colors.white }}
             onPress={handleNext}
-            disabled={!file || loading || uploading}
+            disabled={(!file && !frontImage) || loading || uploading}
           />
         </View>
       </View>
@@ -872,6 +862,13 @@ const styles = StyleSheet.create({
     height: widthPixel(35),
     marginRight: widthPixel(10),
     resizeMode: "contain",
+  },
+  fileImagePreview: {
+    width: widthPixel(50),
+    height: widthPixel(50),
+    marginRight: widthPixel(10),
+    borderRadius: widthPixel(8),
+    resizeMode: "cover",
   },
   fileName: {
     fontSize: fontPixel(15),
@@ -1060,7 +1057,6 @@ const styles = StyleSheet.create({
     width: widthPixel(20),
     height: widthPixel(20),
     resizeMode: "contain",
-    tintColor: colors.grey300,
   },
   calendarCard: {
     borderRadius: widthPixel(16),

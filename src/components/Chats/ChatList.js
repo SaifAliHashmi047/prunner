@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { useChat } from "../../hooks/useChat";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   fontPixel,
   heightPixel,
@@ -36,9 +36,18 @@ export const ChatListScreen = () => {
   const {
     chats,
     loadingChats,
-     
+    fetchChats,
   } = useChat({ userId });
   const insets = useSafeAreaInsets();
+
+  // Refresh chats when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userId) {
+        fetchChats();
+      }
+    }, [userId, fetchChats])
+  );
 
   const handleSelectUser = (selectedUser) => {
     setUsersSelectionModalVisible(false);
@@ -121,7 +130,7 @@ export const ChatListScreen = () => {
           !loadingChats && <NoData text="No chats found" />
         }
       />
-      <TouchableOpacity
+    {user?.role !== "forklift" && <TouchableOpacity
         style={styles.fab}
         onPress={() => {
           setUsersSelectionModalVisible(true);
@@ -135,7 +144,7 @@ export const ChatListScreen = () => {
             tintColor: colors.white,
           }}
         />
-      </TouchableOpacity>
+      </TouchableOpacity>}
       <UserSelectionModal
         visible={usersSelectionModalVisible}
         onClose={() => setUsersSelectionModalVisible(false)}

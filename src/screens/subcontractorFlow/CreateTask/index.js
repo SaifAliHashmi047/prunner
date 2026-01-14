@@ -6,35 +6,39 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Alert
+  Alert,
 } from "react-native";
-import { SecondHeader, AppButton, AppTextInput } from "../../../components";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import { SecondHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
-import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
+import { heightPixel, fontPixel, widthPixel, GOOGLE_PLACES_API_KEY } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CreateTask = ({ navigation }) => {
   const [showPlotInput, setShowPlotInput] = useState(false);
-  const [plotNumber, setPlotNumber] = useState("");
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [dropoffLocation, setDropoffLocation] = useState(null);
   const insets = useSafeAreaInsets();
+
   const handleNext = () => {
     if (showPlotInput) {
-      if (!plotNumber.trim()) {
-        Alert.alert("Error", "Please enter the plot number");
+      if (!pickupLocation || !dropoffLocation) {
+        Alert.alert("Error", "Please enter both pickup and dropoff locations");
         return;
       }
       navigation.navigate(routes.selectTask, {
         materialLocation: {
-          address: plotNumber,
-          coordinates: { latitude: 40.7128, longitude: -74.006 } // Dummy
-        }
+          address: pickupLocation.address,
+          coordinates: pickupLocation.coordinates,
+        },
+        dropOffLocation: {
+          address: dropoffLocation.address,
+          coordinates: dropoffLocation.coordinates,
+        },
       });
     } else {
-      // If they didn't select plot input, maybe they want map?
-      // But the UI has two distinct buttons.
-      // If they click "Next" without doing anything?
       Alert.alert("Error", "Please select a location method");
     }
   };
@@ -47,6 +51,7 @@ const CreateTask = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.subtitle}>
           Select how you want to provide the pickup location.
@@ -68,11 +73,74 @@ const CreateTask = ({ navigation }) => {
 
         {showPlotInput && (
           <View style={{ marginTop: heightPixel(10) }}>
-            <AppTextInput
-              label="Pickup Plot Number"
-              placeholder="Enter the pickup plot number"
-              value={plotNumber}
-              onChangeText={setPlotNumber}
+            <Text style={styles.label}>Pickup Location</Text>
+            <GooglePlacesAutocomplete
+              placeholder="Search pickup location"
+              onPress={(data, details = null) => {
+                if (details) {
+                  setPickupLocation({
+                    address: data.description,
+                    coordinates: {
+                      latitude: details.geometry.location.lat,
+                      longitude: details.geometry.location.lng,
+                    },
+                    placeId: data.place_id,
+                    formattedAddress: details.formatted_address,
+                  });
+                }
+              }}
+              query={{
+                key: GOOGLE_PLACES_API_KEY,
+                language: "en",
+              }}
+              fetchDetails={true}
+              styles={{
+                textInputContainer: styles.autocompleteContainer,
+                textInput: styles.autocompleteInput,
+                listView: styles.autocompleteList,
+                row: styles.autocompleteRow,
+                description: styles.autocompleteDescription,
+              }}
+              enablePoweredByContainer={false}
+              debounce={300}
+              listViewDisplayed="auto"
+              suppressDefaultStyles={false}
+            />
+
+            <Text style={[styles.label, { marginTop: heightPixel(20) }]}>
+              Dropoff Location
+            </Text>
+            <GooglePlacesAutocomplete
+              placeholder="Search dropoff location"
+              onPress={(data, details = null) => {
+                if (details) {
+                  setDropoffLocation({
+                    address: data.description,
+                    coordinates: {
+                      latitude: details.geometry.location.lat,
+                      longitude: details.geometry.location.lng,
+                    },
+                    placeId: data.place_id,
+                    formattedAddress: details.formatted_address,
+                  });
+                }
+              }}
+              query={{
+                key: GOOGLE_PLACES_API_KEY,
+                language: "en",
+              }}
+              fetchDetails={true}
+              styles={{
+                textInputContainer: styles.autocompleteContainer,
+                textInput: styles.autocompleteInput,
+                listView: styles.autocompleteList,
+                row: styles.autocompleteRow,
+                description: styles.autocompleteDescription,
+              }}
+              enablePoweredByContainer={false}
+              debounce={300}
+              listViewDisplayed="auto"
+              suppressDefaultStyles={false}
             />
           </View>
         )}
@@ -125,5 +193,44 @@ const styles = StyleSheet.create({
     fontFamily: fonts.NunitoRegular,
     color: colors.black,
     marginBottom: heightPixel(12),
+  },
+  label: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.black,
+    marginBottom: heightPixel(8),
+  },
+  autocompleteContainer: {
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(8),
+    borderWidth: 1,
+    borderColor: "#eee",
+    paddingHorizontal: widthPixel(10),
+    marginBottom: heightPixel(12),
+  },
+  autocompleteInput: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.black,
+    height: heightPixel(45),
+  },
+  autocompleteList: {
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(8),
+    marginTop: heightPixel(4),
+    maxHeight: heightPixel(200),
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  autocompleteRow: {
+    paddingVertical: heightPixel(12),
+    paddingHorizontal: widthPixel(12),
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  autocompleteDescription: {
+    fontSize: fontPixel(13),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.black,
   },
 });

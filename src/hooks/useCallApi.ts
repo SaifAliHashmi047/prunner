@@ -148,7 +148,7 @@ const useCallApi = () => {
         const response = await api.request({
           url: endpoint,
           method,
-          data: isFormData ? body : body ? { ...body } : undefined,
+          data: method?.toLowerCase() ==="get"  ? null : isFormData ? body  :body ? { ...body } : undefined,
           params,
           headers,
         });
