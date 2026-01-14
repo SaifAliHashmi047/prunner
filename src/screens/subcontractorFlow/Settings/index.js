@@ -134,7 +134,7 @@ const Settings = ({ navigation }) => {
                                         screen: routes.uploadLicense,
                                     });
                                 } else {
-                                    navigation.navigate(item.route);
+                                navigation.navigate(item.route);
                                 }
                             }
                         }}

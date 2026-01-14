@@ -49,19 +49,19 @@ const Home = () => {
   } = useTasks();
   const { selectedSite } = useSelector((state) => state.site || {});
   console.log("selectedSite", selectedSite);
-  const {getSites}=useSite()
-  useEffect(() => {
-      getSites()
-  },[])
+  const { getSites } = useSite();
+
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchTasks(1);
-    },
-    [])
+      Promise.all([
+        fetchTasks(1),
+        getSites()
+      ])
+    }, [])
   );
 
   // loadMore and onRefresh are now handled by the hook and passed directly
@@ -122,7 +122,7 @@ const Home = () => {
   const TabContent = () => (
     <FlatList
       data={filteredData}
-      keyExtractor={(item) => item._id}
+      keyExtractor={(item) =>   `task-${Math.random()}`}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -144,7 +144,7 @@ const Home = () => {
             userName={item?.assignedTo?.name} // Using title as header
             taskTitle={item.title}
             status={item.status}
-            userImage={item.assignedTo?.image  }
+            userImage={item.assignedTo?.image}
             inventory={item?.inventory}
             material1={item1?.item}
             material1Qty={

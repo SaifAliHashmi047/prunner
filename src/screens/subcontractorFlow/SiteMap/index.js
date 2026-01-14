@@ -19,54 +19,10 @@ import useCallApi from "../../../hooks/useCallApi";
 import { Loader } from "../../../components/Loader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useSite from "../../../hooks/useSite";
+import SitesOnMapView from "../../../components/Maps/SitesOnMapView";
 
 const SiteMap = ({ navigation, route }) => {
-  const { callApi } = useCallApi();
-  const [loading, setLoading] = useState(false);
-  const [siteMapUrl, setSiteMapUrl] = useState(null);
-  const siteId = route?.params?.siteId;
-  
-  // Use pagination hook
-  const {
-    sites,
-    loading: sitesLoading,
-    refreshing,
-    loadingMore,
-    hasMore,
-    fetchSites,
-    loadMore,
-    onRefresh,
-  } = useSite();
-console.log("sites",sites);
-
-  useEffect(() => {
-    // Fetch sites with pagination on mount
-    fetchSites(1);
-    
-    if (siteId) {
-      getSiteDetails();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteId]);
-
-  const getSiteDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await callApi(`site/${siteId}`, "GET");
-      if (response?.success && response?.data) {
-        // Assuming the key is siteMap or image.
-        // We'll prioritize siteMap, then image, then null.
-        const url = response.data.siteMap || response.data.image;
-        if (url) {
-          setSiteMapUrl(url);
-        }
-      }
-    } catch (error) {
-      console.log("Error fetching site details", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+   
   const insets = useSafeAreaInsets();
   return (
     <SafeAreaView
@@ -82,12 +38,12 @@ console.log("sites",sites);
       </View>
 
       {/* Image shown on full width */}
-      <Image
+      {/* <Image
         source={siteMapUrl ? { uri: siteMapUrl } : appImages.siteImage}
         style={styles.image}
         resizeMode="contain"
-      />
-      <Loader isVisible={loading || sitesLoading} />
+      /> */}
+      <SitesOnMapView />
     </SafeAreaView>
   );
 };

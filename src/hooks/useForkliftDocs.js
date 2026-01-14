@@ -90,10 +90,6 @@ const useForkliftDocs = () => {
           }
         }
 
-        if (!licenseImageUrl) {
-          throw new Error("No license file or image provided");
-        }
-
         // Build payload for PATCH user/update-me - only send changed values
         const payload = {
           driverInfo: {},
@@ -111,6 +107,12 @@ const useForkliftDocs = () => {
         
         if (licenseImageUrl) {
           payload.driverInfo.drivingLicenseImage = licenseImageUrl;
+        }
+
+        // If nothing actually changed, avoid calling API
+        if (Object.keys(payload.driverInfo).length === 0) {
+          console.log("uploadLicense: no changed fields to update, skipping PATCH");
+          return null;
         }
 
         // Submit to PATCH API - only send driverInfo with changed values
