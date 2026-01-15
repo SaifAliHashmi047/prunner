@@ -9,7 +9,7 @@ import {
   Text,
 } from "react-native";
 
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import Geolocation from "@react-native-community/geolocation";
 import { colors } from "../../services/utilities/colors";
@@ -22,6 +22,7 @@ import {
 } from "../../services/constant";
 import { Loader } from "../Loader";
 import useSite from "../../hooks/useSite";
+import { appIcons } from "../../services/utilities/assets";
 
 interface Site {
   _id: string;
@@ -39,32 +40,10 @@ interface Site {
 interface LocationOnMapProps {
   onSiteSelect?: (site: Site) => void;
 }
-const sites = [
-  {
-    _id: "6942fa370a09d320178f4308",
-    name: "Coco Cubano Desserts",
-    location: {
-      address: "DHA Phase 8, Lahore",
-      coordinates: {
-        Latitude: 31.364,
-        Longitude: 74.2497,
-      },
-    },
-    status: "active",
-    createdBy: {
-      _id: "6929ee5dceeda4dad089c459",
-      email: "admin@yopmail.com",
-      name: "Admin",
-    },
-    createdAt: "2025-12-17T18:45:11.724Z",
-    updatedAt: "2025-12-17T18:45:11.724Z",
-    __v: 0,
-    employeeCounts: { forklift: 0, subConstructor: 0 },
-  },
-];
-
+ 
 const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -73,7 +52,7 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const [isLoading, setLoading] = useState(true);
   const mapRef = useRef<MapView>(null);
   const {
-    // sites,
+    sites,
     loading: sitesLoading,
     fetchSites,
   } = useSite();
@@ -81,44 +60,60 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   useEffect(() => {
     fetchSites(1);
   }, []);
-  // Filter sites with valid coordinates - use static array
+
+  // Update loading state when sites are fetched
+  useEffect(() => {
+    if (!sitesLoading && sites !== undefined) {
+      // Sites have been fetched, we can show the map
+      setLoading(false);
+      // Try to get location in background (non-blocking)
+      if (isFocused) {
+        setTimeout(() => {
+          requestLocationPermission();
+        }, 100);
+      }
+    }
+  }, [sitesLoading, sites, isFocused]);
+
+  // Filter sites with valid coordinates
   const validSites = useMemo(() => {
-    return (
-      sites?.filter(
-        (site: Site) =>
-          site?.location?.coordinates?.latitude &&
-          site?.location?.coordinates?.longitude &&
-          site.location.coordinates.latitude !== 0 &&
-          site.location.coordinates.longitude !== 0
-      ) || []
+    if (!sites || sites.length === 0) return [];
+    const filtered = sites.filter(
+      (site: Site) =>
+        site?.location?.coordinates?.latitude &&
+        site?.location?.coordinates?.longitude &&
+        typeof site.location.coordinates.latitude === "number" &&
+        typeof site.location.coordinates.longitude === "number" &&
+        site.location.coordinates.latitude !== 0 &&
+        site.location.coordinates.longitude !== 0
     );
-  }, []);
+    console.log("[SitesOnMapView] Valid sites count:", filtered.length);
+    return filtered;
+  }, [sites]);
 
   // Default to Lahore, Pakistan coordinates
   const LAHORE_DEFAULT = {
-    // latitude: 31.5204,
-    // longitude: 74.3587,
-    // latitudeDelta: 0.15,
-    // longitudeDelta: 0.15,
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
+    latitude: 31.5204,
+    longitude: 74.3587,
+    latitudeDelta: 0.15,
+    longitudeDelta: 0.15,
   };
 
   // Calculate region to fit all sites (plots view)
   const mapRegion = useMemo((): Region => {
     if (validSites.length === 0) {
-      // If no valid sites, use first site from static array or Lahore default
-      // if (sites && sites.length > 0 && sites[0]?.location?.coordinates) {
-      //   const firstSite = sites[0];
-      //   return {
-      //     latitude: firstSite.location.coordinates.latitude,
-      //     longitude: firstSite.location.coordinates.longitude,
-      //     latitudeDelta: 0.15,
-      //     longitudeDelta: 0.15,
-      //   };
-      // }
+      // If no valid sites, use first site from sites array or Lahore default
+      if (sites && Array.isArray(sites) && sites.length > 0) {
+        const firstSite = sites[0] as Site;
+        if (firstSite?.location?.coordinates) {
+          return {
+            latitude: firstSite.location.coordinates.latitude,
+            longitude: firstSite.location.coordinates.longitude,
+            latitudeDelta: 0.15,
+            longitudeDelta: 0.15,
+          };
+        }
+      }
       // Default to Lahore, Pakistan
       return LAHORE_DEFAULT;
     }
@@ -152,21 +147,7 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
     };
   }, [validSites, currentLocation]);
 
-  // Fit map to show all sites when sites are loaded
-  useEffect(() => {
-    if (mapRegion && mapRef.current) {
-      // Small delay to ensure map is rendered
-      setTimeout(() => {
-        mapRef.current?.animateToRegion(mapRegion, 1000);
-      }, 500);
-    }
-  }, [mapRegion]);
-
   const requestLocationPermission = async () => {
-    // Don't request location at all - just use default region
-    // This prevents timeout errors
-    setLoading(false);
-
     // Optionally try to get location in background (non-blocking)
     // But don't wait for it or show errors
     try {
@@ -205,20 +186,6 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
     );
   };
 
-  const isFocused = useIsFocused();
-  useEffect(() => {
-    // Show map immediately with default region
-    setLoading(false);
-
-    // Optionally try to get location in background (non-blocking)
-    if (isFocused) {
-      // Use setTimeout to ensure map renders first
-      setTimeout(() => {
-        requestLocationPermission();
-      }, 100);
-    }
-  }, [isFocused]);
-
   const handleMarkerPress = (site: Site) => {
     if (onSiteSelect) {
       onSiteSelect(site);
@@ -231,99 +198,79 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
       {isLoading || sitesLoading ? (
         <Loader isVisible={isLoading || sitesLoading} />
       ) : (
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          initialRegion={{
-            // latitude: 31.5204,
-            // longitude: 74.3587,
-            // latitudeDelta: 0.15,
-            // longitudeDelta: 0.15,
-            latitude: 37.78825,
-            longitude: -122.4324,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          
-        >
-          <Marker
-            coordinate={{
-              latitude: 31.364,
-              longitude: 74.2497,
+        <View style={styles.wrapper}>
+          <MapView
+            provider={PROVIDER_GOOGLE}
+
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={mapRegion}
+            showsUserLocation={!!currentLocation}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            mapType="standard"
+            onLayout={() => {
+              // Fit to coordinates when map layout is ready
+              // This is the recommended approach per react-native-maps docs
+              if (validSites.length > 0 && mapRef.current) {
+                const coordinates = validSites.map((site: Site) => ({
+                  latitude: site.location!.coordinates!.latitude,
+                  longitude: site.location!.coordinates!.longitude,
+                }));
+
+                setTimeout(() => {
+                  mapRef.current?.fitToCoordinates(coordinates, {
+                    edgePadding: {
+                      top: 50,
+                      right: 50,
+                      bottom: 50,
+                      left: 50,
+                    },
+                    animated: true,
+                  });
+                }, 500);
+              }
             }}
-            title="Coco Cubano Desserts"
-            description="DHA Phase 8, Lahore"
-          />
-        </MapView>
+          >
+            {/* Render markers for all sites */}
+            {validSites.map((site: Site) => {
+              const lat = Number(site.location?.coordinates?.latitude);
+              const lng = Number(site.location?.coordinates?.longitude);
 
-        // <View style={styles.wrapper}>
-        //   <MapView
-        //     ref={mapRef}
-        //     style={StyleSheet.absoluteFill}
-        //     initialRegion={mapRegion}
-        //     showsUserLocation={!!currentLocation}
-        //     showsMyLocationButton={false}
-        //     showsCompass={true}
-        //     mapType="standard"
-        //   >
-        //       {/* Render markers for all sites */}
-        //       {validSites.map((site: Site) => {
-        //         const lat = site.location!.coordinates!.latitude;
-        //         const lng = site.location!.coordinates!.longitude;
-        //         const isActive = site.status === "active";
+              if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
 
-        //         return (
-        //           <Marker
-        //             key={site._id}
-        //             coordinate={{
-        //               latitude: lat,
-        //               longitude: lng,
-        //             }}
-        //             title={site.name}
-        //             description={site.location?.address || ""}
-        //             onPress={() => handleMarkerPress(site)}
-        //           >
-        //             <View
-        //               style={styles.markerContainer}
-        //             >
-        //               <View
-        //                 style={[
-        //                   styles.markerPin,
-        //                   !isActive && styles.markerPinInactive,
-        //                 ]}
-        //               >
-        //                 <Text style={styles.markerText}>
-        //                   {site.name?.charAt(0)?.toUpperCase() || "S"}
-        //                 </Text>
-        //               </View>
-        //               <View
-        //                 style={[
-        //                   styles.markerShadow,
-        //                   !isActive && styles.markerShadowInactive,
-        //                 ]}
-        //               />
-        //             </View>
-        //           </Marker>
-        //         );
-        //       })}
-        //     </MapView>
+              return (
+                <Marker
+                  key={site._id}
+                  identifier={site._id}
+                  coordinate={{ latitude: lat, longitude: lng }}
+                  title={site.name}
+                  description={site.location?.address || ""}
+                  onPress={() => handleMarkerPress(site)}
+                  anchor={{ x: 0.5, y: 1 }}
+                />
+              );
+            })}
+          </MapView>
 
-        //   {/* Show count of sites */}
-        //   {validSites.length > 0 && (
-        //     <View style={styles.infoContainer}>
-        //       <Text style={styles.infoText}>
-        //         {validSites.length} {validSites.length === 1 ? "Site" : "Sites"}
-        //       </Text>
-        //     </View>
-        //   )}
+          {/* Show count of sites */}
+          {validSites.length > 0 && (
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoText}>
+                {validSites.length} {validSites.length === 1 ? "Site" : "Sites"}
+              </Text>
+            </View>
+          )}
 
-        //   {/* Empty state */}
-        //   {validSites.length === 0 && !sitesLoading && (
-        //     <View style={styles.emptyContainer}>
-        //       <Text style={styles.emptyText}>No sites with valid locations</Text>
-        //   </View>
-        //     )}
-        //   </View>
+          {/* Empty state */}
+          {validSites.length === 0 && !sitesLoading && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No sites with valid locations
+              </Text>
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
@@ -341,6 +288,8 @@ const styles = StyleSheet.create({
   markerContainer: {
     alignItems: "center",
     justifyContent: "center",
+    width: widthPixel(40),
+    height: widthPixel(50),
   },
   markerPin: {
     width: widthPixel(40),

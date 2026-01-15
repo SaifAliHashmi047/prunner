@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,11 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  DrawerActions,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { routes } from "../../../services/constant";
 import { AppHeader, AppButton, TaskCard } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
@@ -24,6 +28,7 @@ import useTasks from "../../../hooks/useTasks";
 import { formateDate } from "../../../services/utilities/helper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppSelector } from "../../../services/store/hooks";
+import useUsers from "../../../hooks/useUsers";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -38,17 +43,22 @@ const Home = () => {
     onRefresh,
     loadingMore,
     fetchTasks,
-    updateTaskStatus
+    updateTaskStatus,
   } = useTasks();
-
+  const { getLoggedInUser } = useUsers();
+  useEffect(() => {
+    getLoggedInUser();
+  }, []);
   // Check for missing license details
-  const isLicenseIncomplete = !user?.driverInfo?.drivingLicenseNumber || 
-                              !user?.driverInfo?.drivingLicenseExpiryDate || 
-                              !user?.driverInfo?.drivingLicenseImage;
+  const isLicenseIncomplete =
+    !user?.driverInfo?.drivingLicenseNumber ||
+    !user?.driverInfo?.drivingLicenseExpiryDate ||
+    !user?.driverInfo?.drivingLicenseImage;
 
   // Check for missing vehicle details
-  const isVehicleIncomplete = !user?.vehicleInfo?.vehiclePlateNumber || 
-                              !user?.vehicleInfo?.registrationNumber;
+  const isVehicleIncomplete =
+    !user?.vehicleInfo?.vehiclePlateNumber ||
+    !user?.vehicleInfo?.registrationNumber;
 
   // Check for missing registration card
   const isRegistrationCardMissing = !user?.vehicleInfo?.registrationCardImage;
@@ -61,23 +71,22 @@ const Home = () => {
   useFocusEffect(
     useCallback(() => {
       fetchTasks(1);
-    }, [ ])
+    }, [])
   );
 
-  const handleStartTask = async(task) => {
-
+  const handleStartTask = async (task) => {
     await updateTaskStatus(task._id, "started");
-    await  fetchTasks(1);
-       
+    await fetchTasks(1);
+
     // Navigate based on status or ID
     // navigation.navigate(routes.forkJobDetail, { task })
     // For now logging
     console.log("Start task", task);
   };
 
-  const handleCompleteTask = async(task) => {
+  const handleCompleteTask = async (task) => {
     await updateTaskStatus(task._id, "completed");
-    await  fetchTasks(1);
+    await fetchTasks(1);
 
     // Navigate based on status or ID
     // navigation.navigate(routes.forkJobDetail, { task })
@@ -91,7 +100,11 @@ const Home = () => {
       const status = task.status?.toLowerCase(); // pending, active, completed, cancelled, in_progress
       if (activeTab === "Pending") return status === "pending";
       if (activeTab === "Active")
-        return status === "active" || status === "in_progress" || status === "started";
+        return (
+          status === "active" ||
+          status === "in_progress" ||
+          status === "started"
+        );
       if (activeTab === "Completed") return status === "completed";
       if (activeTab === "Cancelled") return status === "cancelled";
       return false;
@@ -115,16 +128,17 @@ const Home = () => {
       item.inventory?.map((i) => ({
         name: i.item,
         quantity: `${i.quantity} ${i.unit || ""}`,
-        icon: i?.icon||i?.image, // Default icon?
+        icon: i?.icon || i?.image, // Default icon?
       })) || [];
 
     return (
       <TaskCard
+        key={item?._id}
         task={{
           ...item,
           title: item.title,
-          customerName: item.assignedTo?.name  ,
-          customerImage: item.assignedTo?.image , 
+          customerName: item.assignedTo?.name,
+          customerImage: item.assignedTo?.image,
           materials: materials,
           date: formateDate(item.createdAt || item.date, "DD-MMM-YYYY"),
           time: formateDate(item.createdAt || item.date, "hh:mm A"),
@@ -231,7 +245,9 @@ const Home = () => {
         <TouchableOpacity
           style={styles.ribbon}
           onPress={() => {
-            navigation.navigate(routes.auth, { screen: routes.tellAboutVehicle });
+            navigation.navigate(routes.auth, {
+              screen: routes.tellAboutVehicle,
+            });
           }}
         >
           <View style={styles.ribbonContent}>
@@ -244,21 +260,25 @@ const Home = () => {
       )}
 
       {/* Missing Registration Card Ribbon */}
-      {!isLicenseIncomplete && !isVehicleIncomplete && isRegistrationCardMissing && (
-        <TouchableOpacity
-          style={styles.ribbon}
-          onPress={() => {
-            navigation.navigate(routes.auth, { screen: routes.scanVehicleRegistration });
-          }}
-        >
-          <View style={styles.ribbonContent}>
-            <Text style={styles.ribbonText}>
-              ⚠️ Please upload your vehicle registration card
-            </Text>
-            <Text style={styles.ribbonAction}>Tap to complete →</Text>
-          </View>
-        </TouchableOpacity>
-      )}
+      {!isLicenseIncomplete &&
+        !isVehicleIncomplete &&
+        isRegistrationCardMissing && (
+          <TouchableOpacity
+            style={styles.ribbon}
+            onPress={() => {
+              navigation.navigate(routes.auth, {
+                screen: routes.scanVehicleRegistration,
+              });
+            }}
+          >
+            <View style={styles.ribbonContent}>
+              <Text style={styles.ribbonText}>
+                ⚠️ Please upload your vehicle registration card
+              </Text>
+              <Text style={styles.ribbonAction}>Tap to complete →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
       <View style={styles.tabs}>
         {["Pending", "Active", "Completed", "Cancelled"].map((tab) => (
@@ -281,13 +301,15 @@ const Home = () => {
 
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item?._id || item?.id || `task-${Math.random()}`}
+        keyExtractor={(item) =>
+          item?._id || item?.id || `task-${Math.random()}`
+        }
         renderItem={renderTask}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.taskList}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[colors.themeColor]}
           />

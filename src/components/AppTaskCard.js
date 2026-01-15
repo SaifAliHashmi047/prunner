@@ -4,6 +4,7 @@ import { appIcons } from "../services/utilities/assets";
 import { colors } from "../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../services/constant";
 import SafeImageBackground from "./SafeImageBackground";
+import { fonts } from "../services/utilities/fonts";
 
 
 
@@ -20,6 +21,7 @@ const AppTaskCard = ({
     material2Qty,
     inventory,
     date,
+    taskType,
     time,
     onPress,
     style,
@@ -68,7 +70,14 @@ const AppTaskCard = ({
     }
                 {/* Date & Time */}
                 <Text style={[styles.sectionTitle, { marginTop: heightPixel(12) }]}>Date & Time</Text>
-
+                {
+                    taskType === "instant" && (
+                        <View style={styles.row}>
+                            <Text style={styles.instant}>Instant Task</Text>
+                        </View>
+                    )
+                }
+             {   taskType === "scheduled" && (
                 <View style={styles.row}>
                     <View style={styles.inlineGroup}>
                         <Image source={appIcons.date} style={styles.icon} />
@@ -78,7 +87,7 @@ const AppTaskCard = ({
                         <Image source={appIcons.time} style={styles.icon} />
                         <Text style={styles.inlineText}>{time}</Text>
                     </View>
-                </View>
+                </View>)}
             </View>
         </TouchableOpacity>
     );
@@ -170,5 +179,16 @@ const styles = StyleSheet.create({
         color: '#343433',
         marginLeft: widthPixel(6),
         fontWeight: "500",
+    },
+    instant: {
+        fontSize: fontPixel(14),
+         
+        marginLeft: widthPixel(6),
+        fontWeight: fonts.NunitoSemiBold,
+        color: colors.white,
+        backgroundColor: colors.themeColor,
+        paddingHorizontal: widthPixel(10),
+        paddingVertical: heightPixel(5),
+        borderRadius: widthPixel(10),
     },
 });

@@ -1565,6 +1565,11 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/geolocation/-/geolocation-3.4.0.tgz#8b6ee024a71cf94526ab796af1e9ae140684802c"
   integrity sha512-bzZH89/cwmpkPMKKveoC72C4JH0yF4St5Ceg/ZM9pA1SqX9MlRIrIrrOGZ/+yi++xAvFDiYfihtn9TvXWU9/rA==
 
+"@react-native-community/slider@^5.0.1":
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/@react-native-community/slider/-/slider-5.1.2.tgz#b7255c27b52d74440bcf146a05dcf13c94e7d91c"
+  integrity sha512-UV/MjCyCtSjS5BQDrrGIMmCXm309xEG6XbR0Dj65kzTraJSVDxSjQS2uBUXgX+5SZUOCzCxzv3OufOZBdtQY4w==
+
 "@react-native/assets-registry@0.79.6":
   version "0.79.6"
   resolved "https://registry.yarnpkg.com/@react-native/assets-registry/-/assets-registry-0.79.6.tgz#cecc2a1140a9584d590000b951a08a0611ec30c3"
@@ -5734,6 +5739,11 @@ react-is@^19.0.0, react-is@^19.1.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-19.2.1.tgz#712fa6ee30c8398dc34260017325dad92b9224c5"
   integrity sha512-L7BnWgRbMwzMAubQcS7sXdPdNLmKlucPlopgAzx7FtYbksWZgEWiuYM5x9T6UqS2Ne0rsgQTq5kY2SGqpzUkYA==
 
+react-native-camera-kit@^17.0.1:
+  version "17.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-camera-kit/-/react-native-camera-kit-17.0.1.tgz#97ac40c7395e3768be5d8a2ba8d77772e798b9be"
+  integrity sha512-DcXfyiNl1yXytDgCxbpny1BbhXnUUpQdzI144v9KhkgSLJo/m7ELC6uuMimQAH6h1ccRW29fQ5KY8BGboHEmww==
+
 react-native-confirmation-code-field@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/react-native-confirmation-code-field/-/react-native-confirmation-code-field-8.0.1.tgz#0c6b232497348d728c2f628e9833f7e6bfb8efd1"
@@ -5804,6 +5814,18 @@ react-native-maps@^1.26.20:
   integrity sha512-kWibDz6wLLQ0685gOEFz5jdzm4miD7PMeVdtZV7ilgftDcusC2iy7SueBJpHF0LKCoOSa1BEUiKqpx1dBMSNpA==
   dependencies:
     "@types/geojson" "^7946.0.13"
+
+react-native-nitro-modules@^0.33.1:
+  version "0.33.1"
+  resolved "https://registry.yarnpkg.com/react-native-nitro-modules/-/react-native-nitro-modules-0.33.1.tgz#586a44220e3669e620241630e3c05da626c625af"
+  integrity sha512-Kdo8qiqlkGAEs7fq29i0yiZs0Gf7ucmMiFsH8PH4uzsnSGEt2CQRBJGnQKKMl9vJYL8e7rzA0TZKRwO/L8G/Sg==
+
+react-native-nitro-sound@^0.2.10:
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/react-native-nitro-sound/-/react-native-nitro-sound-0.2.10.tgz#6d54259b216565ef418fb7f1e25a7590b05c1a1d"
+  integrity sha512-hzTk74gbGqIms7jnKG0rQzNj/eI118Zcw3a9+lnXi+TLRzIuhqvEehKImvfa1NdyqA+oi9eZAsIQTtvnlKbb9w==
+  dependencies:
+    "@react-native-community/slider" "^5.0.1"
 
 react-native-reanimated@^3.19.1:
   version "3.19.4"

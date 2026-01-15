@@ -1,14 +1,156 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ScrollView } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, FlatList, ScrollView, Animated } from "react-native";
 import { appIcons, appImages } from "../../../services/utilities/assets";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
+import Sound from 'react-native-nitro-sound';
 
 
 const LiveSound = ({ navigation }) => {
+    const [soundLevel, setSoundLevel] = useState(0);
+    const [db, setDb] = useState(0);
+    const [soundStatus, setSoundStatus] = useState('Normal');
+    const [frequency, setFrequency] = useState(0);
+    const [radialBars, setRadialBars] = useState([]);
+    const [horizontalBarsTop, setHorizontalBarsTop] = useState([]);
+    const [horizontalBarsBottom, setHorizontalBarsBottom] = useState([]);
+
+    // Function to determine sound level status based on DB value
+    const getSoundStatus = (dbValue) => {
+        // DB typically ranges from -160 to 0
+        // -60 to -40: Slow/Quiet
+        // -40 to -20: Normal
+        // -20 to 0: Loud
+        if (dbValue >= -20) {
+            return 'Loud';
+        } else if (dbValue >= -40) {
+            return 'Normal';
+        } else {
+            return 'Slow';
+        }
+    };
+
+    // Function to get status color
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Loud':
+                return { bg: '#FFE5E5', text: '#D32F2F' };
+            case 'Normal':
+                return { bg: '#D6F7DD', text: '#029820' };
+            case 'Slow':
+                return { bg: '#E3F2FD', text: '#1976D2' };
+            default:
+                return { bg: '#D6F7DD', text: '#029820' };
+        }
+    };
+
+    // Function to calculate frequency (0-1000) based on DB
+    const calculateFrequency = (dbValue) => {
+        // Map DB range (-160 to 0) to frequency range (0 to 1000)
+        // Normalize: (dbValue + 160) / 160 * 1000
+        const normalized = Math.max(0, Math.min(1000, ((dbValue + 160) / 160) * 1000));
+        return Math.round(normalized);
+    };
+
+    // Function to generate bar heights based on sound status
+    const generateBarHeights = (status, count, isRadial = false) => {
+        let minHeight, maxHeight;
+        
+        switch (status) {
+            case 'Loud':
+                minHeight = isRadial ? 15 : 40;
+                maxHeight = isRadial ? 35 : 80;
+                break;
+            case 'Normal':
+                minHeight = isRadial ? 8 : 20;
+                maxHeight = isRadial ? 25 : 50;
+                break;
+            case 'Slow':
+                minHeight = isRadial ? 3 : 10;
+                maxHeight = isRadial ? 15 : 30;
+                break;
+            default:
+                minHeight = isRadial ? 8 : 20;
+                maxHeight = isRadial ? 25 : 50;
+        }
+        
+        return Array.from({ length: count }, () => 
+            Math.random() * (maxHeight - minHeight) + minHeight
+        );
+    };
+
+    // Update bar heights based on sound status
+    useEffect(() => {
+        // Generate radial bars (48 bars for full circle)
+        setRadialBars(generateBarHeights(soundStatus, 48, true));
+        
+        // Generate horizontal bars (20 bars for top row, 20 for bottom row)
+        setHorizontalBarsTop(generateBarHeights(soundStatus, 20, false));
+        setHorizontalBarsBottom(generateBarHeights(soundStatus, 20, false));
+        
+        // Update bars periodically for animation effect
+        const interval = setInterval(() => {
+            setRadialBars(generateBarHeights(soundStatus, 48, true));
+            setHorizontalBarsTop(generateBarHeights(soundStatus, 20, false));
+            setHorizontalBarsBottom(generateBarHeights(soundStatus, 20, false));
+        }, 200); // Update every 200ms for smooth animation
+        
+        return () => clearInterval(interval);
+    }, [soundStatus]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const startMonitoring = async () => {
+            try {
+                // Start recorder with metering enabled for sound level monitoring
+                await Sound.startRecorder(undefined, undefined, true); // meteringEnabled = true
+                
+                // Listen for recording updates which include metering data
+                Sound.addRecordBackListener((e) => {
+                    if (!isMounted) return;
+                    
+                    // currentMetering is in dB, typically ranges from -160 to 0
+                    if (e.currentMetering !== undefined) {
+                        const meteringDb = e.currentMetering;
+                        console.log("meteringDb===>>>", e);
+                        setDb(meteringDb);
+                        
+                        // Update sound status
+                        const status = getSoundStatus(meteringDb);
+                        setSoundStatus(status);
+                        
+                        // Calculate and update frequency
+                        const freq = calculateFrequency(meteringDb);
+                        setFrequency(freq);
+                        
+                        // Convert to a 0-100 scale for display (optional)
+                        const normalizedLevel = Math.max(0, Math.min(100, ((meteringDb + 160) / 160) * 100));
+                        setSoundLevel(normalizedLevel);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to start sound monitoring:', error);
+            }
+        };
+
+        startMonitoring();
+        
+        return () => {
+            isMounted = false;
+            Sound.removeRecordBackListener();
+            Sound.stopRecorder().catch((error) => {
+                console.error('Error stopping recorder:', error);
+            });
+        };
+    }, []);
+      
+
+
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -28,33 +170,124 @@ const LiveSound = ({ navigation }) => {
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        marginBottom: heightPixel(20),
                     }}>
                         <Text style={[styles.descriptionText, { fontFamily: fonts.NunitoSemiBold, marginBottom: heightPixel(10) }]}>
                             Sound Level
                         </Text>
                         <View style={{
-                            backgroundColor: '#D6F7DD',
+                            backgroundColor: getStatusColor(soundStatus).bg,
                             paddingHorizontal: widthPixel(10),
                             paddingVertical: heightPixel(5),
                             borderRadius: widthPixel(5),
                         }}>
                             <Text style={{
-                                color: '#029820',
+                                color: getStatusColor(soundStatus).text,
                                 fontFamily: fonts.NunitoSemiBold,
                                 fontSize: fontPixel(14),
                             }}>
-                                Normal
+                                {soundStatus}
                             </Text>
                         </View>
                     </View>
 
-                    {/* Live Sound Image */}
-                    <View style={styles.imageContainer}>
-                        <Image
-                            source={appIcons.liveSound}
-                            style={styles.liveSoundImage}
-                        // resizeMode="contain"
-                        />
+                    {/* DB and Frequency Display */}
+                    {/* <View style={styles.metricsContainer}>
+                        <View style={styles.metricItem}>
+                            <Text style={styles.metricLabel}>Decibel (dB)</Text>
+                            <Text style={styles.metricValue}>{db.toFixed(1)} dB</Text>
+                        </View>
+                        <View style={styles.metricItem}>
+                            <Text style={styles.metricLabel}>Frequency</Text>
+                            <Text style={styles.metricValue}>{frequency} / 1000</Text>
+                        </View>
+                    </View> */}
+
+                    {/* Dynamic Sound Monitoring Visualization */}
+                    <View style={styles.visualizationContainer}>
+                        {/* Circular Gauge with Radial Bars */}
+                        <View style={styles.circularGaugeContainer}>
+                            {/* Radial Bars */}
+                            <View style={styles.radialBarsContainer}>
+                                {radialBars.map((height, index) => {
+                                    const angle = (index * 360) / radialBars.length;
+                                    const barColor = soundStatus === 'Loud' ? '#FF6B6B' : 
+                                                    soundStatus === 'Normal' ? '#4ECDC4' : '#95E1D3';
+                                    
+                                    return (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.radialBarWrapper,
+                                                {
+                                                    transform: [{ rotate: `${angle}deg` }],
+                                                }
+                                            ]}
+                                        >
+                                            <View
+                                                style={[
+                                                    styles.radialBar,
+                                                    {
+                                                        height: heightPixel(height),
+                                                        backgroundColor: barColor,
+                                                    }
+                                                ]}
+                                            />
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                            
+                            {/* Inner Circular Gauge */}
+                            <View style={styles.innerGaugeContainer}>
+                                <View style={[
+                                    styles.innerGauge,
+                                    {
+                                        borderColor: soundStatus === 'Loud' ? '#D32F2F' : 
+                                                    soundStatus === 'Normal' ? '#029820' : '#1976D2',
+                                        backgroundColor: soundStatus === 'Loud' ? 'rgba(255, 107, 107, 0.1)' : 
+                                                        soundStatus === 'Normal' ? 'rgba(78, 205, 196, 0.1)' : 
+                                                        'rgba(149, 225, 211, 0.1)',
+                                    }
+                                ]}>
+                                    {/* Progress Fill from Bottom */}
+                                    <View style={[
+                                        styles.gaugeFill,
+                                        {
+                                            height: `${(frequency / 1000) * 100}%`,
+                                            backgroundColor: soundStatus === 'Loud' ? 'rgba(255, 107, 107, 0.3)' : 
+                                                           soundStatus === 'Normal' ? 'rgba(78, 205, 196, 0.3)' : 
+                                                           'rgba(149, 225, 211, 0.3)',
+                                        }
+                                    ]} />
+                                </View>
+                                
+                                {/* Center Text */}
+                                <View style={styles.centerTextContainer}>
+                                    <Text style={[
+                                        styles.centerValue,
+                                        {
+                                            color: soundStatus === 'Loud' ? '#D32F2F' : 
+                                                  soundStatus === 'Normal' ? '#029820' : '#1976D2',
+                                        }
+                                    ]}>
+                                        {frequency}
+                                    </Text>
+                                    <Text style={[
+                                        styles.centerLabel,
+                                        {
+                                            color: soundStatus === 'Loud' ? '#D32F2F' : 
+                                                  soundStatus === 'Normal' ? '#029820' : '#1976D2',
+                                        }
+                                    ]}>
+                                        /1000
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Horizontal Bar Charts */}
+                      
                     </View>
                 </ScrollView>
             </View>
@@ -88,18 +321,131 @@ const styles = StyleSheet.create({
         lineHeight: heightPixel(24),
         // textAlign: "center",
     },
-    imageContainer: {
-        flex: 1,
-        // alignItems: "center",
-        // justifyContent: "center",
+    visualizationContainer: {
+        alignItems: "center",
         marginBottom: heightPixel(30),
-        // backgroundColor: colors.lightGray,
+        paddingVertical: heightPixel(20),
     },
-    liveSoundImage: {
-        width: widthPixel(480),
-        height: heightPixel(300),
-        resizeMode: "contain",
-        alignSelf: "center",
+    circularGaugeContainer: {
+        width: widthPixel(280),
+        height: heightPixel(280),
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: heightPixel(30),
+        position: "relative",
+    },
+    radialBarsContainer: {
+        position: "absolute",
+        width: widthPixel(280),
+        height: heightPixel(280),
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    radialBarWrapper: {
+        position: "absolute",
+        width: widthPixel(3),
+        height: heightPixel(140),
+        alignItems: "center",
+        justifyContent: "flex-end",
+    },
+    radialBar: {
+        width: widthPixel(3),
+        borderRadius: widthPixel(1.5),
+        minHeight: heightPixel(3),
+    },
+    innerGaugeContainer: {
+        width: widthPixel(180),
+        height: heightPixel(180),
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+    },
+    innerGauge: {
+        width: widthPixel(180),
+        height: heightPixel(180),
+        borderRadius: widthPixel(90),
+        borderWidth: widthPixel(8),
+        overflow: "hidden",
+        position: "relative",
+    },
+    gaugeFill: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: "100%",
+        borderBottomLeftRadius: widthPixel(90),
+        borderBottomRightRadius: widthPixel(90),
+    },
+    centerTextContainer: {
+        position: "absolute",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    centerValue: {
+        fontSize: fontPixel(36),
+        fontFamily: fonts.NunitoSemiBold,
+        fontWeight: "bold",
+    },
+    centerLabel: {
+        fontSize: fontPixel(16),
+        fontFamily: fonts.NunitoRegular,
+        marginTop: heightPixel(-5),
+    },
+    barChartContainer: {
+        width: "100%",
+        paddingHorizontal: widthPixel(20),
+        marginTop: heightPixel(20),
+    },
+    barRow: {
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        marginBottom: heightPixel(15),
+        paddingRight: widthPixel(30),
+    },
+    horizontalBar: {
+        flex: 1,
+        marginHorizontal: widthPixel(2),
+        borderRadius: widthPixel(2),
+        minHeight: heightPixel(5),
+    },
+    barLabel: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoSemiBold,
+        color: '#4ECDC4',
+        marginLeft: widthPixel(10),
+    },
+    metricsContainer: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginBottom: heightPixel(20),
+        paddingVertical: heightPixel(15),
+        backgroundColor: colors.white || "#FFFFFF",
+        borderRadius: widthPixel(10),
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    metricItem: {
+        alignItems: "center",
+        flex: 1,
+    },
+    metricLabel: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.black || "#666",
+        marginBottom: heightPixel(5),
+    },
+    metricValue: {
+        fontSize: fontPixel(20),
+        fontFamily: fonts.NunitoSemiBold,
+        color: colors.black || "#000",
     },
 });
 

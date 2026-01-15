@@ -74,7 +74,14 @@ const HomeDetail = ({ navigation }) => {
                         <Text style={styles.greeting}>Hi, {user?.name}</Text>
                         <Text style={styles.subGreeting}>Welcome back to Project Runner!</Text>
                     </View>
-                    <TouchableOpacity style={styles.iconBtn}>
+                    <TouchableOpacity style={styles.iconBtn}
+                    
+                    onPress={() => navigation.navigate(routes.auth,{
+                        screen: routes.scanQr,
+                        params: {
+                            goBack: true,
+                        },
+                    })}>
                         <Image source={appIcons.scan} style={styles.icon} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate(routes.settings)}>

@@ -241,11 +241,13 @@ const styles = StyleSheet.create({
     marginRight: widthPixel(12)
   },
   itemName: {
+    flex:1,
     fontSize: fontPixel(15),
     fontFamily: fonts.NunitoSemiBold,
     color: colors.black
   },
   itemQty: {
+    flex:1,
     fontSize: fontPixel(14),
     fontFamily: fonts.NunitoRegular,
     color: colors.greyText,

@@ -87,6 +87,8 @@ const VerifyOTP = ({ navigation }) => {
       if (token) {
         await AsyncStorage.setItem("token", token);
         await AsyncStorage.setItem("user", JSON.stringify(response?.data?.data?.user));
+        console.log("user", response?.data?.data?.user);
+        
         dispatch(setUserData(response?.data?.data?.user));
       }
       if (refreshToken) {

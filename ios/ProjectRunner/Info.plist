@@ -29,8 +29,11 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+<string>ProjectRunner needs access to your microphone to measure sound level</string>
+
 	<key>NSCameraUsageDescription</key>
-	<string>ProjectRunner needs access to your camera to upload your profile pictures</string>
+	<string>ProjectRunner needs access to your camera to upload your profile pictures and scan QR codes</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>ProjectRunner needs access to your location to show your position on the map and find nearby venues</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

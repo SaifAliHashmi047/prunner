@@ -130,7 +130,7 @@ const useForkliftDocs = () => {
   );
 
   const registerVehicle = useCallback(
-    async (vehiclePlateNumber, registrationExpiryDate, vehicleImages = [], registrationCardImage = null) => {
+    async (vehiclePlateNumber, registrationNumber, vehicleImages = [], registrationCardImage = null) => {
       try {
         setLoading(true);
         
@@ -188,10 +188,10 @@ const useForkliftDocs = () => {
           payload.vehicleInfo.vehiclePlateNumber = vehiclePlateNumber.trim();
         }
         
-        const formattedRegistrationDate = formatDateToISO(registrationExpiryDate);
-        if (formattedRegistrationDate) {
-          payload.vehicleInfo.registrationNumber = formattedRegistrationDate;
-        }
+        
+        
+          payload.vehicleInfo.registrationNumber = registrationNumber;
+        
         
         if (registrationCardUrl) {
           payload.vehicleInfo.registrationCardImage = registrationCardUrl;

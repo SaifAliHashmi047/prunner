@@ -69,13 +69,7 @@ const TaskUser = ({ navigation, route }) => {
         pictures: uploadedPictures,
         assignedTo: selectedUser,
         inventory: selectedInventory,
-        dropOffLocation: {
-          address: "456 Construction Ave, City",
-          coordinates: {
-            latitude: 40.7589,
-            longitude: -73.9851,
-          },
-        },
+        // dropOffLocation and materialLocation should already be in previousData
       };
 
       const response = await createTask(payload);

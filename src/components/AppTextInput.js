@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, TextInput, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { colors } from "../services/utilities/colors";
+import { heightPixel,widthPixel } from "../services/constant";
 
 const AppTextInput = ({
   value,
@@ -45,7 +46,7 @@ const AppTextInput = ({
                 ? "https://img.icons8.com/material-outlined/24/000000/visible--v1.png"
                 : "https://img.icons8.com/material-outlined/24/000000/invisible.png",
             }}
-            style={{ width: 24, height: 24, tintColor: "#888" }}
+            style={{ width: widthPixel(24), height: heightPixel(24), tintColor: "#888" }}
           />
         </TouchableOpacity>
       )}
@@ -60,16 +61,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    height: 50,
+    height: heightPixel(50),
     backgroundColor: "#f5f5f5",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
+    borderRadius: widthPixel(10),
+    paddingHorizontal: widthPixel(15),
+    marginBottom: heightPixel(20),
   },
   multilineContainer: {
-    height: 100, // bigger box for multiline
+    height: heightPixel(100), // bigger box for multiline
     alignItems: "flex-start", // top align
-    paddingTop: 10,
+    paddingTop: heightPixel(10),
   },
   input: {
     flex: 1,

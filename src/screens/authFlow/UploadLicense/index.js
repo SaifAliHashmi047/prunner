@@ -11,6 +11,9 @@ import {
   ImageBackground,
   PermissionsAndroid,
   Linking,
+  ScrollView,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { SecondHeader, AppButton, ForkLiftHeader, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
@@ -27,6 +30,7 @@ import { setUserData } from "../../../services/store/slices/userSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UploadButton from "../../../components/UploadButton";
 import { useAppSelector } from "../../../services/store/hooks";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Optional DocumentPicker - will use image picker as fallback
 let DocumentPicker = null;
@@ -44,6 +48,46 @@ try {
   console.log("DocumentScanner not available");
 }
 
+// Calendar utility functions
+const buildMonthDays = (year, month) => {
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay(); // 0-6
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const weeks = [];
+  let currentWeek = new Array(startWeekday).fill(null);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    currentWeek.push(d);
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length) {
+    while (currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
+  return weeks;
+};
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const weekdayShort = ["S", "M", "T", "W", "T", "F", "S"];
+
 const UploadLicense = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { uploadLicense, loading, uploading } = useForkliftDocs();
@@ -53,7 +97,25 @@ const UploadLicense = ({ navigation }) => {
   const [frontImage, setFrontImage] = useState(null);
   const [licenseNumber, setLicenseNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
+  const [showCalendar, setShowCalendar] = useState(false);
   const { user } = useAppSelector((state) => state.user);
+
+  // Calendar state
+  const getInitialDate = () => {
+    if (expiryDate) {
+      const date = new Date(expiryDate);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    return new Date();
+  };
+
+  const initialDate = getInitialDate();
+  const [month, setMonth] = useState(initialDate.getMonth());
+  const [year, setYear] = useState(initialDate.getFullYear());
+  const [selectedDay, setSelectedDay] = useState(initialDate.getDate());
+  const [viewMode, setViewMode] = useState("calendar"); // "calendar", "month", "year"
 
   // Prefill fields from existing driverInfo if available (edit mode)
   useEffect(() => {
@@ -67,7 +129,11 @@ const UploadLicense = ({ navigation }) => {
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, "0");
             const dd = String(d.getDate()).padStart(2, "0");
-            setExpiryDate(`${yyyy}-${mm}-${dd}`);
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            setExpiryDate(dateStr);
+            setMonth(d.getMonth());
+            setYear(d.getFullYear());
+            setSelectedDay(d.getDate());
           }
         } catch (e) {
           // ignore parse errors, keep default empty
@@ -76,6 +142,18 @@ const UploadLicense = ({ navigation }) => {
       // Do NOT set file/frontImage from existing URL so we only send image if user changes it
     }
   }, [user]);
+
+  // Update calendar when expiryDate changes externally
+  useEffect(() => {
+    if (expiryDate) {
+      const d = new Date(expiryDate);
+      if (!isNaN(d.getTime())) {
+        setMonth(d.getMonth());
+        setYear(d.getFullYear());
+        setSelectedDay(d.getDate());
+      }
+    }
+  }, [expiryDate]);
   const formatFileSize = (bytes) => {
     if (!bytes) return "0 B";
     const k = 1024;
@@ -141,11 +219,87 @@ const UploadLicense = ({ navigation }) => {
 
   const handleRemoveFile = () => {
     setFile(null);
+    setFrontImage(null);
   };
 
   const handleRemoveScannedImages = () => {
     setFrontImage(null);
     setIsScanning(false);
+  };
+
+  // Calendar handlers
+  const handlePrevMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear((prev) => prev - 1);
+    } else {
+      setMonth((prev) => prev - 1);
+    }
+    setSelectedDay(null);
+  };
+
+  const handleNextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear((prev) => prev + 1);
+    } else {
+      setMonth((prev) => prev + 1);
+    }
+    setSelectedDay(null);
+  };
+
+  const handlePrevYear = () => {
+    setYear((prev) => prev - 1);
+  };
+
+  const handleNextYear = () => {
+    setYear((prev) => prev + 1);
+  };
+
+  const handleMonthSelect = (selectedMonth) => {
+    setMonth(selectedMonth);
+    setViewMode("calendar");
+  };
+
+  const handleYearSelect = (selectedYear) => {
+    setYear(selectedYear);
+    setViewMode("calendar");
+  };
+
+  // Generate years list (current year ± 50 years)
+  const generateYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 5; i <= currentYear + 22; i++) {
+      years.push(i);
+    }
+    return years;
+  };
+
+  const handleDateSelect = (day) => {
+    setSelectedDay(day);
+    const d = new Date(year, month, day);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    setExpiryDate(`${yyyy}-${mm}-${dd}`);
+    setShowCalendar(false);
+  };
+
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return "Select expiry date";
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return dateStr;
   };
 
   const scanDocument = async () => {
@@ -196,11 +350,24 @@ const UploadLicense = ({ navigation }) => {
     }
 
     try {
-      const { scannedImages } = await DocumentScanner.scanDocument();
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        croppedImageQuality: 30,
+      });
       
       if (scannedImages && scannedImages.length > 0) {
         const scannedImage = scannedImages[0];
-        const customImageObject = {
+        const fileName = `license_front_${Date.now()}.jpg`;
+        const fileObject = {
+          name: fileName,
+          size: undefined,
+          type: "image/jpeg",
+          uri: scannedImage,
+          path: scannedImage,
+        };
+
+        // Set both file (for display) and frontImage (for upload)
+        setFile(fileObject);
+        setFrontImage({
           height: undefined,
           mime: "image/jpeg",
           modificationDate: new Date().getTime(),
@@ -209,10 +376,12 @@ const UploadLicense = ({ navigation }) => {
           size: undefined,
           width: undefined,
           type: "image/jpeg",
-          name: `license_front_${Date.now()}.jpg`,
-        };
+          name: fileName,
+        });
 
-        setFrontImage(customImageObject);
+        // Return to main view after scanning
+        setIsScanning(false);
+        toastSuccess({ text: "Document scanned successfully" });
       }
     } catch (error) {
       console.log("Scan document error", error);
@@ -243,46 +412,20 @@ const UploadLicense = ({ navigation }) => {
       return;
     }
 
-    // If scanning mode, check if front image is scanned
-    if (isScanning) {
-      if (!frontImage) {
-        toastError({ text: "Please scan the front side of your license" });
-        return;
-      }
-
-      // Upload scanned image
-      try {
-        const response = await uploadLicense(licenseNumber, expiryDate, frontImage);
-        console.log("license upload success", response);
-        
-        if (response?.success) {
-          if (response?.data?.user) {
-            dispatch(setUserData(response.data.user));
-          }
-          toastSuccess({ text: response?.message || "License uploaded successfully" });
-          navigation.navigate(routes.tellAboutVehicle);
-        } else {
-          toastError({ text: response?.message || "Failed to upload license" });
-        }
-      } catch (error) {
-        const msg =
-          error?.message || error?.response?.data?.message || "Failed to upload license";
-        toastError({ text: msg });
-      }
-      return;
-    }
-
-    // Regular file upload
+    // Check if file or scanned image exists
     if (!file && !frontImage) {
       toastError({ text: "Please upload or scan your driving license" });
       return;
     }
 
     try {
-      const response = await uploadLicense(licenseNumber, expiryDate, frontImage, file);
+      // Use frontImage if available (from scanning), otherwise use file
+      const imageToUpload = frontImage || file;
+      const response = await uploadLicense(licenseNumber, expiryDate, imageToUpload, file);
       
       if (response?.success) {
         if (response?.data?.user) {
+          await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
           dispatch(setUserData(response.data.user));
         }
         toastSuccess({ text: response?.message || "License uploaded successfully" });
@@ -402,14 +545,17 @@ const UploadLicense = ({ navigation }) => {
         {file && (
           <View style={styles.fileCard}>
             <View style={styles.fileRow}>
-              <Image
-                source={
-                  file.type?.includes("image")
-                    ? appIcons.pdf
-                    : appIcons.pdf
-                }
-                style={styles.fileIcon}
-              />
+              {file.type?.includes("image") && file.uri ? (
+                <Image
+                  source={{ uri: file.uri }}
+                  style={styles.fileImagePreview}
+                />
+              ) : (
+                <Image
+                  source={appIcons.pdf}
+                  style={styles.fileIcon}
+                />
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.fileName} numberOfLines={1}>
                   {file.name}
@@ -417,7 +563,7 @@ const UploadLicense = ({ navigation }) => {
                 <Text style={styles.fileSize}>
                   {typeof file.size === "number"
                     ? formatFileSize(file.size)
-                    : file.size || "Unknown size"}
+                    : file.size || "Scanned image"}
                 </Text>
               </View>
               <TouchableOpacity onPress={handleRemoveFile}>
@@ -435,13 +581,226 @@ const UploadLicense = ({ navigation }) => {
           style={{ marginTop: heightPixel(20) }}
         />
 
-        {/* Expiry Date Input */}
-        <AppTextInput
-          placeholder="Enter expiry date (YYYY-MM-DD)"
-          value={expiryDate}
-          onChangeText={setExpiryDate}
-          style={{ marginTop: heightPixel(15) }}
-        />
+        {/* Expiry Date Calendar */}
+        <View style={{  }}>
+          <TouchableOpacity
+            onPress={() => setShowCalendar(true)}
+            // style={styles.dateButton}
+          >
+             <View style={{ backgroundColor: "#f5f5f5",borderRadius:widthPixel(10),padding:widthPixel(10),
+              height:heightPixel(50),
+             }}>
+              <Text>
+                {formatDisplayDate(expiryDate)}
+              </Text>
+              </View>
+           
+           
+          </TouchableOpacity>
+
+          <Modal
+            visible={showCalendar}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowCalendar(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Expiry Date</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowCalendar(false)}
+                    style={styles.closeButton}
+                  >
+                    <Image
+                      source={appIcons.cross}
+                      style={styles.closeIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.calendarCard}>
+                  {viewMode === "calendar" && (
+                    <>
+                      <View style={styles.calendarHeader}>
+                        <TouchableOpacity
+                          onPress={() => setViewMode("month")}
+                          style={styles.monthYearButton}
+                        >
+                          <Text style={styles.calendarMonth}>
+                            {monthNames[month]}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setViewMode("year")}
+                          style={styles.monthYearButton}
+                        >
+                          <Text style={styles.calendarYear}>{year}</Text>
+                        </TouchableOpacity>
+                        <View style={styles.calendarNav}>
+                          <TouchableOpacity
+                            style={styles.navBtn}
+                            onPress={handlePrevMonth}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Text style={styles.navText}>{"<"}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.navBtn}
+                            onPress={handleNextMonth}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Text style={styles.navText}>{">"}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Weekday row */}
+                      <View style={styles.weekRow}>
+                        {weekdayShort.map((d, idx) => (
+                          <Text key={`${d}-${idx}`} style={styles.weekLabel}>
+                            {d}
+                          </Text>
+                        ))}
+                      </View>
+
+                      {/* Calendar days */}
+                      {buildMonthDays(year, month).map((week, wi) => (
+                        <View key={`week-${wi}`} style={styles.weekRow}>
+                          {week.map((day, di) => {
+                            if (!day) {
+                              return (
+                                <View
+                                  key={`empty-${wi}-${di}`}
+                                  style={styles.dayCell}
+                                />
+                              );
+                            }
+                            const isSelected = day === selectedDay;
+                            return (
+                              <TouchableOpacity
+                                key={`day-${wi}-${day}-${di}`}
+                                style={[
+                                  styles.dayCell,
+                                  isSelected && styles.daySelected,
+                                ]}
+                                onPress={() => handleDateSelect(day)}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dayText,
+                                    isSelected && styles.dayTextSelected,
+                                  ]}
+                                >
+                                  {day}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      ))}
+                    </>
+                  )}
+
+                  {viewMode === "month" && (
+                    <>
+                      <View style={styles.pickerHeader}>
+                        <TouchableOpacity
+                          onPress={() => setViewMode("calendar")}
+                          style={styles.backButton}
+                        >
+                          <Text style={styles.backButtonText}>{"< Back"}</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.pickerTitle}>Select Month</Text>
+                        <View style={{ width: widthPixel(60) }} />
+                      </View>
+                      <ScrollView
+                        contentContainerStyle={styles.monthGrid}
+                        showsVerticalScrollIndicator={false}
+                      >
+                        {monthNames.map((monthName, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            style={[
+                              styles.monthItem,
+                              month === idx && styles.monthItemSelected,
+                            ]}
+                            onPress={() => handleMonthSelect(idx)}
+                          >
+                            <Text
+                              style={[
+                                styles.monthItemText,
+                                month === idx && styles.monthItemTextSelected,
+                              ]}
+                            >
+                              {monthName}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </>
+                  )}
+
+                  {viewMode === "year" && (
+                    <>
+                      <View style={styles.pickerHeader}>
+                        <TouchableOpacity
+                          onPress={() => setViewMode("calendar")}
+                          style={styles.backButton}
+                        >
+                          <Text style={styles.backButtonText}>{"< Back"}</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.pickerTitle}>Select Year</Text>
+                        <View style={styles.yearNav}>
+                          <TouchableOpacity
+                            style={styles.navBtn}
+                            onPress={handlePrevYear}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Text style={styles.navText}>{"<"}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.navBtn}
+                            onPress={handleNextYear}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Text style={styles.navText}>{">"}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <ScrollView
+                        style={styles.yearScrollView}
+                        contentContainerStyle={styles.yearGrid}
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                      >
+                        {generateYears().map((y) => (
+                          <TouchableOpacity
+                            key={y}
+                            style={[
+                              styles.yearItem,
+                              year === y && styles.yearItemSelected,
+                            ]}
+                            onPress={() => handleYearSelect(y)}
+                          >
+                            <Text
+                              style={[
+                                styles.yearItemText,
+                                year === y && styles.yearItemTextSelected,
+                              ]}
+                            >
+                              {y}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </>
+                  )}
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </View>
 
         {/* Bottom Buttons */}
         <View style={styles.bottom}>
@@ -457,7 +816,7 @@ const UploadLicense = ({ navigation }) => {
             style={styles.nextBtn}
             textStyle={{ color: colors.white }}
             onPress={handleNext}
-            disabled={!file || loading || uploading}
+            disabled={(!file && !frontImage) || loading || uploading}
           />
         </View>
       </View>
@@ -505,6 +864,13 @@ const styles = StyleSheet.create({
     height: widthPixel(35),
     marginRight: widthPixel(10),
     resizeMode: "contain",
+  },
+  fileImagePreview: {
+    width: widthPixel(50),
+    height: widthPixel(50),
+    marginRight: widthPixel(10),
+    borderRadius: widthPixel(8),
+    resizeMode: "cover",
   },
   fileName: {
     fontSize: fontPixel(15),
@@ -627,5 +993,233 @@ const styles = StyleSheet.create({
   },
   scanNextBtn: {
     backgroundColor: colors.themeColor,
+  },
+  dateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(10),
+    paddingHorizontal: widthPixel(15),
+    paddingVertical: heightPixel(15),
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  dateButtonText: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.black,
+    flex: 1,
+  },
+  dateButtonPlaceholder: {
+    color: "#999",
+  },
+  calendarIcon: {
+    width: widthPixel(20),
+    height: widthPixel(20),
+    resizeMode: "contain",
+    // tintColor: colors.themeColor,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(20),
+    width: "90%",
+    maxWidth: widthPixel(400),
+    padding: widthPixel(20),
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: heightPixel(15),
+  },
+  modalTitle: {
+    fontSize: fontPixel(18),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.black,
+  },
+  closeButton: {
+    width: widthPixel(30),
+    height: widthPixel(30),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeIcon: {
+    width: widthPixel(20),
+    height: widthPixel(20),
+    resizeMode: "contain",
+  },
+  calendarCard: {
+    borderRadius: widthPixel(16),
+    backgroundColor: colors.white,
+    paddingHorizontal: widthPixel(14),
+    paddingVertical: heightPixel(14),
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: heightPixel(10),
+  },
+  calendarMonth: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.grey300,
+  },
+  calendarNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: widthPixel(8),
+  },
+  navBtn: {
+    width: heightPixel(20),
+    height: heightPixel(20),
+    borderRadius: heightPixel(12),
+    backgroundColor: "#F2E8FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  navText: {
+    fontSize: fontPixel(14),
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoSemiBold,
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: heightPixel(6),
+  },
+  weekLabel: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: fontPixel(11),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.greyBg,
+  },
+  dayCell: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: heightPixel(6),
+    borderRadius: widthPixel(12),
+  },
+  daySelected: {
+    backgroundColor: "#E1D4FF",
+  },
+  dayText: {
+    fontSize: fontPixel(13),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  dayTextSelected: {
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoSemiBold,
+  },
+  monthYearButton: {
+    paddingHorizontal: widthPixel(8),
+    paddingVertical: heightPixel(4),
+  },
+  calendarYear: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.themeColor,
+    marginLeft: widthPixel(5),
+  },
+  pickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: heightPixel(15),
+  },
+  pickerTitle: {
+    fontSize: fontPixel(16),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.black,
+  },
+  backButton: {
+    paddingVertical: heightPixel(5),
+    paddingHorizontal: widthPixel(5),
+  },
+  backButtonText: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.themeColor,
+  },
+  monthGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingVertical: heightPixel(10),
+  },
+  monthItem: {
+    width: "30%",
+    paddingVertical: heightPixel(12),
+    paddingHorizontal: widthPixel(10),
+    marginBottom: heightPixel(10),
+    borderRadius: widthPixel(8),
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  monthItemSelected: {
+    backgroundColor: "#E1D4FF",
+  },
+  monthItemText: {
+    fontSize: fontPixel(13),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  monthItemTextSelected: {
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoSemiBold,
+  },
+  yearScrollView: {
+    maxHeight: heightPixel(350),
+    flexGrow: 0,
+  },
+  yearGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingVertical: heightPixel(10),
+    paddingBottom: heightPixel(20),
+  },
+  yearItem: {
+    width: "22%",
+    paddingVertical: heightPixel(12),
+    paddingHorizontal: widthPixel(8),
+    marginBottom: heightPixel(8),
+    borderRadius: widthPixel(8),
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  yearItemSelected: {
+    backgroundColor: "#E1D4FF",
+  },
+  yearItemText: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  yearItemTextSelected: {
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoSemiBold,
+  },
+  yearNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: widthPixel(8),
   },
 });

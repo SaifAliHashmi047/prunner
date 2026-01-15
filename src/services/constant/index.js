@@ -111,5 +111,6 @@ export const emailFormat =
 export const passwordFormat =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{7,24}$/; // just one upper case alphabet/one lower case alpjhabet/number/special chars
 
+export const GOOGLE_PLACES_API_KEY = "AIzaSyBTfmafw67mrYUhReeF6NURJ0QIta0nNaA";
 
 export { widthPixel, heightPixel, fontPixel };

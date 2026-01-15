@@ -138,17 +138,21 @@ const useCallApi = () => {
       try {
         // Prepare headers without overriding Authorization
         const headers: any = {};
+        const methodLower = method?.toLowerCase();
 
-        if (isFormData) {
-          headers["Content-Type"] = "multipart/form-data";
-        } else {
-          headers["Content-Type"] = "application/json";
+        // Only set Content-Type for non-GET requests (GET requests shouldn't have Content-Type header)
+        if (methodLower !== "get") {
+          if (isFormData) {
+            headers["Content-Type"] = "multipart/form-data";
+          } else {
+            headers["Content-Type"] = "application/json";
+          }
         }
 
         const response = await api.request({
           url: endpoint,
           method,
-          data: isFormData ? body : body ? { ...body } : undefined,
+          data: methodLower === "get" ? null : isFormData ? body : body ? { ...body } : undefined,
           params,
           headers,
         });

@@ -27,7 +27,7 @@ const useComplaints = () => {
     }
 
     try {
-      const response = await callApi("complain/my-complains", "GET", {}, {
+      const response = await callApi("complain/my-complains", "GET", null, {
         page: pageNum,
         limit: 10
       });
