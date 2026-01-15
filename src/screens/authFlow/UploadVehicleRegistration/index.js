@@ -25,6 +25,7 @@ import { setUserData } from "../../../services/store/slices/userSlice";
 import { useAppSelector } from "../../../services/store/hooks";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UploadButton from "../../../components/UploadButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const UploadVehicleRegistration = ({ navigation, route }) => {
     const { uploadRegistrationCard, loading, uploading } = useForkliftDocs();
@@ -100,6 +101,7 @@ const UploadVehicleRegistration = ({ navigation, route }) => {
 
         if (response?.success) {
           if (response?.data?.user) {
+            await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
             dispatch(setUserData(response.data.user));
           }
           toastSuccess({ text: response?.message || "Registration card uploaded successfully" });

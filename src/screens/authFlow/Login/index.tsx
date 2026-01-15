@@ -15,6 +15,7 @@ import axiosInstance from "../../../api/axiosInstance";
 import styles from "./styles";
 import { toastError } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import useNavigateUser from "../../../hooks/useNavigateUser";
 
 const Login = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState("testing1@yopmail.com");
@@ -23,6 +24,7 @@ const Login = ({ navigation }: { navigation: any }) => {
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
   const [role, setRole] = useState("subConstructor");
+  const navigateUser = useNavigateUser();
   // Validation function
   const validateForm = () => {
     const newErrors = { email: "", password: "" };
@@ -105,14 +107,11 @@ const Login = ({ navigation }: { navigation: any }) => {
 
         if (user?.role) {
           dispatch(setUserRole(user.role));
-          if (user.role === "forklift") {
-            navigation.replace(routes.forkliftFlow);
-          } else {
-            navigation.replace(routes.subcontractorFlow);
-          }
-        } else {
-          navigation.replace(routes.subcontractorFlow);
         }
+
+        // Use navigateUser hook for consistent navigation logic
+        // This will check profile completion, induction number, and verification status
+        await navigateUser();
       } else {
         throw new Error("Token not received from server");
       }

@@ -128,7 +128,7 @@ const Home = () => {
   const TabContent = () => (
     <FlatList
       data={filteredData}
-      keyExtractor={(item) =>   `task-${Math.random()}`}
+      keyExtractor={(item) =>   item?._id}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl

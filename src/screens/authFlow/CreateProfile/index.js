@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   TextInput,
@@ -24,6 +24,8 @@ import {
 import { Loader } from "../../../components/Loader";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../../../services/store/slices/userSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAppSelector } from "../../../services/store/hooks";
 
 const CreateProfile = ({ navigation }) => {
   const { callApi, uploadFile } = useCallApi();
@@ -33,7 +35,7 @@ const CreateProfile = ({ navigation }) => {
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ name: "", image: "" });
-
+ 
   // Handle image picker
   const handlePickImage = async () => {
     try {
@@ -130,6 +132,7 @@ const CreateProfile = ({ navigation }) => {
 
       if (response?.success) {
         // Show success message
+        await AsyncStorage.setItem("user", JSON.stringify(response?.data?.user));
         toastSuccess({ text: "Profile created successfully!" });
         dispatch(setUserData(response?.data?.user));
         // Navigate to profile created screen

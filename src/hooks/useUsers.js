@@ -4,6 +4,7 @@ import { toastError } from '../services/utilities/toast/toast';
 import { useAppSelector } from '../services/store/hooks';
 import { setUserData } from '../services/store/slices/userSlice';
 import { useDispatch } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useUsers = () => {
   const { callApi } = useCallApi();
@@ -90,6 +91,7 @@ const getLoggedInUser = useCallback(async () => {
 
         if (response?.data) {
           dispatch(setUserData(response.data));
+          await AsyncStorage.setItem("user", JSON.stringify(response.data));
         }
       }
     } catch (error) {

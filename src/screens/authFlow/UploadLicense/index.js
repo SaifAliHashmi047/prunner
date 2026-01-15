@@ -30,6 +30,7 @@ import { setUserData } from "../../../services/store/slices/userSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import UploadButton from "../../../components/UploadButton";
 import { useAppSelector } from "../../../services/store/hooks";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Optional DocumentPicker - will use image picker as fallback
 let DocumentPicker = null;
@@ -424,6 +425,7 @@ const UploadLicense = ({ navigation }) => {
       
       if (response?.success) {
         if (response?.data?.user) {
+          await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
           dispatch(setUserData(response.data.user));
         }
         toastSuccess({ text: response?.message || "License uploaded successfully" });

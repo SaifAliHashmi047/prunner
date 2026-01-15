@@ -24,6 +24,7 @@ import {
   toastSuccess,
 } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const accountTypes = [
   {
@@ -74,6 +75,7 @@ const AccountType = ({ navigation }) => {
         const response = await callApi("user/update-me", "PATCH", payload);
 
         if (response?.success) {
+          await AsyncStorage.setItem("user", JSON.stringify(response?.data?.user));
           dispatch(setUserData(response?.data?.user));
           // Show success modal
           toastSuccess({ text: "Role updated successfully" });

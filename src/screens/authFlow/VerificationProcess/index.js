@@ -1,4 +1,4 @@
-import React , {useEffect} from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,19 +13,68 @@ import { colors } from "../../../services/utilities/colors";
 import { appIcons } from "../../../services/utilities/assets";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { routes } from "../../../services/constant";
+import { useAppSelector } from "../../../services/store/hooks";
+import useUsers from "../../../hooks/useUsers";
 
 const VerificationProcess = ({ navigation }) => {
+  const { user } = useAppSelector((state) => state.user);
+  const { getLoggedInUser } = useUsers();
+  const intervalRef = useRef(null);
+  const isNavigatingRef = useRef(false);
 
+  // Watch for verification status changes and navigate when verified
   useEffect(() => {
-    // Simulate a verification process with a timeout
-    const timer = setTimeout(() => {
-      navigation.replace(routes.auth , {
-        screen: routes.profileVerified
-      }); // Uncomment and implement navigation as needed
-    }, 5000); // 5 seconds for demonstration
+    const verificationStatus = user?.verification?.status;
+    
+    // If status is not pending (verified), navigate to success screen
+    if (verificationStatus && verificationStatus !== "pending" && !isNavigatingRef.current) {
+      isNavigatingRef.current = true;
+      
+      // Clear interval if it exists
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
+      navigation.replace(routes.auth, {
+        screen: routes.profileVerified,
+      });
+    }
+  }, [user?.verification?.status, navigation]);
 
-    return () => clearTimeout(timer); // Cleanup the timer on component unmount
-  }, []);
+  // Set up polling if status is pending
+  useEffect(() => {
+    const verificationStatus = user?.verification?.status;
+    
+    // If status is not pending, don't set up polling
+    if (verificationStatus && verificationStatus !== "pending") {
+      return;
+    }
+    
+    // Only set up polling if status is pending and user exists
+    if (verificationStatus === "pending" && user?._id) {
+      // Initial check - fetch user data immediately
+      getLoggedInUser();
+
+      // Set up polling interval (every 20 seconds)
+      intervalRef.current = setInterval(async () => {
+        try {
+          // Fetch latest user data
+          await getLoggedInUser();
+        } catch (error) {
+          console.log("Error checking verification status:", error);
+        }
+      }, 20000); // 20 seconds
+    }
+
+    // Cleanup interval on unmount or when status changes
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [user?.verification?.status, user?._id, getLoggedInUser]);
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { AppButton, AppTextInput } from "../../../components";
@@ -21,6 +21,13 @@ const SignUp = ({ navigation }) => {
     const dispatch = useAppDispatch();
     const [loading, setLoading] = useState(false);
     // const loading = useAppSelector((state) => state.user.loading);
+    useEffect(() => {
+       if(__DEV__){
+        setEmail("testing1@yopmail.com");
+        setPassword("123456");
+        setConfirmPassword("123456");
+       }
+    }, [loading]);
 
     // Validation function
     const validateForm = () => {

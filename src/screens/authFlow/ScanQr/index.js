@@ -32,7 +32,8 @@ import { toastError } from "../../../services/utilities/toast/toast";
 const { width, height } = Dimensions.get("window");
 const SCAN_AREA_SIZE = widthPixel(width * 0.7);
 
-const ScanQr = ({ navigation }) => {
+const ScanQr = ({ navigation, route }) => {
+    const goBack = route?.params?.goBack || false;
     const [hasPermission, setHasPermission] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [scannedCode, setScannedCode] = useState(null);
@@ -99,7 +100,9 @@ const ScanQr = ({ navigation }) => {
             // Navigate to ProvideInfo with the scanned code
             navigation.navigate(routes.auth, {
                 screen: routes.provideInfo,
-                params: { inductionNumber: code },
+                params: { inductionNumber: code,
+                    goBack: goBack,
+                 },
             });
         } catch (error) {
             console.error("Error reading QR code:", error);
@@ -115,7 +118,9 @@ const ScanQr = ({ navigation }) => {
         setShowManualInput(false);
         navigation.navigate(routes.auth, {
             screen: routes.provideInfo,
-            params: { inductionNumber: manualCode.trim() },
+            params: { inductionNumber: manualCode.trim(),
+                goBack: goBack,
+            },
         });
     };
 
