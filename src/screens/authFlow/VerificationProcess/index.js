@@ -27,7 +27,7 @@ const VerificationProcess = ({ navigation }) => {
     const verificationStatus = user?.verification?.status;
     
     // If status is not pending (verified), navigate to success screen
-    if (verificationStatus && verificationStatus !== "pending" && !isNavigatingRef.current) {
+    if (verificationStatus && verificationStatus !== "pending" && !isNavigatingRef.current || __DEV__) {
       isNavigatingRef.current = true;
       
       // Clear interval if it exists

@@ -42,12 +42,13 @@ const CancelJob = ({ navigation, route }) => {
     try {
       const response = await updateTaskStatus(taskId, "cancelled", selectedOption);
       if (response?.success) {
-        toastSuccess({ message: "Task cancelled successfully" })
+        // toastSuccess({ message: "Task cancelled successfully" })
       }
     } catch (error) {
       console.log("Cancel job error", error);
       toastError({ message: "Failed to cancel task" })
     } finally {
+      navigation.goBack();
       navigation.goBack();
 
     }

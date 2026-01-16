@@ -20,8 +20,11 @@ import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Loader } from "../../../components/Loader";
 import useCallApi from "../../../hooks/useCallApi";
+import useSite from "../../../hooks/useSite";
+import { setSelectedSite } from "../../../services/store/slices/siteSlice";
+import { useDispatch } from "react-redux";
 
-const LocationOnMap = ({ navigation }) => {
+const LocationOnMap = ({ navigation }) => { 
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
   const { callApi } = useCallApi();
@@ -30,6 +33,31 @@ const LocationOnMap = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isLoading, setLoading] = useState(true);
   const [selectingLocation, setSelectingLocation] = useState("pickup"); // "pickup" or "dropoff"
+  const { getSites } = useSite();
+  const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState(null);
+  const dispatch = useDispatch();
+
+
+
+  useEffect(() => {
+    fetchSites();
+}, []);
+
+const fetchSites = async () => {
+    try {
+        setLoading(true);
+        const sitesList = await getSites();
+        if (sitesList && sitesList.length > 0) {
+          console.log("sitesList====>>", JSON.stringify(sitesList , null , 2));
+            setSites(sitesList);
+        }
+    } catch (error) {
+        console.log("Error fetching sites", error);
+    } finally {
+        setLoading(false);
+    }
+};
 
   // Default region (Lahore, Pakistan)
   const defaultRegion = {
@@ -102,6 +130,12 @@ const LocationOnMap = ({ navigation }) => {
   };
 
   const handleMapPress = async (e) => {
+    // Only allow map press for dropoff location selection
+    // Pickup location must be selected from site markers
+    if (selectingLocation === "pickup") {
+      return;
+    }
+
     const { latitude, longitude } = e.nativeEvent.coordinate;
     const address = await getAddressFromCoordinates(latitude, longitude);
 
@@ -113,19 +147,83 @@ const LocationOnMap = ({ navigation }) => {
       },
     };
 
-    if (selectingLocation === "pickup") {
-      setPickupLocation(locationData);
-      setSelectingLocation("dropoff");
-    } else {
-      setDropoffLocation(locationData);
-    }
+    setDropoffLocation(locationData);
   };
+
+  const handleSiteMarkerPress = async (site) => {
+    // Only allow site marker selection for pickup location
+    if (selectingLocation !== "pickup") {
+      return;
+    }
+
+    const { latitude, longitude } = site.location.coordinates;
+    const address = site.location.address || `Site: ${site.name}`;
+
+    const locationData = {
+      address: address,
+      coordinates: {
+        latitude,
+        longitude,
+      },
+    };
+    setSelectedSiteId(site._id);
+
+    setPickupLocation(locationData);
+    setSelectingLocation("dropoff");
+  };
+
+  // Filter and normalize sites with valid coordinates
+  // Sites with invalid coordinates (0,0 or 90,180) will be marked in Lahore
+  const validSites = sites
+    .filter((site) => {
+      const lat = site?.location?.coordinates?.latitude;
+      const lng = site?.location?.coordinates?.longitude;
+      
+      // Basic validation - must have coordinates
+      return (
+        lat !== undefined &&
+        lng !== undefined &&
+        lat !== null &&
+        lng !== null &&
+        typeof lat === "number" &&
+        typeof lng === "number" &&
+        !isNaN(lat) &&
+        !isNaN(lng)
+      );
+    })
+    .map((site) => {
+      const lat = site?.location?.coordinates?.latitude;
+      const lng = site?.location?.coordinates?.longitude;
+      
+      // Normalize invalid coordinates to Lahore
+      const isInvalid = 
+        (lat === 0 && lng === 0) || // Null island
+        (lat === 90 && lng === 180); // Invalid coordinates
+      
+      if (isInvalid) {
+        return {
+          ...site,
+          location: {
+            ...site.location,
+            coordinates: {
+              latitude: defaultRegion.latitude,
+              longitude: defaultRegion.longitude,
+            },
+            address: site.location?.address || `${site.name}, Lahore, Pakistan`,
+          },
+        };
+      }
+      
+      return site;
+    });
 
   const handleNext = () => {
     if (!pickupLocation || !dropoffLocation) {
       Alert.alert("Error", "Please select both pickup and dropoff locations on the map");
       return;
     }
+    console.log("pickupLocation====>>", selectedSiteId);
+    dispatch(setSelectedSite(selectedSiteId))
 
     navigation.navigate(routes.selectTask, {
       materialLocation: pickupLocation,
@@ -152,22 +250,43 @@ const LocationOnMap = ({ navigation }) => {
       <View style={styles.header}>
         <SecondHeader onPress={() => navigation.goBack()} title="Select Locations" />
         <Text style={styles.subtitle}>
-          Tap on the map to select {selectingLocation === "pickup" ? "pickup" : "dropoff"} location
+          {selectingLocation === "pickup" 
+            ? "Tap on a site marker to select pickup location" 
+            : "Tap on the map to select dropoff location"}
         </Text>
       </View>
 
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
-          style={StyleSheet.absoluteFill}
-          initialRegion={currentLocation || defaultRegion}
-          showsUserLocation={!!currentLocation}
-          showsMyLocationButton={false}
+          // provider={PROVIDER_GOOGLE}
+          style={{ flex: 1 }}
+          initialRegion={defaultRegion}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
           showsCompass={true}
           mapType="standard"
           onPress={handleMapPress}
         >
+          {/* Site markers - only for pickup selection */}
+          {validSites.map((site) => {
+            const lat = site?.location?.coordinates?.latitude;
+            const lng = site?.location?.coordinates?.longitude;
+            
+            if (!lat || !lng) return null;
+
+            return (
+              <Marker
+                key={site._id}
+                coordinate={{ latitude: lat, longitude: lng }}
+                title={site.name}
+                description={site.location?.address || ""}
+                pinColor="blue"
+                onPress={() => handleSiteMarkerPress(site)}
+              />
+            );
+          })}
+          
           {pickupLocation && (
             <Marker
               coordinate={pickupLocation.coordinates}
@@ -190,8 +309,8 @@ const LocationOnMap = ({ navigation }) => {
         <View style={styles.selectionIndicator}>
           <Text style={styles.selectionText}>
             {selectingLocation === "pickup"
-              ? "Tap to select Pickup Location"
-              : "Tap to select Dropoff Location"}
+              ? "Tap on a site marker to select Pickup Location"
+              : "Tap on the map to select Dropoff Location"}
           </Text>
         </View>
 

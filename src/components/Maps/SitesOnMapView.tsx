@@ -79,6 +79,7 @@ const sites = [
 const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
+  const [activeSites, setActiveSites] = useState<Site[]>([]);
 
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -89,12 +90,29 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const {
     // sites,
     loading: sitesLoading,
-    fetchSites,
+    // fetchSites,
+    getSites
   } = useSite();
 
   useEffect(() => {
-    fetchSites(1);
-  }, []);
+    fetchSites();
+}, []);
+
+const fetchSites = async () => {
+    try {
+        setLoading(true);
+        const sitesList = await getSites();
+        if (sitesList && sitesList.length > 0) {
+          console.log("sitesList====>>", sitesList);
+            setActiveSites(sitesList);
+        }
+    } catch (error) {
+        console.log("Error fetching sites", error);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
   // Update loading state when sites are available
   useEffect(() => {
@@ -153,10 +171,11 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
 
   // Calculate region to fit all sites (plots view)
   const mapRegion = useMemo((): Region => {
-    if (validSites.length === 0) {
+    if (validSites.length === 0) { 
       // If no valid sites, use first site from sites array or Lahore default
       if (sites && Array.isArray(sites) && sites.length > 0) {
         const firstSite = sites[0] as Site;
+        console.log("[SitesOnMapView] First site:", firstSite);
         if (firstSite?.location?.coordinates) {
           return {
             latitude: firstSite.location.coordinates.latitude,
@@ -166,6 +185,7 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
           };
         }
       }
+      console.log("[SitesOnMapView] No first site, using Lahore default" , LAHORE_DEFAULT);
       // Default to Lahore, Pakistan
       return LAHORE_DEFAULT;
     }
@@ -255,16 +275,21 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
  
         <View style={styles.wrapper}>
           <MapView
-            provider={PROVIDER_GOOGLE}
+            // provider={PROVIDER_GOOGLE}
             ref={mapRef}
-            style={StyleSheet.absoluteFill}
-            initialRegion={mapRegion}
+            style={{ flex: 1 }}
+  initialRegion={{
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  }}
             loadingEnabled={true}
             loadingIndicatorColor="#666666"
             loadingBackgroundColor="#eeeeee"
             moveOnMarkerPress={false}
             showsUserLocation={!!currentLocation}
-            showsMyLocationButton={false}
+            showsMyLocationButton={true}
             showsCompass={true}
             mapType="standard"
             onLayout={() => {
@@ -292,7 +317,7 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
               }
             }}
           >
-            {validSites.map((site: Site) => {
+            {activeSites.map((site: Site) => {
               const lat = Number(site.location?.coordinates?.latitude);
               const lng = Number(site.location?.coordinates?.longitude);
               

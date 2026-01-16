@@ -74,74 +74,12 @@ const CreateTask = ({ navigation }) => {
         {showPlotInput && (
           <View style={{ marginTop: heightPixel(10) }}>
             <Text style={styles.label}>Pickup Location</Text>
-            <GooglePlacesAutocomplete
-              placeholder="Search pickup location"
-              onPress={(data, details = null) => {
-                if (details) {
-                  setPickupLocation({
-                    address: data.description,
-                    coordinates: {
-                      latitude: details.geometry.location.lat,
-                      longitude: details.geometry.location.lng,
-                    },
-                    placeId: data.place_id,
-                    formattedAddress: details.formatted_address,
-                  });
-                }
-              }}
-              query={{
-                key: GOOGLE_PLACES_API_KEY,
-                language: "en",
-              }}
-              fetchDetails={true}
-              styles={{
-                textInputContainer: styles.autocompleteContainer,
-                textInput: styles.autocompleteInput,
-                listView: styles.autocompleteList,
-                row: styles.autocompleteRow,
-                description: styles.autocompleteDescription,
-              }}
-              enablePoweredByContainer={false}
-              debounce={300}
-              listViewDisplayed="auto"
-              suppressDefaultStyles={false}
-            />
+         
 
             <Text style={[styles.label, { marginTop: heightPixel(20) }]}>
               Dropoff Location
             </Text>
-            <GooglePlacesAutocomplete
-              placeholder="Search dropoff location"
-              onPress={(data, details = null) => {
-                if (details) {
-                  setDropoffLocation({
-                    address: data.description,
-                    coordinates: {
-                      latitude: details.geometry.location.lat,
-                      longitude: details.geometry.location.lng,
-                    },
-                    placeId: data.place_id,
-                    formattedAddress: details.formatted_address,
-                  });
-                }
-              }}
-              query={{
-                key: GOOGLE_PLACES_API_KEY,
-                language: "en",
-              }}
-              fetchDetails={true}
-              styles={{
-                textInputContainer: styles.autocompleteContainer,
-                textInput: styles.autocompleteInput,
-                listView: styles.autocompleteList,
-                row: styles.autocompleteRow,
-                description: styles.autocompleteDescription,
-              }}
-              enablePoweredByContainer={false}
-              debounce={300}
-              listViewDisplayed="auto"
-              suppressDefaultStyles={false}
-            />
+           
           </View>
         )}
 

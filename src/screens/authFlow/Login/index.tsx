@@ -18,8 +18,8 @@ import { Loader } from "../../../components/Loader";
 import useNavigateUser from "../../../hooks/useNavigateUser";
 
 const Login = ({ navigation }: { navigation: any }) => {
-  const [email, setEmail] = useState("testing1@yopmail.com");
-  const [password, setPassword] = useState("mM@12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();

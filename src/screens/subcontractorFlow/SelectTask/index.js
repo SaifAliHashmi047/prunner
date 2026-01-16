@@ -108,8 +108,8 @@ const SelectTask = ({ navigation, route }) => {
   };
 
   useEffect(() => {
-    if (selectedSite?._id) {
-      setSiteId(selectedSite?._id);
+    if (selectedSite) {
+      setSiteId(selectedSite);
     }
   }, [selectedSite]);
 
@@ -131,6 +131,8 @@ const SelectTask = ({ navigation, route }) => {
         multiple: true,
         mediaType: "photo",
         maxFiles: 5 - pictures.length,
+          compressImageQuality: 0.8,
+
       });
       const formattedImages = images.map((img) => ({
         uri: img.path,
@@ -144,7 +146,23 @@ const SelectTask = ({ navigation, route }) => {
   };
 
   // Calendar handlers
+  // Check if current month/year is in the past
+  const isPastMonth = (checkYear, checkMonth) => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    return checkYear < currentYear || (checkYear === currentYear && checkMonth < currentMonth);
+  };
+
   const handlePrevMonth = () => {
+    const newMonth = month === 0 ? 11 : month - 1;
+    const newYear = month === 0 ? year - 1 : year;
+    
+    // Prevent navigation to past months
+    if (isPastMonth(newYear, newMonth)) {
+      return;
+    }
+    
     if (month === 0) {
       setMonth(11);
       setYear((prev) => prev - 1);
@@ -173,11 +191,36 @@ const SelectTask = ({ navigation, route }) => {
   };
 
   const handleMonthSelect = (selectedMonth) => {
+    // Prevent selecting past months in current year
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    
+    if (year === currentYear && selectedMonth < currentMonth) {
+      return; // Don't allow selecting past months
+    }
+    
     setMonth(selectedMonth);
     setViewMode("calendar");
   };
 
   const handleYearSelect = (selectedYear) => {
+    // Prevent selecting past years
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    if (selectedYear < currentYear) {
+      return; // Don't allow selecting past years
+    }
+    
+    // If selecting current year, ensure month is not in the past
+    if (selectedYear === currentYear) {
+      const currentMonth = today.getMonth();
+      if (month < currentMonth) {
+        setMonth(currentMonth); // Set to current month if selected month is in past
+      }
+    }
+    
     setYear(selectedYear);
     setViewMode("calendar");
   };
@@ -192,7 +235,20 @@ const SelectTask = ({ navigation, route }) => {
     return years;
   };
 
+  // Check if a date is in the past
+  const isPastDate = (day) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    const selectedDate = new Date(year, month, day);
+    selectedDate.setHours(0, 0, 0, 0);
+    return selectedDate < today;
+  };
+
   const handleDateSelect = (day) => {
+    // Prevent selection of past dates
+    if (isPastDate(day)) {
+      return;
+    }
     setSelectedDay(day);
     const d = new Date(year, month, day);
     const yyyy = d.getFullYear();
@@ -392,11 +448,18 @@ const SelectTask = ({ navigation, route }) => {
                           </TouchableOpacity>
                           <View style={styles.calendarNav}>
                             <TouchableOpacity
-                              style={styles.navBtn}
+                              style={[
+                                styles.navBtn,
+                                isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1) && styles.navBtnDisabled
+                              ]}
                               onPress={handlePrevMonth}
                               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                              disabled={isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1)}
                             >
-                              <Text style={styles.navText}>{"<"}</Text>
+                              <Text style={[
+                                styles.navText,
+                                isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1) && styles.navTextDisabled
+                              ]}>{"<"}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={styles.navBtn}
@@ -430,19 +493,23 @@ const SelectTask = ({ navigation, route }) => {
                                 );
                               }
                               const isSelected = day === selectedDay;
+                              const isPast = isPastDate(day);
                               return (
                                 <TouchableOpacity
                                   key={`day-${wi}-${day}-${di}`}
                                   style={[
                                     styles.dayCell,
                                     isSelected && styles.daySelected,
+                                    isPast && styles.dayDisabled,
                                   ]}
                                   onPress={() => handleDateSelect(day)}
+                                  disabled={isPast}
                                 >
                                   <Text
                                     style={[
                                       styles.dayText,
                                       isSelected && styles.dayTextSelected,
+                                      isPast && styles.dayTextDisabled,
                                     ]}
                                   >
                                     {day}
@@ -471,25 +538,35 @@ const SelectTask = ({ navigation, route }) => {
                           contentContainerStyle={styles.monthGrid}
                           showsVerticalScrollIndicator={false}
                         >
-                          {monthNames.map((monthName, idx) => (
-                            <TouchableOpacity
-                              key={idx}
-                              style={[
-                                styles.monthItem,
-                                month === idx && styles.monthItemSelected,
-                              ]}
-                              onPress={() => handleMonthSelect(idx)}
-                            >
-                              <Text
+                          {monthNames.map((monthName, idx) => {
+                            const today = new Date();
+                            const currentYear = today.getFullYear();
+                            const currentMonth = today.getMonth();
+                            const isPastMonth = year === currentYear && idx < currentMonth;
+                            
+                            return (
+                              <TouchableOpacity
+                                key={idx}
                                 style={[
-                                  styles.monthItemText,
-                                  month === idx && styles.monthItemTextSelected,
+                                  styles.monthItem,
+                                  month === idx && styles.monthItemSelected,
+                                  isPastMonth && styles.monthItemDisabled,
                                 ]}
+                                onPress={() => handleMonthSelect(idx)}
+                                disabled={isPastMonth}
                               >
-                                {monthName}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
+                                <Text
+                                  style={[
+                                    styles.monthItemText,
+                                    month === idx && styles.monthItemTextSelected,
+                                    isPastMonth && styles.monthItemTextDisabled,
+                                  ]}
+                                >
+                                  {monthName}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
                         </ScrollView>
                       </>
                     )}
@@ -527,25 +604,34 @@ const SelectTask = ({ navigation, route }) => {
                           showsVerticalScrollIndicator={true}
                           nestedScrollEnabled={true}
                         >
-                          {generateYears().map((y) => (
-                            <TouchableOpacity
-                              key={y}
-                              style={[
-                                styles.yearItem,
-                                year === y && styles.yearItemSelected,
-                              ]}
-                              onPress={() => handleYearSelect(y)}
-                            >
-                              <Text
+                          {generateYears().map((y) => {
+                            const today = new Date();
+                            const currentYear = today.getFullYear();
+                            const isPastYear = y < currentYear;
+                            
+                            return (
+                              <TouchableOpacity
+                                key={y}
                                 style={[
-                                  styles.yearItemText,
-                                  year === y && styles.yearItemTextSelected,
+                                  styles.yearItem,
+                                  year === y && styles.yearItemSelected,
+                                  isPastYear && styles.yearItemDisabled,
                                 ]}
+                                onPress={() => handleYearSelect(y)}
+                                disabled={isPastYear}
                               >
-                                {y}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
+                                <Text
+                                  style={[
+                                    styles.yearItemText,
+                                    year === y && styles.yearItemTextSelected,
+                                    isPastYear && styles.yearItemTextDisabled,
+                                  ]}
+                                >
+                                  {y}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
                         </ScrollView>
                       </>
                     )}
@@ -787,6 +873,12 @@ const styles = StyleSheet.create({
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
   },
+  navBtnDisabled: {
+    opacity: 0.3,
+  },
+  navTextDisabled: {
+    color: colors.greyText || "#999",
+  },
   weekRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -817,6 +909,12 @@ const styles = StyleSheet.create({
   dayTextSelected: {
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
+  },
+  dayDisabled: {
+    opacity: 0.3,
+  },
+  dayTextDisabled: {
+    color: colors.greyText || "#999",
   },
   monthYearButton: {
     paddingHorizontal: widthPixel(8),
@@ -876,6 +974,12 @@ const styles = StyleSheet.create({
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
   },
+  monthItemDisabled: {
+    opacity: 0.3,
+  },
+  monthItemTextDisabled: {
+    color: colors.greyText || "#999",
+  },
   yearScrollView: {
     maxHeight: heightPixel(350),
     flexGrow: 0,
@@ -908,6 +1012,12 @@ const styles = StyleSheet.create({
   yearItemTextSelected: {
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
+  },
+  yearItemDisabled: {
+    opacity: 0.3,
+  },
+  yearItemTextDisabled: {
+    color: colors.greyText || "#999",
   },
   yearNav: {
     flexDirection: "row",

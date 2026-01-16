@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { SecondHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -30,13 +31,127 @@ const JobDetail = ({ navigation, route }) => {
     );
   }
 
+  const mapRef = useRef(null);
   const taskTitle = task.title || "Task";
   const customerName = task.assignedTo?.name || task.createdBy?.name || "Unknown User";
   const customerImage = task.assignedTo?.profileImage || task.assignedTo?.image || task.createdBy?.profileImage || task.createdBy?.image || null;
   const status = task.status || "pending";
   const taskDate = task.createdAt || task.date || task.scheduledDate;
   const siteMapUrl = task.siteId?.siteMap || task.siteMap || null;
+  console.log("siteMapUrl====>>", task);
+  const pickUpLocation = task?.siteId?.location;
+  const dropOffLocation = task?.dropOffLocation?.coordinates;
 
+  // Helper function to generate two random UK coordinates 5km apart
+  const generateUKCoordinates = () => {
+    // UK approximate bounds: lat 50-60, lng -8 to 2
+    const baseLat = 50 + Math.random() * 10; // Random latitude in UK
+    const baseLng = -8 + Math.random() * 10; // Random longitude in UK
+    
+    // 5km ≈ 0.045 degrees (1 degree ≈ 111km)
+    const distanceInDegrees = 0.045;
+    const angle = Math.random() * 2 * Math.PI; // Random direction
+    
+    const pickup = {
+      latitude: baseLat,
+      longitude: baseLng,
+    };
+    
+    const dropoff = {
+      latitude: baseLat + distanceInDegrees * Math.cos(angle),
+      longitude: baseLng + distanceInDegrees * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180),
+    };
+    
+    return { pickup, dropoff };
+  };
+
+  // Validate coordinates
+  const isValidCoordinate = (coord) => {
+    if (!coord) return false;
+    const lat = coord.latitude;
+    const lng = coord.longitude;
+    return (
+      lat !== undefined &&
+      lng !== undefined &&
+      lat !== null &&
+      lng !== null &&
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      !isNaN(lat) &&
+      !isNaN(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180 &&
+      !(lat === 0 && lng === 0) &&
+      !(lat === 90 && lng === 180)
+    );
+  };
+
+  // Get coordinates for map
+  const mapCoordinates = useMemo(() => {
+    const pickupCoord = pickUpLocation?.coordinates;
+    const dropoffCoord = dropOffLocation;
+    
+    const pickupValid = isValidCoordinate(pickupCoord);
+    const dropoffValid = isValidCoordinate(dropoffCoord);
+    
+    if (!pickupValid || !dropoffValid) {
+      // Generate UK coordinates if invalid
+      const ukCoords = generateUKCoordinates();
+      return {
+        pickup: pickupValid ? pickupCoord : ukCoords.pickup,
+        dropoff: dropoffValid ? dropoffCoord : ukCoords.dropoff,
+      };
+    }
+    
+    return {
+      pickup: pickupCoord,
+      dropoff: dropoffCoord,
+    };
+  }, [pickUpLocation, dropOffLocation]);
+
+  // Calculate map region to fit both markers
+  const mapRegion = useMemo(() => {
+    const { pickup, dropoff } = mapCoordinates;
+    const latitudes = [pickup.latitude, dropoff.latitude];
+    const longitudes = [pickup.longitude, dropoff.longitude];
+    
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLng = Math.min(...longitudes);
+    const maxLng = Math.max(...longitudes);
+    
+    const latDelta = maxLat - minLat;
+    const lngDelta = maxLng - minLng;
+    
+    // Add padding (20% on each side)
+    const padding = 0.2;
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: Math.max(latDelta * (1 + padding * 2), 0.01),
+      longitudeDelta: Math.max(lngDelta * (1 + padding * 2), 0.01),
+    };
+  }, [mapCoordinates]);
+
+  // Fit map to show both markers after layout
+  useEffect(() => {
+    if (mapRef.current && mapCoordinates.pickup && mapCoordinates.dropoff) {
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(
+          [mapCoordinates.pickup, mapCoordinates.dropoff],
+          {
+            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+            animated: true,
+          }
+        );
+      }, 500);
+    }
+  }, [mapCoordinates]);
   return (
     <SafeAreaView style={styles.container}>
       <SecondHeader onPress={() => navigation.goBack()} title="Job Detail" />
@@ -59,19 +174,48 @@ const JobDetail = ({ navigation, route }) => {
 
         {/* Site Map */}
         <Text style={styles.sectionTitle}>Site Map</Text>
-        {siteMapUrl ? (
-          <Image
-            source={{ uri: siteMapUrl }}
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            // provider={PROVIDER_GOOGLE}
             style={styles.siteMap}
-            resizeMode="cover"
-          />
-        ) : (
-          <Image
-            source={appImages.jobMap}
-            style={styles.siteMap}
-            resizeMode="cover"
-          />
-        )}
+            initialRegion={mapRegion}
+            mapType="standard"
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            onLayout={() => {
+              if (mapRef.current && mapCoordinates.pickup && mapCoordinates.dropoff) {
+                setTimeout(() => {
+                  mapRef.current?.fitToCoordinates(
+                    [mapCoordinates.pickup, mapCoordinates.dropoff],
+                    {
+                      edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                      animated: true,
+                    }
+                  );
+                }, 500);
+              }
+            }}
+          >
+            {mapCoordinates.pickup && (
+              <Marker
+                coordinate={mapCoordinates.pickup}
+                title="Pickup Location"
+                description={pickUpLocation?.address || "Pickup Location"}
+                pinColor="green"
+              />
+            )}
+            {mapCoordinates.dropoff && (
+              <Marker
+                coordinate={mapCoordinates.dropoff}
+                title="Dropoff Location"
+                description={task?.dropOffLocation?.address || "Dropoff Location"}
+                pinColor="red"
+              />
+            )}
+          </MapView>
+        </View>
 
         {/* Date & Time */}
         <Text style={styles.sectionTitle}>Date & Time</Text>
@@ -181,11 +325,16 @@ const styles = StyleSheet.create({
     color: colors.black,
     marginVertical: heightPixel(10),
   },
-  siteMap: {
+  mapContainer: {
     width: "100%",
     height: heightPixel(160),
     borderRadius: widthPixel(8),
     marginBottom: heightPixel(16),
+    overflow: "hidden",
+  },
+  siteMap: {
+    width: "100%",
+    height: "100%",
   },
   rowBox: {
     flexDirection: "row",
