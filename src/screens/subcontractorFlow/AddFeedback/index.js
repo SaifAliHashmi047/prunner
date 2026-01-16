@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -7,7 +7,8 @@ import {
     Image,
     SafeAreaView,
     FlatList,
-    ScrollView
+    ScrollView,
+    Modal
 } from "react-native";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -17,22 +18,53 @@ import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { useSelector } from "react-redux";
 import { Image_Picker } from "../../../services/utilities/Image_Picker";
 import useCallApi from "../../../hooks/useCallApi";
+import useSite from "../../../hooks/useSite";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
 
 const AddFeedback = ({ navigation, route }) => {
     const { user } = useSelector((state) => state.user);
-    const { selectedSite } = useSelector((state) => state.site);
+    const { getSites } = useSite();
 
     const [title, setTitle] = useState("");
     const [details, setDetails] = useState("");
     const [pictures, setPictures] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [sites, setSites] = useState([]);
+    const [selectedSiteId, setSelectedSiteId] = useState("");
+    const [selectedSiteName, setSelectedSiteName] = useState("");
+    const [showSiteModal, setShowSiteModal] = useState(false);
+    const [loadingSites, setLoadingSites] = useState(false);
     const { callApi, uploadFile } = useCallApi();
 
     // Default rating to 5 as per request example "rating": 5
     // Unless UI is added for star rating, we keep it internal or fixed.
     const [rating, setRating] = useState(5);
+
+    // Fetch sites on mount
+    useEffect(() => {
+        fetchSites();
+    }, []);
+
+    const fetchSites = async () => {
+        try {
+            setLoadingSites(true);
+            const sitesList = await getSites();
+            if (sitesList && sitesList.length > 0) {
+                setSites(sitesList);
+            }
+        } catch (error) {
+            console.log("Error fetching sites", error);
+        } finally {
+            setLoadingSites(false);
+        }
+    };
+
+    const handleSelectSite = (site) => {
+        setSelectedSiteId(site._id);
+        setSelectedSiteName(site.name || "Select Site");
+        setShowSiteModal(false);
+    };
 
     const handleRemovePicture = (id) => {
         setPictures(pictures.filter((pic) => pic.id !== id));
@@ -65,7 +97,7 @@ const AddFeedback = ({ navigation, route }) => {
             toastError({ text: "Please enter details" });
             return;
         }
-        if (!selectedSite?._id) {
+        if (!selectedSiteId) {
             toastError({ text: "Please select a site" });
             return;
         }
@@ -92,7 +124,7 @@ const AddFeedback = ({ navigation, route }) => {
                 title: title,
                 description: details,
                 rating: rating,
-                siteId: selectedSite?._id,
+                siteId: selectedSiteId,
                 media: uploadedUrls
             };
 
@@ -129,11 +161,24 @@ const AddFeedback = ({ navigation, route }) => {
                     </Text>
 
                     {/* Input fields */}
+                    {/* Site Selection Dropdown */}
+                    <Text style={styles.sectionTitle}>Select Site</Text>
+                    <TouchableOpacity
+                        style={styles.dropdown}
+                        onPress={() => setShowSiteModal(true)}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.dropdownText, !selectedSiteName && styles.placeholder]}>
+                            {selectedSiteName || "Select a site"}
+                        </Text>
+                        <Text style={styles.dropdownArrow}>▼</Text>
+                    </TouchableOpacity>
+
                     <AppTextInput
                         placeholder="Feedback title"
                         value={title}
                         onChangeText={setTitle}
-                        style={{ marginBottom: heightPixel(14) }}
+                        style={{ marginBottom: heightPixel(14), marginTop: heightPixel(14) }}
                     />
 
                     <AppTextInput
@@ -203,6 +248,59 @@ const AddFeedback = ({ navigation, route }) => {
 
             </View>
             <Loader isVisible={loading} />
+
+            {/* Site Selection Modal */}
+            <Modal
+                visible={showSiteModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowSiteModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Site</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowSiteModal(false)}
+                                style={styles.modalCloseButton}
+                            >
+                                <Text style={styles.modalCloseText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {loadingSites ? (
+                            <View style={styles.modalLoading}>
+                                <Text style={styles.modalLoadingText}>Loading sites...</Text>
+                            </View>
+                        ) : (
+                            <FlatList
+                                data={sites}
+                                keyExtractor={(item) => item._id}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.siteItem,
+                                            selectedSiteId === item._id && styles.siteItemSelected
+                                        ]}
+                                        onPress={() => handleSelectSite(item)}
+                                    >
+                                        <Text style={[
+                                            styles.siteItemText,
+                                            selectedSiteId === item._id && styles.siteItemTextSelected
+                                        ]}>
+                                            {item.name || "Unnamed Site"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                                ListEmptyComponent={
+                                    <View style={styles.modalEmpty}>
+                                        <Text style={styles.modalEmptyText}>No sites available</Text>
+                                    </View>
+                                }
+                            />
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -213,7 +311,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.white,
-        // paddingHorizontal: widthPixel(20),
+        paddingHorizontal: widthPixel(15),
     },
     description: {
         fontSize: fontPixel(14),
@@ -298,5 +396,103 @@ const styles = StyleSheet.create({
     },
     star: {
         fontSize: fontPixel(32),
+    },
+    dropdown: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderWidth: 1,
+        borderColor: colors.grey300,
+        borderRadius: widthPixel(8),
+        paddingHorizontal: widthPixel(15),
+        paddingVertical: heightPixel(14),
+        backgroundColor: colors.white,
+        marginBottom: heightPixel(14),
+    },
+    dropdownText: {
+        flex: 1,
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.black,
+    },
+    placeholder: {
+        color: colors.grey300,
+    },
+    dropdownArrow: {
+        fontSize: fontPixel(12),
+        color: colors.grey300,
+        marginLeft: widthPixel(10),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContainer: {
+        width: "85%",
+        maxHeight: "70%",
+        backgroundColor: colors.white,
+        borderRadius: widthPixel(12),
+        overflow: "hidden",
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: widthPixel(20),
+        borderBottomWidth: 1,
+        borderBottomColor: colors.grey300,
+    },
+    modalTitle: {
+        fontSize: fontPixel(18),
+        fontFamily: fonts.NunitoSemiBold,
+        color: colors.black,
+    },
+    modalCloseButton: {
+        width: widthPixel(30),
+        height: widthPixel(30),
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalCloseText: {
+        fontSize: fontPixel(20),
+        color: colors.grey300,
+        fontWeight: "bold",
+    },
+    modalLoading: {
+        padding: widthPixel(40),
+        alignItems: "center",
+    },
+    modalLoadingText: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
+    },
+    siteItem: {
+        padding: widthPixel(15),
+        borderBottomWidth: 1,
+        borderBottomColor: colors.grey300,
+    },
+    siteItemSelected: {
+        backgroundColor: "#F7F1FF",
+    },
+    siteItemText: {
+        fontSize: fontPixel(15),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.black,
+    },
+    siteItemTextSelected: {
+        fontFamily: fonts.NunitoSemiBold,
+        color: colors.themeColor,
+    },
+    modalEmpty: {
+        padding: widthPixel(40),
+        alignItems: "center",
+    },
+    modalEmptyText: {
+        fontSize: fontPixel(14),
+        fontFamily: fonts.NunitoRegular,
+        color: colors.grey300,
     },
 });

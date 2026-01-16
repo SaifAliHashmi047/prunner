@@ -9,7 +9,7 @@ import {
   Text,
 } from "react-native";
 
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, {   Marker, MarkerAnimated, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import Geolocation from "@react-native-community/geolocation";
 import { colors } from "../../services/utilities/colors";
@@ -40,7 +40,42 @@ interface Site {
 interface LocationOnMapProps {
   onSiteSelect?: (site: Site) => void;
 }
- 
+// Hardcoded sites for testing - 3 distinct markers in Lahore area
+const sites = [
+  {
+    _id: "1",
+    name: "Site 1",
+    location: {
+      address: "Lahore Site 1",
+      coordinates: {
+        latitude: 31.5204,
+        longitude: 74.3587,
+      },
+    },
+  },
+  {
+    _id: "2",
+    name: "Site 2",
+    location: {
+      address: "Lahore Site 2",
+      coordinates: {
+        latitude: 31.5304,
+        longitude: 74.3687,
+      },
+    },
+  },
+  {
+    _id: "3",
+    name: "Site 3",
+    location: {
+      address: "Lahore Site 3",
+      coordinates: {
+        latitude: 31.5104,
+        longitude: 74.3487,
+      },
+    },
+  },
+];
 const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
@@ -52,7 +87,7 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
   const [isLoading, setLoading] = useState(true);
   const mapRef = useRef<MapView>(null);
   const {
-    sites,
+    // sites,
     loading: sitesLoading,
     fetchSites,
   } = useSite();
@@ -61,10 +96,11 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
     fetchSites(1);
   }, []);
 
-  // Update loading state when sites are fetched
+  // Update loading state when sites are available
   useEffect(() => {
-    if (!sitesLoading && sites !== undefined) {
-      // Sites have been fetched, we can show the map
+    // Since we're using hardcoded sites, we can show the map immediately
+    // But still wait a bit for any async operations
+    if (!sitesLoading) {
       setLoading(false);
       // Try to get location in background (non-blocking)
       if (isFocused) {
@@ -73,21 +109,37 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
         }, 100);
       }
     }
-  }, [sitesLoading, sites, isFocused]);
+  }, [sitesLoading, isFocused]);
 
   // Filter sites with valid coordinates
   const validSites = useMemo(() => {
-    if (!sites || sites.length === 0) return [];
+    if (!sites || sites.length === 0) {
+      console.log("[SitesOnMapView] No sites available");
+      return [];
+    }
     const filtered = sites.filter(
-      (site: Site) =>
-        site?.location?.coordinates?.latitude &&
-        site?.location?.coordinates?.longitude &&
-        typeof site.location.coordinates.latitude === "number" &&
-        typeof site.location.coordinates.longitude === "number" &&
-        site.location.coordinates.latitude !== 0 &&
-        site.location.coordinates.longitude !== 0
+      (site: Site) => {
+        const lat = site?.location?.coordinates?.latitude;
+        const lng = site?.location?.coordinates?.longitude;
+        const isValid =
+          lat !== undefined &&
+          lng !== undefined &&
+          lat !== null &&
+          lng !== null &&
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng) &&
+          lat !== 0 &&
+          lng !== 0;
+        if (!isValid) {
+          console.warn(`[SitesOnMapView] Invalid site coordinates:`, site);
+        }
+        return isValid;
+      }
     );
-    console.log("[SitesOnMapView] Valid sites count:", filtered.length);
+    console.log("[SitesOnMapView] Valid sites count:", filtered.length, "out of", sites.length);
+    console.log("[SitesOnMapView] Valid sites:", filtered.map(s => ({ id: s._id, name: s.name, lat: s.location?.coordinates?.latitude, lng: s.location?.coordinates?.longitude })));
     return filtered;
   }, [sites]);
 
@@ -198,46 +250,57 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
       {isLoading || sitesLoading ? (
         <Loader isVisible={isLoading || sitesLoading} />
       ) : (
+  
+
+ 
         <View style={styles.wrapper}>
           <MapView
             provider={PROVIDER_GOOGLE}
-
             ref={mapRef}
             style={StyleSheet.absoluteFill}
             initialRegion={mapRegion}
+            loadingEnabled={true}
+            loadingIndicatorColor="#666666"
+            loadingBackgroundColor="#eeeeee"
+            moveOnMarkerPress={false}
             showsUserLocation={!!currentLocation}
             showsMyLocationButton={false}
             showsCompass={true}
             mapType="standard"
             onLayout={() => {
-              // Fit to coordinates when map layout is ready
-              // This is the recommended approach per react-native-maps docs
+              console.log("[SitesOnMapView] Map layout, validSites:", validSites.length);
               if (validSites.length > 0 && mapRef.current) {
-                const coordinates = validSites.map((site: Site) => ({
-                  latitude: site.location!.coordinates!.latitude,
-                  longitude: site.location!.coordinates!.longitude,
-                }));
-
-                setTimeout(() => {
-                  mapRef.current?.fitToCoordinates(coordinates, {
-                    edgePadding: {
-                      top: 50,
-                      right: 50,
-                      bottom: 50,
-                      left: 50,
-                    },
-                    animated: true,
-                  });
-                }, 500);
+                const coordinates = validSites
+                  .map((site: Site) => {
+                    const lat = site.location?.coordinates?.latitude;
+                    const lng = site.location?.coordinates?.longitude;
+                    if (typeof lat === "number" && typeof lng === "number" && !isNaN(lat) && !isNaN(lng)) {
+                      return { latitude: lat, longitude: lng };
+                    }
+                    return null;
+                  })
+                  .filter((coord): coord is { latitude: number; longitude: number } => coord !== null);
+                
+                if (coordinates.length > 0) {
+                  setTimeout(() => {
+                    mapRef.current?.fitToCoordinates(coordinates, {
+                      edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                      animated: true,
+                    });
+                  }, 500);
+                }
               }
             }}
           >
-            {/* Render markers for all sites */}
             {validSites.map((site: Site) => {
               const lat = Number(site.location?.coordinates?.latitude);
               const lng = Number(site.location?.coordinates?.longitude);
-
-              if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+              
+              // Validate coordinates are valid numbers
+              if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+                console.warn(`[SitesOnMapView] Invalid coordinates for site ${site._id}:`, { lat, lng });
+                return null;
+              }
 
               return (
                 <Marker
@@ -247,30 +310,15 @@ const SitesOnMapView: React.FC<LocationOnMapProps> = ({ onSiteSelect }) => {
                   title={site.name}
                   description={site.location?.address || ""}
                   onPress={() => handleMarkerPress(site)}
+                  image={appIcons.markerIcon}
                   anchor={{ x: 0.5, y: 1 }}
                 />
               );
             })}
           </MapView>
-
-          {/* Show count of sites */}
-          {validSites.length > 0 && (
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoText}>
-                {validSites.length} {validSites.length === 1 ? "Site" : "Sites"}
-              </Text>
-            </View>
-          )}
-
-          {/* Empty state */}
-          {validSites.length === 0 && !sitesLoading && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                No sites with valid locations
-              </Text>
-            </View>
-          )}
         </View>
+ 
+
       )}
     </View>
   );

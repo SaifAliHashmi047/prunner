@@ -61,7 +61,7 @@ const useNavigateUser = (options = {}) => {
         if (role === "subConstructor" || role === "forklift") {
           // Check if profile is complete
           if (!image || !name) {
-            navigation.navigate(routes.auth, {
+            navigation.replace(routes.auth, {
               screen: routes.createProfile,
             });
             return;
@@ -69,21 +69,21 @@ const useNavigateUser = (options = {}) => {
 
           // Check if induction number is provided
           if (!inductionNumber) {
-            navigation.navigate(routes.auth, {
+            navigation.replace(routes.auth, {
               screen: routes.scanQr,
             });
             return;
           }
 
           // Check if verification is pending
-        //   if (verificationStatus === "pending") {
-        //     navigation.navigate(routes.auth, {
-        //       screen: routes.verificationProcess,
-        //     });
-        //     return;
-        //   }
+          if (verificationStatus === "pending" && !__DEV__) {
+            navigation.replace(routes.auth, {
+              screen: routes.verificationProcess,
+            });
+            return;
+          }
 
-          // Navigate to appropriate flow based on role
+          // replace to appropriate flow based on role
           if (role === "forklift") {
         
             // Check for missing license details
@@ -100,19 +100,19 @@ const useNavigateUser = (options = {}) => {
               !userData?.vehicleInfo?.registrationCardImage;
 
             if (isLicenseIncomplete) {
-              navigation.navigate(routes.auth, {
+              navigation.replace(routes.auth, {
                 screen: routes.uploadLicense,
               });
               return;
             }
             if (isVehicleIncomplete) {
-              navigation.navigate(routes.auth, {
+              navigation.replace(routes.auth, {
                 screen: routes.tellAboutVehicle,
               });
               return;
             }
             if (isRegistrationCardMissing) {
-              navigation.navigate(routes.auth, {
+              navigation.replace(routes.auth, {
                 screen: routes.uploadVehicleRegistration,
               });
               return;
@@ -125,7 +125,7 @@ const useNavigateUser = (options = {}) => {
           }
         } else {
           // No role or invalid role, navigate to account type selection
-          navigation.navigate(routes.auth, {
+          navigation.replace(routes.auth, {
             screen: routes.accountType,
           });
         }
