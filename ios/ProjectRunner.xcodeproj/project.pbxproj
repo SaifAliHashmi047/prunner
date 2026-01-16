@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0DD6A5D35AF442428F11ED90 /* Nunito-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F25676CA00346E4848FD2F1 /* Nunito-Regular.ttf */; };
-		0F4815B3D0D451B4539E1863 /* libPods-ProjectRunner.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 429990B54604B96A520E1800 /* libPods-ProjectRunner.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		37C4741F92A5449389D4AF8D /* Nunito-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 79FA5A0352BE48BCB23E84B3 /* Nunito-ExtraBold.ttf */; };
 		4A2C11570FB044328FF537E6 /* Nunito-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0414AB3E108848AFB940FB62 /* Nunito-Bold.ttf */; };
@@ -282,23 +281,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ProjectRunner/Pods-ProjectRunner-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		B24B0CFDB2395CF9A176170A /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ProjectRunner/Pods-ProjectRunner-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ProjectRunner/Pods-ProjectRunner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ProjectRunner/Pods-ProjectRunner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
