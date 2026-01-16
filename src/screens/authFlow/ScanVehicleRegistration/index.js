@@ -78,7 +78,9 @@ const ScanVehicleRegistration = ({ navigation }) => {
     }
 
     try {
-      const { scannedImages } = await DocumentScanner.scanDocument();
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        croppedImageQuality: 30,
+      });
       
       if (scannedImages && scannedImages.length > 0) {
         const scannedImage = scannedImages[0];
