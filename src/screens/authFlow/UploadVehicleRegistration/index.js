@@ -103,7 +103,8 @@ const UploadVehicleRegistration = ({ navigation, route }) => {
             dispatch(setUserData(response.data.user));
           }
           toastSuccess({ text: response?.message || "Registration card uploaded successfully" });
-          navigation.navigate(routes.verificationProcess);
+          navigation.replace(routes.forkliftFlow);
+          // navigation.navigate(routes.verificationProcess);
         } else {
           toastError({ text: response?.message || "Failed to upload registration card" });
         }

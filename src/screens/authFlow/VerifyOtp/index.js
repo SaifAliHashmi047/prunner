@@ -166,7 +166,7 @@ const VerifyOTP = ({ navigation }) => {
         setTimer((prev) => prev - 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(interval); 
   }, [timer]);
 
   return (
