@@ -6,6 +6,7 @@ import {
   Image,
   SafeAreaView,
   ScrollView,
+  Platform,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { SecondHeader, AppButton } from "../../../components";
@@ -177,7 +178,7 @@ const JobDetail = ({ navigation, route }) => {
         <View style={styles.mapContainer}>
           <MapView
             ref={mapRef}
-            // provider={PROVIDER_GOOGLE}
+            provider={ Platform.OS === "android" ? PROVIDER_GOOGLE : null}
             style={styles.siteMap}
             initialRegion={mapRegion}
             mapType="standard"

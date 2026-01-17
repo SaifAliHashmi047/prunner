@@ -259,7 +259,7 @@ const fetchSites = async () => {
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          // provider={PROVIDER_GOOGLE}
+          provider={ Platform.OS === "android" ? PROVIDER_GOOGLE : null}
           style={{ flex: 1 }}
           initialRegion={defaultRegion}
           showsUserLocation={true}
