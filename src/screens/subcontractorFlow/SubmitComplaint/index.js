@@ -20,8 +20,10 @@ import { Loader } from "../../../components/Loader";
 import useCallApi from "../../../hooks/useCallApi";
 import useComplaints from "../../../hooks/useComplaints";
 import { toastSuccess, toastError } from "../../../services/utilities/toast/toast";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 const SubmitComplaint = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const [title, setTitle] = useState("");
     const [details, setDetails] = useState("");
     const [media, setMedia] = useState([]);
@@ -70,10 +72,12 @@ const SubmitComplaint = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container,{
+            paddingTop: insets.top+0
+        }]}>
             <SecondHeader onPress={() => navigation.goBack()} title="Submit Complaint" />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Description */}
                 <Text style={styles.description}>
                     Please describe your issue below and attach any relevant photos.
@@ -107,7 +111,7 @@ const SubmitComplaint = ({ navigation }) => {
                     onPress={handleSubmit}
                     disabled={submitting}
                 />
-            </ScrollView>
+            </KeyboardAwareScrollView>
             <Loader isVisible={submitting} />
         </SafeAreaView>
     );

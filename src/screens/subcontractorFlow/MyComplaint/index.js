@@ -20,6 +20,7 @@ import useComplaints from "../../../hooks/useComplaints";
 import { formateDate } from "../../../services/utilities/helper";
 import { Loader } from "../../../components/Loader";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MyComplaint = ({ navigation }) => {
   const {
@@ -32,7 +33,7 @@ const MyComplaint = ({ navigation }) => {
     fetchComplaints,
   } = useComplaints();
   const onEndReachedCalledDuringMomentum = useRef(true);
-
+  const insets = useSafeAreaInsets();
   useFocusEffect(
     useCallback(() => {
       fetchComplaints(1);
@@ -51,7 +52,9 @@ const MyComplaint = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top+0
+    }]}>
       <View style={styles.content}>
         <SecondHeader
           onPress={() => navigation.goBack()}

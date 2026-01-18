@@ -26,6 +26,7 @@ import { useDispatch } from "react-redux";
 import { setUserData } from "../../../services/store/slices/userSlice";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAppSelector } from "../../../services/store/hooks";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const CreateProfile = ({ navigation }) => {
   const { callApi, uploadFile } = useCallApi();
@@ -160,9 +161,11 @@ const CreateProfile = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid
+        extraScrollHeight={20}
       >
         {/* Header */}
         <AppHeader
@@ -222,7 +225,7 @@ const CreateProfile = ({ navigation }) => {
             disabled={loading}
           />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
       <Loader isVisible={loading} />
     </SafeAreaView>
   );

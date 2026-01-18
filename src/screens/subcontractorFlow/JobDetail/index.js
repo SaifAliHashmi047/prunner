@@ -17,10 +17,10 @@ import { appIcons, appImages } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
 import { formateDate } from "../../../services/utilities/helper";
 import SafeImageBackground from "../../../components/SafeImageBackground";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 const JobDetail = ({ navigation, route }) => {
   const { task } = route.params || {};
-
+  const insets = useSafeAreaInsets();
   if (!task) {
     return (
       <SafeAreaView style={styles.container}>
@@ -154,7 +154,9 @@ const JobDetail = ({ navigation, route }) => {
     }
   }, [mapCoordinates]);
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top
+    }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Job Detail" />
 
       <ScrollView

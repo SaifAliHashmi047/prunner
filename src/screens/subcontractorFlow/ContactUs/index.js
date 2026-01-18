@@ -13,8 +13,10 @@ import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
 import { appIcons } from "../../../services/utilities/assets"; // assume you have mail, phone, web icons
 import { fonts } from "../../../services/utilities/fonts";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ContactUs = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const contactOptions = [
     {
       id: 1,
@@ -40,7 +42,9 @@ const ContactUs = ({ navigation }) => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, {
+      paddingTop: insets.top
+    }]}>
       {/* Header */}
       <View style={{
         flex: 1,

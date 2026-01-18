@@ -9,11 +9,12 @@ import { routes } from "../../../services/constant";
 import { Loader } from "../../../components/Loader";
 import { appIcons } from "../../../services/utilities/assets";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SelectInventoryForTask = ({ navigation, route }) => {
   const { previousData } = route.params || {};
   console.log("previousData", previousData);
-
+  const insets = useSafeAreaInsets();
   const {
     inventory,
     loading,
@@ -115,14 +116,18 @@ const SelectInventoryForTask = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top
+    }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Inventory" />
 
       <View style={{ flex: 1, paddingHorizontal: widthPixel(20) }}>
 
         {/* Custom Section */}
         <TouchableOpacity
-          style={[styles.card, isCustomSelected && styles.activeCard]}
+          style={[styles.card, isCustomSelected && styles.activeCard,{
+            marginTop:heightPixel(10)
+          }]}
           onPress={toggleCustom}
         >
           <View style={styles.customHeaderRow}>
@@ -198,11 +203,7 @@ const styles = StyleSheet.create({
     padding: widthPixel(16),
     borderRadius: widthPixel(12),
     marginBottom: heightPixel(12),
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2
+ 
   },
   activeCard: {
     borderWidth: 1,

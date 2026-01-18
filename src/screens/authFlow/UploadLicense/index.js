@@ -15,6 +15,7 @@ import {
   Modal,
   Dimensions,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SecondHeader, AppButton, ForkLiftHeader, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
@@ -510,11 +511,16 @@ const UploadLicense = ({ navigation }) => {
     <SafeAreaView style={[styles.container,{
       paddingTop:insets.top
     }]}>
-      {/* Header */}
-      <View style={{
-        flex: 1,
-        paddingHorizontal: widthPixel(20),
-      }}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 100 : 150}
+        keyboardShouldPersistTaps="handled"
+        extraHeight={Platform.OS === 'android' ? 150 : 100}
+      >
         {/* Title & Subtitle */}
         <ForkLiftHeader 
           title="Upload your Driving License"
@@ -819,7 +825,7 @@ const UploadLicense = ({ navigation }) => {
             disabled={(!file && !frontImage) || loading || uploading}
           />
         </View>
-      </View>
+      </KeyboardAwareScrollView>
       <Loader isVisible={loading || uploading} />
     </SafeAreaView>
   );

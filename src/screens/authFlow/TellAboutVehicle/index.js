@@ -10,8 +10,10 @@ import {
     Alert,
     FlatList,
     Modal,
+    Platform,
 } from "react-native";
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { ForkLiftHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -312,7 +314,16 @@ const TellAboutVehicle = ({ navigation }) => {
                     onPress={() => navigation.goBack()}
                 />
 
-                <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ paddingBottom: heightPixel(20) }}
+                    showsVerticalScrollIndicator={false}
+                    enableOnAndroid={true}
+                    enableAutomaticScroll={true}
+                    extraScrollHeight={Platform.OS === 'ios' ? 100 : 150}
+                    keyboardShouldPersistTaps="handled"
+                    extraHeight={Platform.OS === 'android' ? 150 : 100}
+                >
                     {/* Input Fields */}
                     <View style={styles.inputContainer}>
                         <AppTextInput
@@ -573,18 +584,18 @@ const TellAboutVehicle = ({ navigation }) => {
                             />
                         </View>
                     </View>
-                </ScrollView>
 
-                {/* Next Button */}
-                <View style={styles.buttonContainer}>
-                    <AppButton
-                        title={loading || uploading ? "SUBMITTING..." : "NEXT"}
-                        onPress={handleNext}
-                        style={{ backgroundColor: colors.themeColor }}
-                        textStyle={{ color: colors.white }}
-                        disabled={loading || uploading}
-                    />
-                </View>
+                    {/* Next Button */}
+                    <View style={styles.buttonContainer}>
+                        <AppButton
+                            title={loading || uploading ? "SUBMITTING..." : "NEXT"}
+                            onPress={handleNext}
+                            style={{ backgroundColor: colors.themeColor }}
+                            textStyle={{ color: colors.white }}
+                            disabled={loading || uploading}
+                        />
+                    </View>
+                </KeyboardAwareScrollView>
             </View>
             <Loader isVisible={loading || uploading} />
         </SafeAreaView>

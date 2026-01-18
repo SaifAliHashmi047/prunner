@@ -130,6 +130,9 @@ const Home = () => {
       data={filteredData}
       keyExtractor={(item) =>   item?._id}
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        padding: heightPixel(3),
+      }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

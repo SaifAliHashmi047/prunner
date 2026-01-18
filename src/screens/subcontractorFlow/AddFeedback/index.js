@@ -21,11 +21,13 @@ import useCallApi from "../../../hooks/useCallApi";
 import useSite from "../../../hooks/useSite";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AddFeedback = ({ navigation, route }) => {
     const { user } = useSelector((state) => state.user);
     const { getSites } = useSite();
-
+    const insets = useSafeAreaInsets();
     const [title, setTitle] = useState("");
     const [details, setDetails] = useState("");
     const [pictures, setPictures] = useState([]);
@@ -146,7 +148,16 @@ const AddFeedback = ({ navigation, route }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container,{
+            paddingTop: insets.top
+        }]}>
+          <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      enableOnAndroid
+      extraScrollHeight={20}
+    >
+
             <View style={{
                 flex: 1,
                 paddingTop: heightPixel(20),
@@ -246,6 +257,8 @@ const AddFeedback = ({ navigation, route }) => {
                 </View>
 
             </View>
+    </KeyboardAwareScrollView>
+
             <Loader isVisible={loading} />
 
             {/* Site Selection Modal */}
