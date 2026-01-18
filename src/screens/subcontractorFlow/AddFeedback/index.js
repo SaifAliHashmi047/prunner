@@ -162,13 +162,12 @@ const AddFeedback = ({ navigation, route }) => {
 
                     {/* Input fields */}
                     {/* Site Selection Dropdown */}
-                    <Text style={styles.sectionTitle}>Select Site</Text>
                     <TouchableOpacity
                         style={styles.dropdown}
                         onPress={() => setShowSiteModal(true)}
                         activeOpacity={0.7}
                     >
-                        <Text style={[styles.dropdownText, !selectedSiteName && styles.placeholder]}>
+                        <Text style={[styles.dropdownText, styles.placeholder]}>
                             {selectedSiteName || "Select a site"}
                         </Text>
                         <Text style={styles.dropdownArrow}>▼</Text>
@@ -327,7 +326,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: fontPixel(16),
         fontFamily: fonts.NunitoSemiBold,
-        color: colors.black,
+     color:colors.grey200,
         marginBottom: heightPixel(10),
     },
     picturesRow: {
@@ -401,26 +400,24 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        borderWidth: 1,
-        borderColor: colors.grey300,
+        backgroundColor: "#f5f5f5",
         borderRadius: widthPixel(8),
         paddingHorizontal: widthPixel(15),
         paddingVertical: heightPixel(14),
-        backgroundColor: colors.white,
         marginBottom: heightPixel(14),
     },
     dropdownText: {
         flex: 1,
         fontSize: fontPixel(14),
         fontFamily: fonts.NunitoRegular,
-        color: colors.black,
+        color: colors.gray,
     },
     placeholder: {
         color: colors.grey300,
     },
     dropdownArrow: {
         fontSize: fontPixel(12),
-        color: colors.grey300,
+        color: colors.grey200,
         marginLeft: widthPixel(10),
     },
     modalOverlay: {
@@ -442,7 +439,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: widthPixel(20),
         borderBottomWidth: 1,
-        borderBottomColor: colors.grey300,
+        borderBottomColor: colors.gray,
     },
     modalTitle: {
         fontSize: fontPixel(18),
@@ -450,14 +447,14 @@ const styles = StyleSheet.create({
         color: colors.black,
     },
     modalCloseButton: {
-        width: widthPixel(30),
-        height: widthPixel(30),
+        width: heightPixel(30),
+        height: heightPixel(30),
         justifyContent: "center",
         alignItems: "center",
     },
     modalCloseText: {
         fontSize: fontPixel(20),
-        color: colors.grey300,
+        color: colors.gray,
         fontWeight: "bold",
     },
     modalLoading: {
@@ -472,7 +469,7 @@ const styles = StyleSheet.create({
     siteItem: {
         padding: widthPixel(15),
         borderBottomWidth: 1,
-        borderBottomColor: colors.grey300,
+        borderBottomColor: colors.gray,
     },
     siteItemSelected: {
         backgroundColor: "#F7F1FF",
