@@ -20,9 +20,10 @@ import { Loader } from "../../../components/Loader";
 import useHsLogs from "../../../hooks/useHsLogs";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 const HsLog = ({ navigation }) => {
   const { user } = useSelector((state) => state.user);
+  const insets = useSafeAreaInsets();
   const {
     logs,
     loading,
@@ -73,7 +74,9 @@ const HsLog = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top+0
+    }]}>
       <View style={styles.content}>
         <SecondHeader onPress={() => navigation.goBack()} title="H&S Log" />
 

@@ -126,7 +126,7 @@ const Inventory = ({ navigation, route }) => {
         <FlatList
           data={inventory}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingBottom: heightPixel(80) }}
+          contentContainerStyle={{padding:heightPixel(3), paddingBottom: heightPixel(80) }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }

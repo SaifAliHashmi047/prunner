@@ -362,6 +362,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: widthPixel(20),
     paddingTop: heightPixel(20),
     paddingBottom: heightPixel(20),
+
   },
   ribbon: {
     backgroundColor: "#FFF3CD",

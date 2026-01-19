@@ -15,6 +15,7 @@ import { heightPixel, fontPixel, widthPixel, GOOGLE_PLACES_API_KEY } from "../..
 import { fonts } from "../../../services/utilities/fonts";
 import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const CreateTask = ({ navigation }) => {
   const [showPlotInput, setShowPlotInput] = useState(false);
@@ -48,10 +49,15 @@ const CreateTask = ({ navigation }) => {
       paddingTop: insets.top 
     }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Create Task" />
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: widthPixel(20), paddingBottom: heightPixel(20) }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={100}
+        nestedScrollEnabled={true}
       >
         <Text style={styles.subtitle}>
           Select how you want to provide the pickup location.
@@ -74,16 +80,78 @@ const CreateTask = ({ navigation }) => {
         {showPlotInput && (
           <View style={{ marginTop: heightPixel(10) }}>
             <Text style={styles.label}>Pickup Location</Text>
-         
+            <GooglePlacesAutocomplete
+              placeholder="Enter pickup location"
+              fetchDetails={true}
+              listViewDisplayed="auto"
+              onPress={(data, details = null) => {
+                if (details) {
+                  setPickupLocation({
+                    address: data.description,
+                    coordinates: {
+                      latitude: details.geometry.location.lat,
+                      longitude: details.geometry.location.lng,
+                    },
+                  });
+                }
+              }}
+              query={{
+                key: GOOGLE_PLACES_API_KEY,
+                language: "en",
+              }}
+              styles={{
+                container: styles.autocompleteContainer,
+                textInput: styles.autocompleteInput,
+                listView: styles.autocompleteList,
+                row: styles.autocompleteRow,
+                description: styles.autocompleteDescription,
+              }}
+              enablePoweredByContainer={false}
+              textInputProps={{
+                placeholderTextColor: colors.grey300,
+              }}
+              keyboardShouldPersistTaps="handled"
+            />
 
             <Text style={[styles.label, { marginTop: heightPixel(20) }]}>
               Dropoff Location
             </Text>
-           
+            <GooglePlacesAutocomplete
+              placeholder="Enter dropoff location"
+              fetchDetails={true}
+              listViewDisplayed="auto"
+              onPress={(data, details = null) => {
+                if (details) {
+                  setDropoffLocation({
+                    address: data.description,
+                    coordinates: {
+                      latitude: details.geometry.location.lat,
+                      longitude: details.geometry.location.lng,
+                    },
+                  });
+                }
+              }}
+              query={{
+                key: GOOGLE_PLACES_API_KEY,
+                language: "en",
+              }}
+              styles={{
+                container: styles.autocompleteContainer,
+                textInput: styles.autocompleteInput,
+                listView: styles.autocompleteList,
+                row: styles.autocompleteRow,
+                description: styles.autocompleteDescription,
+              }}
+              enablePoweredByContainer={false}
+              textInputProps={{
+                placeholderTextColor: colors.grey300,
+              }}
+              keyboardShouldPersistTaps="handled"
+            />
           </View>
         )}
 
-        <View style={{ flex: 1, justifyContent: "flex-end", marginBottom: heightPixel(20) }}>
+        <View style={{ marginTop: heightPixel(30) }}>
           <AppButton
             title="NEXT"
             style={{ backgroundColor: colors.themeColor }}
@@ -91,7 +159,7 @@ const CreateTask = ({ navigation }) => {
             onPress={handleNext}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
@@ -156,9 +224,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: widthPixel(8),
     marginTop: heightPixel(4),
-    maxHeight: heightPixel(200),
+    maxHeight: heightPixel(150),
     borderWidth: 1,
     borderColor: "#eee",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   autocompleteRow: {
     paddingVertical: heightPixel(12),

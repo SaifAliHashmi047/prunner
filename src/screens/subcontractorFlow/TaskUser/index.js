@@ -22,10 +22,11 @@ import {
   toastError,
 } from "../../../services/utilities/toast/toast";
 import useTasks from "../../../hooks/useTasks";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TaskUser = ({ navigation, route }) => {
   const { previousData, selectedInventory } = route.params || {};
-
+  const insets = useSafeAreaInsets();
   // User Hook
   const {
     users,
@@ -115,7 +116,9 @@ const TaskUser = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top
+    }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Select User" />
       <View style={{ flex: 1, paddingHorizontal: widthPixel(20) }}>
         <Text style={styles.subtitle}>Assign this task to a user.</Text>

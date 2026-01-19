@@ -6,6 +6,7 @@ import { heightPixel, widthPixel, fontPixel } from '../../../services/constant';
 import useCallApi from '../../../hooks/useCallApi';
 import { toastError, toastSuccess } from '../../../services/utilities/toast/toast';
 import { Loader } from '../../../components/Loader';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const CreateWorkPack = ({ navigation }) => {
     const [workPackTitle, setWorkPackTitle] = useState("");
@@ -46,10 +47,12 @@ const CreateWorkPack = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
+            <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      enableOnAndroid
+      extraScrollHeight={20}
+    >
                 <SecondHeader
                     title="Create Work Pack"
                     onPress={() => navigation.goBack()}
@@ -87,7 +90,7 @@ const CreateWorkPack = ({ navigation }) => {
                         disabled={loading}
                     />
                 </View>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
             <Loader isVisible={loading} />
         </SafeAreaView>
     );

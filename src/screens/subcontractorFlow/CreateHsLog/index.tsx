@@ -6,6 +6,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
@@ -15,8 +17,10 @@ import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
 import useHsLogs from "../../../hooks/useHsLogs";
+import useSite from "../../../hooks/useSite";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { Loader } from "../../../components/Loader";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 // Simple calendar util
 const buildMonthDays = (year: number, month: number) => {
@@ -66,6 +70,7 @@ const CreateHsLog = ({ navigation }:any) => {
   const { log, isEdit } = params || {};
 
   const { createHsLog, updateHsLog, loadingCreate, loadingUpdate, fetchHsLogs } = useHsLogs();
+  const { getSites } = useSite();
 
   // Parse date from log if editing, otherwise use today
   const getInitialDate = () => {
@@ -87,6 +92,32 @@ const CreateHsLog = ({ navigation }:any) => {
   const [title, setTitle] = useState(log?.title || "");
   const [precaution, setPrecaution] = useState(log?.precaution || "");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Site selection state
+  const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState(() => {
+    if (log && log.siteId) {
+      return log.siteId._id || log.siteId;
+    } else if (selectedSite && selectedSite._id) {
+      return selectedSite._id;
+    }
+    return "";
+  });
+  const [selectedSiteName, setSelectedSiteName] = useState(() => {
+    if (log && log.siteId) {
+      return log.siteId.name || "Site";
+    } else if (selectedSite && selectedSite.name) {
+      return selectedSite.name;
+    }
+    return "";
+  });
+  const [showSiteModal, setShowSiteModal] = useState(false);
+  const [loadingSites, setLoadingSites] = useState(false);
+
+  // Fetch sites on mount
+  useEffect(() => {
+    fetchSites();
+  }, []);
 
   // Update form when log changes (if editing)
   useEffect(() => {
@@ -114,6 +145,26 @@ const CreateHsLog = ({ navigation }:any) => {
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const fetchSites = async () => {
+    try {
+      setLoadingSites(true);
+      const sitesList = await getSites();
+      if (sitesList && sitesList.length > 0) {
+        setSites(sitesList);
+      }
+    } catch (error) {
+      console.log("Error fetching sites", error);
+    } finally {
+      setLoadingSites(false);
+    }
+  };
+
+  const handleSelectSite = (site: any) => {
+    setSelectedSiteId(site._id);
+    setSelectedSiteName(site.name || "Select Site");
+    setShowSiteModal(false);
   };
 
   const handlePrevMonth = () => {
@@ -149,13 +200,13 @@ const CreateHsLog = ({ navigation }:any) => {
       toastError({ text: "Please select a date" });
       return;
     }
-    if (!selectedSite?._id && !log?.siteId?._id) {
-      toastError({ text: "Please select a site first" });
+    if (!selectedSiteId) {
+      toastError({ text: "Please select a site" });
       return;
     }
 
     const dateStr = getSelectedDateString();
-    const siteId = selectedSite?._id || log?.siteId?._id || log?.siteId;
+    const siteId = selectedSiteId;
 
     try {
       setSubmitting(true);
@@ -215,6 +266,12 @@ const CreateHsLog = ({ navigation }:any) => {
     <SafeAreaView
       style={[styles.container, { paddingTop: insets.top || heightPixel(10) }]}
     >
+          <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      enableOnAndroid
+      extraScrollHeight={20}
+    >
       <View style={styles.inner}>
         <SecondHeader
           onPress={() => navigation.goBack()}
@@ -229,12 +286,24 @@ const CreateHsLog = ({ navigation }:any) => {
             porttitor lectus augue
           </Text>
 
+          {/* Site Selection Dropdown */}
+          <TouchableOpacity
+            style={styles.dropdown}
+            onPress={() => setShowSiteModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.dropdownText, !selectedSiteName && styles.placeholder]}>
+              {selectedSiteName || "Select a site"}
+            </Text>
+            <Text style={styles.dropdownArrow}>▼</Text>
+          </TouchableOpacity>
+
           <AppTextInput
             placeholder="Enter title"
             value={title}
             onChangeText={setTitle}
             keyboardType="default"
-            style={{ marginTop: heightPixel(16) }}
+            style={{ marginTop: heightPixel(12) }}
           />
 
           <AppTextInput
@@ -340,7 +409,61 @@ const CreateHsLog = ({ navigation }:any) => {
           />
         </ScrollView>
       </View>
+      </KeyboardAwareScrollView>
       <Loader isVisible={submitting || loadingCreate || loadingUpdate} />
+
+      {/* Site Selection Modal */}
+      <Modal
+        visible={showSiteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSiteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Site</Text>
+              <TouchableOpacity
+                onPress={() => setShowSiteModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            {loadingSites ? (
+              <View style={styles.modalLoading}>
+                <Text style={styles.modalLoadingText}>Loading sites...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={sites}
+                keyExtractor={(item: any) => item._id}
+                renderItem={({ item }: any) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.siteItem,
+                      selectedSiteId === item._id && styles.siteItemSelected
+                    ]}
+                    onPress={() => handleSelectSite(item)}
+                  >
+                    <Text style={[
+                      styles.siteItemText,
+                      selectedSiteId === item._id && styles.siteItemTextSelected
+                    ]}>
+                      {item.name || "Unnamed Site"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <View style={styles.modalEmpty}>
+                    <Text style={styles.modalEmptyText}>No sites available</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -433,6 +556,102 @@ const styles = StyleSheet.create({
   dayTextSelected: {
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
+  },
+  dropdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f5f5f5",
+    borderRadius: widthPixel(8),
+    paddingHorizontal: widthPixel(15),
+    paddingVertical: heightPixel(14),
+    marginTop: heightPixel(16),
+  },
+  dropdownText: {
+    flex: 1,
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  placeholder: {
+    color: colors.grey300,
+  },
+  dropdownArrow: {
+    fontSize: fontPixel(12),
+    color: colors.grey200,
+    marginLeft: widthPixel(10),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "85%",
+    maxHeight: "70%",
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(12),
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: widthPixel(20),
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  modalTitle: {
+    fontSize: fontPixel(18),
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.grey300,
+  },
+  modalCloseButton: {
+    width: heightPixel(30),
+    height: heightPixel(30),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseText: {
+    fontSize: fontPixel(20),
+    color: colors.grey300,
+    fontWeight: "bold",
+  },
+  modalLoading: {
+    padding: widthPixel(40),
+    alignItems: "center",
+  },
+  modalLoadingText: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  siteItem: {
+    padding: widthPixel(15),
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  siteItemSelected: {
+    backgroundColor: "#F7F1FF",
+  },
+  siteItemText: {
+    fontSize: fontPixel(15),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
+  },
+  siteItemTextSelected: {
+    fontFamily: fonts.NunitoSemiBold,
+    color: colors.themeColor,
+  },
+  modalEmpty: {
+    padding: widthPixel(40),
+    alignItems: "center",
+  },
+  modalEmptyText: {
+    fontSize: fontPixel(14),
+    fontFamily: fonts.NunitoRegular,
+    color: colors.grey300,
   },
 });
 

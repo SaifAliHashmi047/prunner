@@ -35,12 +35,7 @@ const settingsOptions = [
     { id: 9, label: "Terms of Use", icon: appIcons.terms, route: routes.termsOfUse },
     { id: 10, label: "Logout", icon: appIcons.logout },
     { id: 11, label: "Delete Account", icon: appIcons.delete, route: routes.deleteAccount, isDeleteAccount: true },
-    {
-        id: 12,
-        label: "Upload License",
-        icon: appIcons.camera,
-        route: routes.uploadLicense,
-    }
+
 ];
 
 const Settings = ({ navigation }) => {

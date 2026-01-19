@@ -110,7 +110,7 @@ const FeedBack = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <SafeAreaView style={[styles.container, { paddingTop: insets.top+0 }]}>
             <View style={styles.content}>
                 {/* <SecondHeader onPress={() => navigation.goBack()} title="Feedback" /> */}
 
@@ -125,7 +125,7 @@ const FeedBack = ({ navigation }) => {
                     onEndReachedThreshold={0.5}
                     ListFooterComponent={renderFooter}
                     ListEmptyComponent={renderEmpty}
-                    contentContainerStyle={data.length === 0 ? { flex: 1 } : { paddingBottom: heightPixel(80) }}
+                    contentContainerStyle={data.length === 0 ? { flex: 1 } : {padding:heightPixel(3), paddingBottom: heightPixel(80) }}
                     renderItem={({ item }) => (
                         <View style={styles.itemContainer}>
                             <View style={styles.row}>

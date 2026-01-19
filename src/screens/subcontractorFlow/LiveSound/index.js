@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet,  TouchableOpacity, SafeAreaView, FlatList, ScrollView, Animated, Platform, PermissionsAndroid, Alert, Linking } from "react-native";
+import { View, Text, StyleSheet,  TouchableOpacity, SafeAreaView, FlatList, ScrollView, Animated, Platform, PermissionsAndroid, Alert, Linking, BackHandler } from "react-native";
  import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
 import { SecondHeader } from "../../../components";
 import { fonts } from "../../../services/utilities/fonts";
  import Sound from 'react-native-nitro-sound';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 const LiveSound = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const [soundLevel, setSoundLevel] = useState(0);
     const [db, setDb] = useState(0);
     const [soundStatus, setSoundStatus] = useState('Normal');
@@ -16,6 +19,22 @@ const LiveSound = ({ navigation }) => {
     const [horizontalBarsTop, setHorizontalBarsTop] = useState([]);
     const [horizontalBarsBottom, setHorizontalBarsBottom] = useState([]);
     const [hasPermission, setHasPermission] = useState(false);
+    const isRecording = useRef(false);
+
+    // Function to stop recording and clean up
+    const stopRecording = async () => {
+        try {
+            if (isRecording.current) {
+                console.log('Stopping sound recorder...');
+                Sound.removeRecordBackListener();
+                await Sound.stopRecorder();
+                isRecording.current = false;
+                console.log('Sound recorder stopped successfully');
+            }
+        } catch (error) {
+            console.error('Error stopping recorder:', error);
+        }
+    };
 
     // Function to determine sound level status based on DB value
     const getSoundStatus = (dbValue) => {
@@ -158,15 +177,20 @@ const LiveSound = ({ navigation }) => {
     // Function to start sound monitoring
     const startSoundMonitoring = async () => {
         try {
+            // Stop any existing recording first
+            await stopRecording();
+            
             // Start recorder with metering enabled for sound level monitoring
             await Sound.startRecorder(undefined, undefined, true); // meteringEnabled = true
+            isRecording.current = true;
+            console.log('Sound recorder started successfully');
             
             // Listen for recording updates which include metering data
             Sound.addRecordBackListener((e) => {
                 // currentMetering is in dB, typically ranges from -160 to 0
                 if (e.currentMetering !== undefined) {
                     const meteringDb = e.currentMetering;
-                    console.log("meteringDb===>>>", e);
+                    // console.log("meteringDb===>>>", e);
                     setDb(meteringDb);
                     
                     // Update sound status
@@ -184,6 +208,7 @@ const LiveSound = ({ navigation }) => {
             });
         } catch (error) {
             console.error('Failed to start sound monitoring:', error);
+            isRecording.current = false;
             Alert.alert(
                 "Error",
                 "Failed to start sound monitoring. Please try again or check your device settings.",
@@ -204,28 +229,59 @@ const LiveSound = ({ navigation }) => {
                 return;
             }
 
-            await startSoundMonitoring();
+            if (isMounted) {
+                await startSoundMonitoring();
+            }
         };
 
         initializeMonitoring();
         
         return () => {
             isMounted = false;
-            Sound.removeRecordBackListener();
-            Sound.stopRecorder().catch((error) => {
-                console.error('Error stopping recorder:', error);
-            });
+            console.log('Component unmounting, cleaning up...');
+            stopRecording();
         };
     }, []);
+
+    // Stop recording when screen loses focus (user navigates away)
+    useFocusEffect(
+        React.useCallback(() => {
+            // Screen is focused - recording already started in useEffect
+            console.log('Screen focused');
+            
+            return () => {
+                // Screen is unfocused (user navigated away)
+                console.log('Screen unfocused, stopping recorder...');
+                stopRecording();
+            };
+        }, [])
+    );
+
+    // Handle Android hardware back button
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', async () => {
+            console.log('Hardware back button pressed, stopping recorder...');
+            await stopRecording();
+            navigation.goBack();
+            return true; // Prevent default behavior
+        });
+
+        return () => backHandler.remove();
+    }, [navigation]);
       
 
 
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, {
+            paddingTop: insets.top
+        }]}>
             <View style={styles.content}>
                 <SecondHeader
-                    onPress={() => navigation.goBack()}
+                    onPress={async () => {
+                        await stopRecording();
+                        navigation.goBack();
+                    }}
                     title="Live Sound Level Monitoring"
                 />
 

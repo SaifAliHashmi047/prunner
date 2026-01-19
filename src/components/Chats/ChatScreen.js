@@ -72,82 +72,83 @@ export const ChatScreen = ({
     <SafeAreaView style={[styles.container,{
       paddingTop:insets.top
     }]}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
-          <Image source={appIcons.backArrow} style={styles.backIcon} />
-        </TouchableOpacity>
-        <SafeImageBackground
-          source={receiverImage ? { uri: receiverImage } : null}
-          name={receiverName || "User"}
-          style={styles.avatar}
-        />
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>{receiverName || "Chat"}</Text>
-
-          {typingUser && (
-            <Text style={styles.typingIndicator}> Typing... </Text>
-          )}
-        </View>
-      </View>
-
-      {/* MESSAGES */}
-      <FlatList
-        data={[...messages].reverse()} // Reverse for normal display (not inverted)
-        keyExtractor={(item) => item._id || item.id}
-        contentContainerStyle={{ padding: widthPixel(16) }}
-        onEndReached={loadMoreMessages}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={
-          loadingMessages && messages?.length<0 && <ActivityIndicator color={colors.themeColor} />
-        }
-        renderItem={({ item }) => {
-          const isSent = isSentMessage(item);
-          const messageTime = item.createdAt || item.timestamp || new Date();
-
-          return (
-            <View
-              style={[
-                styles.messageContainer,
-                isSent ? styles.sent : styles.received,
-              ]}
-            >
-              <Text
-                style={[styles.messageText, isSent && styles.sentMessageText]}
-              >
-                {item.content}
-              </Text>
-              <Text
-                style={[styles.messageTime, isSent && styles.sentMessageTime]}
-              >
-                {formateDate(messageTime, "hh:mm A")}
-              </Text>
-            </View>
-          );
-        }}
-        ListEmptyComponent={
-          !loadingMessages && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {isNewChat ? "Start a conversation..." : "No messages yet"}
-              </Text>
-            </View>
-          )
-        }
-      />
-
-      {/* MESSAGE INPUT */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={heightPixel(10)}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <View style={styles.inputBar}>
-          <TouchableOpacity>
-            <Image source={appIcons.camera} style={styles.icon} />
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+          >
+            <Image source={appIcons.backArrow} style={styles.backIcon} />
           </TouchableOpacity>
+          <SafeImageBackground
+            source={receiverImage ? { uri: receiverImage } : null}
+            name={receiverName || "User"}
+            style={styles.avatar}
+          />
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>{receiverName || "Chat"}</Text>
+
+            {typingUser && (
+              <Text style={styles.typingIndicator}> Typing... </Text>
+            )}
+          </View>
+        </View>
+
+        {/* MESSAGES */}
+        <FlatList
+          data={[...messages].reverse()} // Reverse for normal display (not inverted)
+          keyExtractor={(item) => item._id || item.id}
+          contentContainerStyle={{ padding: widthPixel(16), flexGrow: 1 }}
+          onEndReached={loadMoreMessages}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            loadingMessages && messages?.length<0 && <ActivityIndicator color={colors.themeColor} />
+          }
+          renderItem={({ item }) => {
+            const isSent = isSentMessage(item);
+            const messageTime = item.createdAt || item.timestamp || new Date();
+
+            return (
+              <View
+                style={[
+                  styles.messageContainer,
+                  isSent ? styles.sent : styles.received,
+                ]}
+              >
+                <Text
+                  style={[styles.messageText, isSent && styles.sentMessageText]}
+                >
+                  {item.content}
+                </Text>
+                <Text
+                  style={[styles.messageTime, isSent && styles.sentMessageTime]}
+                >
+                  {formateDate(messageTime, "hh:mm A")}
+                </Text>
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            !loadingMessages && (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {isNewChat ? "Start a conversation..." : "No messages yet"}
+                </Text>
+              </View>
+            )
+          }
+        />
+
+        {/* MESSAGE INPUT */}
+        <View style={styles.inputBar}>
+          {/* <TouchableOpacity>
+            <Image source={appIcons.camera} style={styles.icon} />
+          </TouchableOpacity> */}
           <TextInput
             style={styles.input}
             placeholder={isNewChat ? "Start a conversation..." : "Message..."}
@@ -171,19 +172,13 @@ export const ChatScreen = ({
               }
             }}
           />
-          <TouchableOpacity>
-            <Image source={appIcons.mic} style={styles.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              if (text.trim() && receiverId) {
-                sendMessage(receiverId, text.trim(), isNewChat);
-                setText("");
-              }
-            }}
-            disabled={!text.trim() || !receiverId}
-          >
-            <Image source={appIcons.gallery} style={styles.icon} />
+          <TouchableOpacity onPress={() => {
+            if (text.trim() && receiverId) {
+              sendMessage(receiverId, text.trim(), isNewChat);
+              setText("");
+            }
+          }} disabled={!text.trim() || !receiverId}>
+            <Text style={[styles.sendButtonText, (!text.trim() || !receiverId) && styles.sendButtonDisabled]}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -283,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.lightGray || colors.greyLight,
-    margin: widthPixel(10),
+    marginHorizontal: widthPixel(10),
     borderRadius: widthPixel(30),
   },
   input: {
@@ -294,8 +289,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.NunitoRegular,
   },
   icon: {
-    width: widthPixel(22),
-    height: widthPixel(22),
+    width: heightPixel(22),
+    height: heightPixel(22),
     resizeMode: "contain",
+  },
+  sendButtonText: {
+    fontSize: fontPixel(14),
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoRegular,
+  },
+  sendButtonDisabled: {
+    opacity: 0.4,
   },
 });
