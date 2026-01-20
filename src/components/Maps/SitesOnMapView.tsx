@@ -103,7 +103,7 @@ const fetchSites = async () => {
         setLoading(true);
         const sitesList = await getSites();
         if (sitesList && sitesList.length > 0) {
-          console.log("sitesList====>>", sitesList);
+          console.log("sitesList====>>999", sitesList);
             setActiveSites(sitesList);
         }
     } catch (error) {
@@ -129,38 +129,6 @@ const fetchSites = async () => {
     }
   }, [sitesLoading, isFocused]);
 
-  // Filter sites with valid coordinates
-  const validSites = useMemo(() => {
-    if (!sites || sites.length === 0) {
-      console.log("[SitesOnMapView] No sites available");
-      return [];
-    }
-    const filtered = sites.filter(
-      (site: Site) => {
-        const lat = site?.location?.coordinates?.latitude;
-        const lng = site?.location?.coordinates?.longitude;
-        const isValid =
-          lat !== undefined &&
-          lng !== undefined &&
-          lat !== null &&
-          lng !== null &&
-          typeof lat === "number" &&
-          typeof lng === "number" &&
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          lat !== 0 &&
-          lng !== 0;
-        if (!isValid) {
-          console.warn(`[SitesOnMapView] Invalid site coordinates:`, site);
-        }
-        return isValid;
-      }
-    );
-    console.log("[SitesOnMapView] Valid sites count:", filtered.length, "out of", sites.length);
-    console.log("[SitesOnMapView] Valid sites:", filtered.map(s => ({ id: s._id, name: s.name, lat: s.location?.coordinates?.latitude, lng: s.location?.coordinates?.longitude })));
-    return filtered;
-  }, [sites]);
-
   // Default to Lahore, Pakistan coordinates
   const LAHORE_DEFAULT = {
     latitude: 31.5204,
@@ -169,12 +137,70 @@ const fetchSites = async () => {
     longitudeDelta: 0.15,
   };
 
+  // Filter and normalize sites with valid coordinates
+  // Sites with invalid coordinates (90, 180) will be normalized to Lahore coordinates
+  const validSites = useMemo(() => {
+    // Use activeSites (from API) instead of hardcoded sites array
+    const sitesToProcess = activeSites && activeSites.length > 0 ? activeSites : sites;
+    
+    if (!sitesToProcess || sitesToProcess.length === 0) {
+      console.log("[SitesOnMapView] No sites available");
+      return [];
+    }
+    
+    const filtered = sitesToProcess
+      .filter((site: Site) => {
+        const lat = site?.location?.coordinates?.latitude;
+        const lng = site?.location?.coordinates?.longitude;
+        
+        // Basic validation - must have coordinates
+        return (
+          lat !== undefined &&
+          lng !== undefined &&
+          lat !== null &&
+          lng !== null &&
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng)
+        );
+      })
+      .map((site: Site) => {
+        const lat = site?.location?.coordinates?.latitude;
+        const lng = site?.location?.coordinates?.longitude;
+        
+        // Normalize invalid coordinates (90, 180) to Lahore
+        const isInvalid = (lat === 90 && lng === 180) || (lat === 0 && lng === 0);
+        
+        if (isInvalid) {
+          return {
+            ...site,
+            location: {
+              ...site.location,
+              coordinates: {
+                latitude: LAHORE_DEFAULT.latitude,
+                longitude: LAHORE_DEFAULT.longitude,
+              },
+              address: site.location?.address || `${site.name}, Lahore, Pakistan`,
+            },
+          };
+        }
+        
+        return site;
+      });
+    
+    console.log("[SitesOnMapView] Valid sites count:", filtered.length, "out of", sitesToProcess.length);
+    console.log("[SitesOnMapView] Valid sites:", filtered.map(s => ({ id: s._id, name: s.name, lat: s.location?.coordinates?.latitude, lng: s.location?.coordinates?.longitude })));
+    return filtered;
+  }, [activeSites, sites]);
+
   // Calculate region to fit all sites (plots view)
   const mapRegion = useMemo((): Region => {
     if (validSites.length === 0) { 
-      // If no valid sites, use first site from sites array or Lahore default
-      if (sites && Array.isArray(sites) && sites.length > 0) {
-        const firstSite = sites[0] as Site;
+      // If no valid sites, use first site from activeSites or hardcoded sites array or Lahore default
+      const sitesToCheck = activeSites && activeSites.length > 0 ? activeSites : sites;
+      if (sitesToCheck && Array.isArray(sitesToCheck) && sitesToCheck.length > 0) {
+        const firstSite = sitesToCheck[0] as Site;
         console.log("[SitesOnMapView] First site:", firstSite);
         if (firstSite?.location?.coordinates) {
           return {
@@ -278,12 +304,7 @@ const fetchSites = async () => {
            provider={ Platform.OS === "android" ? PROVIDER_GOOGLE : null}
             ref={mapRef}
             style={{ flex: 1 }}
-  initialRegion={{
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  }}
+            initialRegion={mapRegion}
             loadingEnabled={true}
             loadingIndicatorColor="#666666"
             loadingBackgroundColor="#eeeeee"
@@ -317,12 +338,12 @@ const fetchSites = async () => {
               }
             }}
           >
-            {activeSites.map((site: Site) => {
+            {validSites.map((site: Site) => {
               const lat = Number(site.location?.coordinates?.latitude);
               const lng = Number(site.location?.coordinates?.longitude);
               
-              // Validate coordinates are valid numbers
-              if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+              // Validate coordinates are valid numbers (should already be validated in validSites)
+              if (isNaN(lat) || isNaN(lng)) {
                 console.warn(`[SitesOnMapView] Invalid coordinates for site ${site._id}:`, { lat, lng });
                 return null;
               }
@@ -335,8 +356,8 @@ const fetchSites = async () => {
                   title={site.name}
                   description={site.location?.address || ""}
                   onPress={() => handleMarkerPress(site)}
-                  image={appIcons.markerIcon}
-                  anchor={{ x: 0.5, y: 1 }}
+                  // image={appIcons.markerIcon}
+                  // anchor={{ x: 0.5, y: 1 }}
                 />
               );
             })}

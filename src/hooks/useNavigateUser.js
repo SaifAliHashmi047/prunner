@@ -76,7 +76,7 @@ const useNavigateUser = (options = {}) => {
           }
 
           // Check if verification is pending
-          if (verificationStatus === "pending" && !__DEV__) {
+          if (verificationStatus === "pending") {
             navigation.replace(routes.auth, {
               screen: routes.verificationProcess,
             });

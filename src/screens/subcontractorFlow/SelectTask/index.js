@@ -10,7 +10,6 @@ import {
   FlatList,
   Alert,
   Modal,
-  Platform,
 } from "react-native";
 import ImagePicker from "react-native-image-crop-picker";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
@@ -21,11 +20,9 @@ import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
 import { Loader } from "../../../components/Loader";
 import useCallApi from "../../../hooks/useCallApi";
-import useSite from "../../../hooks/useSite";
 import { useSelector } from "react-redux";
 import { toastError } from "../../../services/utilities/toast/toast";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 // Calendar utility functions
 const buildMonthDays = (year, month) => {
@@ -104,54 +101,17 @@ const SelectTask = ({ navigation, route }) => {
   const [pictures, setPictures] = useState([]);
 
   const { uploadFile } = useCallApi();
-  const { getSites } = useSite();
   const [uploading, setUploading] = useState(false);
-
-  // Site selection state
-  const [sites, setSites] = useState([]);
-  const [selectedSiteId, setSelectedSiteId] = useState("");
-  const [selectedSiteName, setSelectedSiteName] = useState("");
-  const [showSiteModal, setShowSiteModal] = useState(false);
-  const [loadingSites, setLoadingSites] = useState(false);
 
   const handleRemovePicture = (uri) => {
     setPictures(pictures.filter((pic) => pic.uri !== uri));
   };
 
-  // Fetch sites on mount
-  useEffect(() => {
-    fetchSites();
-  }, []);
-
-  // Initialize selected site
   useEffect(() => {
     if (selectedSite) {
       setSiteId(selectedSite);
-      setSelectedSiteId(selectedSite._id || selectedSite);
-      setSelectedSiteName(selectedSite.name || "Site");
     }
   }, [selectedSite]);
-
-  const fetchSites = async () => {
-    try {
-      setLoadingSites(true);
-      const sitesList = await getSites();
-      if (sitesList && sitesList.length > 0) {
-        setSites(sitesList);
-      }
-    } catch (error) {
-      console.log("Error fetching sites", error);
-    } finally {
-      setLoadingSites(false);
-    }
-  };
-
-  const handleSelectSite = (site) => {
-    setSelectedSiteId(site._id);
-    setSelectedSiteName(site.name || "Select Site");
-    setSiteId(site);
-    setShowSiteModal(false);
-  };
 
   // Update calendar when scheduledDate changes externally
   useEffect(() => {
@@ -171,60 +131,22 @@ const SelectTask = ({ navigation, route }) => {
         multiple: true,
         mediaType: "photo",
         maxFiles: 5 - pictures.length,
+          compressImageQuality: 0.8,
+
       });
-
-      const MAX_SIZE = 1 * 1024 * 1024; // 1MB in bytes
-      const validImages = [];
-      const rejectedImages = [];
-
-      images.forEach((img) => {
-        const sizeInMB = (img.size / (1024 * 1024)).toFixed(2);
-        if (img.size <= MAX_SIZE) {
-          validImages.push({
-            uri: img.path,
-            type: img.mime,
-            name: img.filename || `image_${Date.now()}_${Math.random()}.jpg`,
-            size: img.size,
-          });
-        } else {
-          rejectedImages.push(sizeInMB);
-        }
-      });
-
-      if (rejectedImages.length > 0) {
-        Alert.alert(
-          "Image Size Error",
-          `${rejectedImages.length} image(s) exceeded 1MB limit (sizes: ${rejectedImages.join('MB, ')}MB). Please select images smaller than 1MB.`,
-          [{ text: "OK" }]
-        );
-      }
-
-      if (validImages.length > 0) {
-        setPictures([...pictures, ...validImages]);
-      }
+      const formattedImages = images.map((img) => ({
+        uri: img.path,
+        type: img.mime,
+        name: img.filename || `image_${Date.now()}_${Math.random()}.jpg`,
+      }));
+      setPictures([...pictures, ...formattedImages]);
     } catch (error) {
       console.log("ImagePicker error", error);
     }
   };
 
   // Calendar handlers
-  // Check if current month/year is in the past
-  const isPastMonth = (checkYear, checkMonth) => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    return checkYear < currentYear || (checkYear === currentYear && checkMonth < currentMonth);
-  };
-
   const handlePrevMonth = () => {
-    const newMonth = month === 0 ? 11 : month - 1;
-    const newYear = month === 0 ? year - 1 : year;
-    
-    // Prevent navigation to past months
-    if (isPastMonth(newYear, newMonth)) {
-      return;
-    }
-    
     if (month === 0) {
       setMonth(11);
       setYear((prev) => prev - 1);
@@ -253,36 +175,11 @@ const SelectTask = ({ navigation, route }) => {
   };
 
   const handleMonthSelect = (selectedMonth) => {
-    // Prevent selecting past months in current year
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    
-    if (year === currentYear && selectedMonth < currentMonth) {
-      return; // Don't allow selecting past months
-    }
-    
     setMonth(selectedMonth);
     setViewMode("calendar");
   };
 
   const handleYearSelect = (selectedYear) => {
-    // Prevent selecting past years
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    
-    if (selectedYear < currentYear) {
-      return; // Don't allow selecting past years
-    }
-    
-    // If selecting current year, ensure month is not in the past
-    if (selectedYear === currentYear) {
-      const currentMonth = today.getMonth();
-      if (month < currentMonth) {
-        setMonth(currentMonth); // Set to current month if selected month is in past
-      }
-    }
-    
     setYear(selectedYear);
     setViewMode("calendar");
   };
@@ -297,20 +194,7 @@ const SelectTask = ({ navigation, route }) => {
     return years;
   };
 
-  // Check if a date is in the past
-  const isPastDate = (day) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-    const selectedDate = new Date(year, month, day);
-    selectedDate.setHours(0, 0, 0, 0);
-    return selectedDate < today;
-  };
-
   const handleDateSelect = (day) => {
-    // Prevent selection of past dates
-    if (isPastDate(day)) {
-      return;
-    }
     setSelectedDay(day);
     const d = new Date(year, month, day);
     const yyyy = d.getFullYear();
@@ -392,18 +276,13 @@ const SelectTask = ({ navigation, route }) => {
         },
       ]}
     >
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
+      <ScrollView
         contentContainerStyle={{
           paddingHorizontal: widthPixel(20),
-          paddingBottom: heightPixel(150),
+          flexGrow: 1,
+          paddingBottom: heightPixel(40),
         }}
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={Platform.OS === 'ios' ? 100 : 150}
-        keyboardShouldPersistTaps="handled"
-        extraHeight={Platform.OS === 'android' ? 150 : 100}
       >
         <SecondHeader
           onPress={() => navigation.goBack()}
@@ -421,19 +300,6 @@ const SelectTask = ({ navigation, route }) => {
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin
           porttitor lectus augue
         </Text>
-
-        {/* Site Selection Dropdown */}
-        <Text style={styles.sectionTitle}>Select Site</Text>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => setShowSiteModal(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.dropdownText, !selectedSiteName && styles.placeholder]}>
-            {selectedSiteName || "Select a site"}
-          </Text>
-          <Text style={styles.dropdownArrow}>▼</Text>
-        </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Basic Info</Text>
         <AppTextInput
@@ -528,18 +394,11 @@ const SelectTask = ({ navigation, route }) => {
                           </TouchableOpacity>
                           <View style={styles.calendarNav}>
                             <TouchableOpacity
-                              style={[
-                                styles.navBtn,
-                                isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1) && styles.navBtnDisabled
-                              ]}
+                              style={styles.navBtn}
                               onPress={handlePrevMonth}
                               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                              disabled={isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1)}
                             >
-                              <Text style={[
-                                styles.navText,
-                                isPastMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1) && styles.navTextDisabled
-                              ]}>{"<"}</Text>
+                              <Text style={styles.navText}>{"<"}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={styles.navBtn}
@@ -573,23 +432,19 @@ const SelectTask = ({ navigation, route }) => {
                                 );
                               }
                               const isSelected = day === selectedDay;
-                              const isPast = isPastDate(day);
                               return (
                                 <TouchableOpacity
                                   key={`day-${wi}-${day}-${di}`}
                                   style={[
                                     styles.dayCell,
                                     isSelected && styles.daySelected,
-                                    isPast && styles.dayDisabled,
                                   ]}
                                   onPress={() => handleDateSelect(day)}
-                                  disabled={isPast}
                                 >
                                   <Text
                                     style={[
                                       styles.dayText,
                                       isSelected && styles.dayTextSelected,
-                                      isPast && styles.dayTextDisabled,
                                     ]}
                                   >
                                     {day}
@@ -618,35 +473,25 @@ const SelectTask = ({ navigation, route }) => {
                           contentContainerStyle={styles.monthGrid}
                           showsVerticalScrollIndicator={false}
                         >
-                          {monthNames.map((monthName, idx) => {
-                            const today = new Date();
-                            const currentYear = today.getFullYear();
-                            const currentMonth = today.getMonth();
-                            const isPastMonth = year === currentYear && idx < currentMonth;
-                            
-                            return (
-                              <TouchableOpacity
-                                key={idx}
+                          {monthNames.map((monthName, idx) => (
+                            <TouchableOpacity
+                              key={idx}
+                              style={[
+                                styles.monthItem,
+                                month === idx && styles.monthItemSelected,
+                              ]}
+                              onPress={() => handleMonthSelect(idx)}
+                            >
+                              <Text
                                 style={[
-                                  styles.monthItem,
-                                  month === idx && styles.monthItemSelected,
-                                  isPastMonth && styles.monthItemDisabled,
+                                  styles.monthItemText,
+                                  month === idx && styles.monthItemTextSelected,
                                 ]}
-                                onPress={() => handleMonthSelect(idx)}
-                                disabled={isPastMonth}
                               >
-                                <Text
-                                  style={[
-                                    styles.monthItemText,
-                                    month === idx && styles.monthItemTextSelected,
-                                    isPastMonth && styles.monthItemTextDisabled,
-                                  ]}
-                                >
-                                  {monthName}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
+                                {monthName}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
                         </ScrollView>
                       </>
                     )}
@@ -684,34 +529,25 @@ const SelectTask = ({ navigation, route }) => {
                           showsVerticalScrollIndicator={true}
                           nestedScrollEnabled={true}
                         >
-                          {generateYears().map((y) => {
-                            const today = new Date();
-                            const currentYear = today.getFullYear();
-                            const isPastYear = y < currentYear;
-                            
-                            return (
-                              <TouchableOpacity
-                                key={y}
+                          {generateYears().map((y) => (
+                            <TouchableOpacity
+                              key={y}
+                              style={[
+                                styles.yearItem,
+                                year === y && styles.yearItemSelected,
+                              ]}
+                              onPress={() => handleYearSelect(y)}
+                            >
+                              <Text
                                 style={[
-                                  styles.yearItem,
-                                  year === y && styles.yearItemSelected,
-                                  isPastYear && styles.yearItemDisabled,
+                                  styles.yearItemText,
+                                  year === y && styles.yearItemTextSelected,
                                 ]}
-                                onPress={() => handleYearSelect(y)}
-                                disabled={isPastYear}
                               >
-                                <Text
-                                  style={[
-                                    styles.yearItemText,
-                                    year === y && styles.yearItemTextSelected,
-                                    isPastYear && styles.yearItemTextDisabled,
-                                  ]}
-                                >
-                                  {y}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
+                                {y}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
                         </ScrollView>
                       </>
                     )}
@@ -774,7 +610,13 @@ const SelectTask = ({ navigation, route }) => {
           />
         </View>
 
-        <View style={{ marginTop: heightPixel(30) }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            marginBottom: heightPixel(20),
+          }}
+        >
           <AppButton
             title="NEXT: SELECT INVENTORY"
             style={{ backgroundColor: colors.themeColor }}
@@ -782,60 +624,7 @@ const SelectTask = ({ navigation, route }) => {
             onPress={handleNext}
           />
         </View>
-      </KeyboardAwareScrollView>
-
-      {/* Site Selection Modal */}
-      <Modal
-        visible={showSiteModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSiteModal(false)}
-      >
-        <View style={styles.siteModalOverlay}>
-          <View style={styles.siteModalContainer}>
-            <View style={styles.siteModalHeader}>
-              <Text style={styles.siteModalTitle}>Select Site</Text>
-              <TouchableOpacity
-                onPress={() => setShowSiteModal(false)}
-                style={styles.siteModalCloseButton}
-              >
-                <Text style={styles.siteModalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            {loadingSites ? (
-              <View style={styles.siteModalLoading}>
-                <Text style={styles.siteModalLoadingText}>Loading sites...</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={sites}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.siteItem,
-                      selectedSiteId === item._id && styles.siteItemSelected
-                    ]}
-                    onPress={() => handleSelectSite(item)}
-                  >
-                    <Text style={[
-                      styles.siteItemText,
-                      selectedSiteId === item._id && styles.siteItemTextSelected
-                    ]}>
-                      {item.name || "Unnamed Site"}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <View style={styles.siteModalEmpty}>
-                    <Text style={styles.siteModalEmptyText}>No sites available</Text>
-                  </View>
-                }
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -899,13 +688,6 @@ const styles = StyleSheet.create({
     width: widthPixel(28),
     height: widthPixel(28),
     tintColor: colors.themeColor,
-  },
-  uploadText: {
-    fontSize: fontPixel(12),
-    color: colors.themeColor,
-    fontFamily: fonts.NunitoRegular,
-    marginTop: heightPixel(4),
-    textAlign: "center",
   },
   pictureWrapper: {
     position: "relative",
@@ -1007,12 +789,6 @@ const styles = StyleSheet.create({
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
   },
-  navBtnDisabled: {
-    opacity: 0.3,
-  },
-  navTextDisabled: {
-    color: colors.greyText || "#999",
-  },
   weekRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1043,12 +819,6 @@ const styles = StyleSheet.create({
   dayTextSelected: {
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
-  },
-  dayDisabled: {
-    opacity: 0.3,
-  },
-  dayTextDisabled: {
-    color: colors.greyText || "#999",
   },
   monthYearButton: {
     paddingHorizontal: widthPixel(8),
@@ -1108,12 +878,6 @@ const styles = StyleSheet.create({
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
   },
-  monthItemDisabled: {
-    opacity: 0.3,
-  },
-  monthItemTextDisabled: {
-    color: colors.greyText || "#999",
-  },
   yearScrollView: {
     maxHeight: heightPixel(350),
     flexGrow: 0,
@@ -1147,111 +911,9 @@ const styles = StyleSheet.create({
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
   },
-  yearItemDisabled: {
-    opacity: 0.3,
-  },
-  yearItemTextDisabled: {
-    color: colors.greyText || "#999",
-  },
   yearNav: {
     flexDirection: "row",
     alignItems: "center",
     gap: widthPixel(8),
-  },
-  dropdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#f5f5f5",
-    borderRadius: widthPixel(8),
-    paddingHorizontal: widthPixel(15),
-    paddingVertical: heightPixel(14),
-    marginBottom: heightPixel(14),
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.grey300,
-  },
-  placeholder: {
-    color: colors.grey300,
-  },
-  dropdownArrow: {
-    fontSize: fontPixel(12),
-    color: colors.grey200,
-    marginLeft: widthPixel(10),
-  },
-  siteModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  siteModalContainer: {
-    width: "85%",
-    maxHeight: "70%",
-    backgroundColor: colors.white,
-    borderRadius: widthPixel(12),
-    overflow: "hidden",
-  },
-  siteModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: widthPixel(20),
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  siteModalTitle: {
-    fontSize: fontPixel(18),
-    fontFamily: fonts.NunitoSemiBold,
-    color: colors.black,
-  },
-  siteModalCloseButton: {
-    width: heightPixel(30),
-    height: heightPixel(30),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  siteModalCloseText: {
-    fontSize: fontPixel(20),
-    color: colors.grey300,
-    fontWeight: "bold",
-  },
-  siteModalLoading: {
-    padding: widthPixel(40),
-    alignItems: "center",
-  },
-  siteModalLoadingText: {
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.grey300,
-  },
-  siteItem: {
-    padding: widthPixel(15),
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  siteItemSelected: {
-    backgroundColor: "#F7F1FF",
-  },
-  siteItemText: {
-    fontSize: fontPixel(15),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.black,
-  },
-  siteItemTextSelected: {
-    fontFamily: fonts.NunitoSemiBold,
-    color: colors.themeColor,
-  },
-  siteModalEmpty: {
-    padding: widthPixel(40),
-    alignItems: "center",
-  },
-  siteModalEmptyText: {
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.grey300,
   },
 });

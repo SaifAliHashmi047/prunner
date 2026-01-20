@@ -4,10 +4,10 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   SafeAreaView,
   StyleSheet,
   Image,
+  RefreshControl,
 } from "react-native";
 import { useChat } from "../../hooks/useChat";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -26,6 +26,7 @@ import { appIcons } from "../../services/utilities/assets";
 import UserSelectionModal from "./UserSelectionModal";
 import SafeImageBackground from "../SafeImageBackground";
 import { formateDate } from "../../services/utilities/helper";
+import { Loader } from "../Loader";
 
 export const ChatListScreen = () => {
   const { user } = useSelector((state) => state.user);
@@ -33,6 +34,8 @@ export const ChatListScreen = () => {
   const navigation = useNavigation();
   const [usersSelectionModalVisible, setUsersSelectionModalVisible] =
     useState(false);
+  const [refreshing, setRefreshing] = useState(true);
+  const [errorLoading, setErrorLoading] = useState(false);
   const {
     chats,
     loadingChats,
@@ -40,14 +43,46 @@ export const ChatListScreen = () => {
   } = useChat({ userId });
   const insets = useSafeAreaInsets();
 
+  // Clear error when chats successfully load
+  React.useEffect(() => {
+    if (chats.length > 0 && errorLoading) {
+      setErrorLoading(false);
+     
+    }
+    if(chats?.length > 0){
+      setRefreshing(false);
+    }
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 5000);
+   
+  }, [chats.length, errorLoading]);
+
   // Refresh chats when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       if (userId) {
+        setErrorLoading(false);
         fetchChats();
       }
     }, [userId, fetchChats])
   );
+
+  // Detect when loading completes but no chats received (potential error)
+  React.useEffect(() => {
+    if (!loadingChats && !refreshing && userId && chats.length === 0) {
+      // If we're not loading, not refreshing, have a userId, but no chats,
+      // it might indicate a failed load (though empty chats could also be valid)
+      // We'll set error only if we've been waiting for a while
+      const timeoutId = setTimeout(() => {
+        setErrorLoading(true);
+      }, 3000); // 3 second delay to allow for initial load
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setErrorLoading(false);
+    }
+  }, [loadingChats, refreshing, userId, chats.length]);
 
   const handleSelectUser = (selectedUser) => {
     setUsersSelectionModalVisible(false);
@@ -59,7 +94,16 @@ export const ChatListScreen = () => {
     });
   };
 
-  if (loadingChats) return <ActivityIndicator />;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setErrorLoading(false);
+    fetchChats();
+    // Reset refreshing after a delay (fetchChats doesn't return a promise)
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
   console.log("chats", chats);
   return   (
     <SafeAreaView
@@ -77,6 +121,14 @@ export const ChatListScreen = () => {
         data={chats}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.chatList}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.themeColor]}
+            tintColor={colors.themeColor}
+          />
+        }
         renderItem={({ item }) => {
           const participant = item.participants?.find((p) => p._id !== userId);
           const participantName =
@@ -151,6 +203,7 @@ export const ChatListScreen = () => {
         onSelectUser={handleSelectUser}
         currentUserId={userId}
       />
+      <Loader isVisible={(loadingChats || errorLoading) && !refreshing} />
     </SafeAreaView>
   );
 };

@@ -15,6 +15,7 @@ import { routes } from "../../../services/constant";
 import useTasks from "../../../hooks/useTasks";
 import { Loader } from "../../../components/Loader";
 import { toastSuccess } from "../../../services/utilities/toast/toast";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const CancelJob = ({ navigation, route }) => {
   const { taskId } = route.params || {};
@@ -57,7 +58,12 @@ const CancelJob = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={{
+     <KeyboardAwareScrollView style={{ flex: 1, backgroundColor: "#fff" }}
+     contentContainerStyle={{ flexGrow: 1 }}
+     enableOnAndroid
+     extraScrollHeight={20}
+     >
+     <View style={{
         flex: 1,
         paddingHorizontal: widthPixel(20),
 
@@ -108,6 +114,7 @@ const CancelJob = ({ navigation, route }) => {
           />
         </View>
       </View>
+     </KeyboardAwareScrollView>
       <Loader isVisible={loading} />
     </SafeAreaView>
   );

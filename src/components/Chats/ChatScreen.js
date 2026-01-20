@@ -54,6 +54,7 @@ export const ChatScreen = ({
 // return
     if (chatId) {
       // Existing chat - open it
+      console.log("[ChatScreen] Existing chat with receiver, opening chat:", chatId, receiverId);
       openChat(chatId, receiverId);
       setIsNewChat(false);
     } else if (receiverId) {
@@ -101,7 +102,12 @@ export const ChatScreen = ({
 
         {/* MESSAGES */}
         <FlatList
-          data={[...messages].reverse()} // Reverse for normal display (not inverted)
+          data={[...messages].sort((a, b) => {
+            // Sort messages by time (oldest first)
+            const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+            const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+            return timeA - timeB;
+          })}
           keyExtractor={(item) => item._id || item.id}
           contentContainerStyle={{ padding: widthPixel(16), flexGrow: 1 }}
           onEndReached={loadMoreMessages}

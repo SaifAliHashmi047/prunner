@@ -56,6 +56,7 @@ export const useChat = ({ userId }) => {
           page: 1,
           limit: 20,
         };
+        console.log("[useChat] Emitting fetch_chat event", fetchParams);
         socketRef.current.emit("fetch_chat", fetchParams);
         socketRef.current.emit("chat_history", fetchParams);
       }

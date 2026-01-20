@@ -98,7 +98,7 @@ const VerifyEmail = ({ navigation }) => {
         {/* Header */}
         <AppHeader
           title="Verify Email"
-          subtitle="Enter the 4-digit code sent to your email address."
+          subtitle="Enter the 6-digit code sent to your email address."
           onBack={() => navigation.goBack()}
         />
 

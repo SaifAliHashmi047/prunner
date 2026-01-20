@@ -7,6 +7,7 @@ import { fonts } from "../../../services/utilities/fonts";
 import useTasks from "../../../hooks/useTasks";
 import { toastError, toastSuccess } from "../../../services/utilities/toast/toast";
 import { useSelector } from "react-redux";
+import { Loader } from "../../../components/Loader";
 
 const CancelJobOther = ({ navigation }) => {
     const [reason, setReason] = useState("");

@@ -71,7 +71,7 @@ const ChangePassword = ({ navigation }) => {
       setLoading(true);
 
       // Call reset password API
-      const response = await axiosInstance.post(
+      const response = await axiosInstance.patch(
         "auth/resetPassword",
         {
           email: email.trim(),
