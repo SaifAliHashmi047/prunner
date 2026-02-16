@@ -23,14 +23,14 @@ const ForkHomeDetail = ({ navigation }) => {
     const dispatch = useDispatch();
     const { sites, loading, fetchSites } = useSite();
     const { user } = useSelector((state) => state.user);
-    console.log("usr",user);
+    console.log("usr", user);
     useEffect(() => {
         fetchSites(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSitePress = (site) => {
-        dispatch(setSelectedSite(site));
+        // dispatch(setSelectedSite(site));
         navigation.replace(routes.forkliftFlow);
     };
 
@@ -43,11 +43,11 @@ const ForkHomeDetail = ({ navigation }) => {
 
         return (
             <TouchableOpacity style={styles.card} onPress={() => handleSitePress(item)}>
-                <SafeImageBackground 
+                <SafeImageBackground
                     name={siteName}
-                     source={{uri:siteImage}} 
-                     style={styles.siteImage} 
-                     />
+                    source={{ uri: siteImage }}
+                    style={styles.siteImage}
+                />
                 <View style={{ flex: 1, marginLeft: widthPixel(12) }}>
                     <Text style={styles.siteName}>{siteName}</Text>
                     <Text style={styles.taskText}>{taskText}</Text>
@@ -66,11 +66,11 @@ const ForkHomeDetail = ({ navigation }) => {
 
             }}>
                 <View style={styles.headerRow}>
-                    <SafeImageBackground 
-                    name={user?.name}
-                     source={{uri:user?.image}} 
-                     style={styles.avatar} 
-                     />
+                    <SafeImageBackground
+                        name={user?.name}
+                        source={{ uri: user?.image }}
+                        style={styles.avatar}
+                    />
 
                     <View style={{ flex: 1, marginLeft: widthPixel(10) }}>
                         <Text style={styles.greeting}>Hi, {user?.name}</Text>
@@ -89,11 +89,11 @@ const ForkHomeDetail = ({ navigation }) => {
 
                 {/* Builder Info */}
                 <View style={styles.builderRow}>
-                <SafeImageBackground 
-                    name={user?.name}
-                     source={{uri:user?.image}} 
-                     style={styles.avatar} 
-                     />
+                    <SafeImageBackground
+                        name={user?.name}
+                        source={{ uri: user?.image }}
+                        style={styles.avatar}
+                    />
                     <Text style={styles.builderName}>{user?.name}</Text>
                 </View>
 
@@ -102,7 +102,7 @@ const ForkHomeDetail = ({ navigation }) => {
                     data={sites}
                     renderItem={renderSiteCard}
                     keyExtractor={(item) => item?._id || item?.id || `site-${Math.random()}`}
-                    contentContainerStyle={{padding:heightPixel(2), paddingBottom: heightPixel(20) }}
+                    contentContainerStyle={{ padding: heightPixel(2), paddingBottom: heightPixel(20) }}
                     ListEmptyComponent={
                         !loading ? (
                             <View style={{ paddingVertical: heightPixel(40), alignItems: "center" }}>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         fontFamily: fonts.NunitoMedium,
         color: colors.black,
         fontWeight: "500",
-        marginLeft:widthPixel(10)
+        marginLeft: widthPixel(10)
     },
     card: {
         flexDirection: "row",

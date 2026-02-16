@@ -41,7 +41,7 @@ const AppTaskCard = ({
             <View style={styles.cardHeader}>
                 <View style={styles.userInfo}>
                     <SafeImageBackground
-                        source={{uri:userImage}}
+                        source={{ uri: userImage }}
                         style={styles.profileImage}
                         name={userName}
                     />
@@ -57,17 +57,17 @@ const AppTaskCard = ({
 
             {/* Content */}
             <View style={styles.cardContent}>
-                {/* Material */}
+
                 <Text style={styles.sectionTitle}>Material</Text>
-{
-    inventory?.map((item) => (
-        <View style={styles.row}>
-            <SafeImageBackground source={{uri:item?.icon||item?.image}} name={item?.item} style={styles.icon} />
-                <Text style={styles.materialName}>{item?.item}</Text>
-                <Text style={styles.materialQty}>{item.quantity}</Text>
-            </View>
-        ))
-    }
+                {
+                    inventory?.map((item) => (
+                        <View style={styles.row}>
+                            <SafeImageBackground source={{ uri: item?.icon || item?.image }} name={item?.item} style={styles.icon} />
+                            <Text style={styles.materialName}>{item?.item}</Text>
+                            <Text style={styles.materialQty}>{item.quantity}</Text>
+                        </View>
+                    ))
+                }
                 {/* Date & Time */}
                 <Text style={[styles.sectionTitle, { marginTop: heightPixel(12) }]}>Date & Time</Text>
                 {
@@ -77,17 +77,17 @@ const AppTaskCard = ({
                         </View>
                     )
                 }
-             {   taskType === "scheduled" && (
-                <View style={styles.row}>
-                    <View style={styles.inlineGroup}>
-                        <Image source={appIcons.date} style={styles.icon} />
-                        <Text style={styles.inlineText}>{date}</Text>
-                    </View>
-                    <View style={[styles.inlineGroup, { marginLeft: widthPixel(18) }]}>
-                        <Image source={appIcons.time} style={styles.icon} />
-                        <Text style={styles.inlineText}>{time}</Text>
-                    </View>
-                </View>)}
+                {taskType === "scheduled" && (
+                    <View style={styles.row}>
+                        <View style={styles.inlineGroup}>
+                            <Image source={appIcons.date} style={styles.icon} />
+                            <Text style={styles.inlineText}>{date}</Text>
+                        </View>
+                        <View style={[styles.inlineGroup, { marginLeft: widthPixel(18) }]}>
+                            <Image source={appIcons.time} style={styles.icon} />
+                            <Text style={styles.inlineText}>{time}</Text>
+                        </View>
+                    </View>)}
             </View>
         </TouchableOpacity>
     );
@@ -150,6 +150,8 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "center",
+        width: '100%',
+        // backgroundColor: 'pink',
         marginBottom: heightPixel(8),
     },
     icon: {
@@ -161,11 +163,13 @@ const styles = StyleSheet.create({
         resizeMode: "contain",
     },
     materialName: {
+        flex: 3,
         width: NAME_COL_W, // keeps the quantities lined up
         fontSize: fontPixel(14),
         color: colors.greyText || "#444",
     },
     materialQty: {
+        flex: 2,
         fontSize: fontPixel(14),
         fontWeight: "600",
         color: colors.greyText,
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
     },
     instant: {
         fontSize: fontPixel(14),
-         
+
         marginLeft: widthPixel(6),
         fontWeight: fonts.NunitoSemiBold,
         color: colors.white,

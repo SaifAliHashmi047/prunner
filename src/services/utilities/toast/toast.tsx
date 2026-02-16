@@ -1,9 +1,10 @@
 import Snackbar from 'react-native-snackbar';
 import { colors } from '../colors';
- // make sure fonts is correct
+// make sure fonts is correct
 
-const toastError = ({text, properties = {}, onPress = () => {}} : any) => {
+const toastError = ({ text, properties = {}, onPress = () => { } }: any) => {
   let { backgroundColor = colors?.red, textColor = colors.white } = properties;
+  if (text == 'Request failed') return
 
   Snackbar.show({
     text,
@@ -11,11 +12,11 @@ const toastError = ({text, properties = {}, onPress = () => {}} : any) => {
     backgroundColor,
     textColor, // works only if using latest version
     marginBottom: 20,
-    
+
   });
 };
 
-const toastSuccess = ({text, properties = {}, onPress = () => {} }: any) => {
+const toastSuccess = ({ text, properties = {}, onPress = () => { } }: any) => {
   let { backgroundColor = colors.themeColor, textColor = colors.white } = properties;
 
   Snackbar.show({

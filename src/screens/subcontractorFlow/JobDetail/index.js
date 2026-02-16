@@ -20,6 +20,7 @@ import SafeImageBackground from "../../../components/SafeImageBackground";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const JobDetail = ({ navigation, route }) => {
   const { task } = route.params || {};
+  console?.log('------->>>', task)
   const insets = useSafeAreaInsets();
   if (!task) {
     return (
@@ -48,21 +49,21 @@ const JobDetail = ({ navigation, route }) => {
     // UK approximate bounds: lat 50-60, lng -8 to 2
     const baseLat = 50 + Math.random() * 10; // Random latitude in UK
     const baseLng = -8 + Math.random() * 10; // Random longitude in UK
-    
+
     // 5km ≈ 0.045 degrees (1 degree ≈ 111km)
     const distanceInDegrees = 0.045;
     const angle = Math.random() * 2 * Math.PI; // Random direction
-    
+
     const pickup = {
       latitude: baseLat,
       longitude: baseLng,
     };
-    
+
     const dropoff = {
       latitude: baseLat + distanceInDegrees * Math.cos(angle),
       longitude: baseLng + distanceInDegrees * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180),
     };
-    
+
     return { pickup, dropoff };
   };
 
@@ -93,10 +94,10 @@ const JobDetail = ({ navigation, route }) => {
   const mapCoordinates = useMemo(() => {
     const pickupCoord = pickUpLocation?.coordinates;
     const dropoffCoord = dropOffLocation;
-    
+
     const pickupValid = isValidCoordinate(pickupCoord);
     const dropoffValid = isValidCoordinate(dropoffCoord);
-    
+
     if (!pickupValid || !dropoffValid) {
       // Generate UK coordinates if invalid
       const ukCoords = generateUKCoordinates();
@@ -105,7 +106,7 @@ const JobDetail = ({ navigation, route }) => {
         dropoff: dropoffValid ? dropoffCoord : ukCoords.dropoff,
       };
     }
-    
+
     return {
       pickup: pickupCoord,
       dropoff: dropoffCoord,
@@ -117,20 +118,20 @@ const JobDetail = ({ navigation, route }) => {
     const { pickup, dropoff } = mapCoordinates;
     const latitudes = [pickup.latitude, dropoff.latitude];
     const longitudes = [pickup.longitude, dropoff.longitude];
-    
+
     const minLat = Math.min(...latitudes);
     const maxLat = Math.max(...latitudes);
     const minLng = Math.min(...longitudes);
     const maxLng = Math.max(...longitudes);
-    
+
     const latDelta = maxLat - minLat;
     const lngDelta = maxLng - minLng;
-    
+
     // Add padding (20% on each side)
     const padding = 0.2;
     const centerLat = (minLat + maxLat) / 2;
     const centerLng = (minLng + maxLng) / 2;
-    
+
     return {
       latitude: centerLat,
       longitude: centerLng,
@@ -154,7 +155,7 @@ const JobDetail = ({ navigation, route }) => {
     }
   }, [mapCoordinates]);
   return (
-    <SafeAreaView style={[styles.container,{
+    <SafeAreaView style={[styles.container, {
       paddingTop: insets.top
     }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Job Detail" />
@@ -166,7 +167,7 @@ const JobDetail = ({ navigation, route }) => {
       >
         {/* User Info / Task Title */}
         <View style={styles.userRow}>
-          <SafeImageBackground 
+          <SafeImageBackground
             source={customerImage ? { uri: customerImage } : null}
             name={customerName}
             style={styles.avatar}
@@ -178,9 +179,10 @@ const JobDetail = ({ navigation, route }) => {
         {/* Site Map */}
         <Text style={styles.sectionTitle}>Site Map</Text>
         <View style={styles.mapContainer}>
-          <MapView
+          <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
+          {/* <MapView
             ref={mapRef}
-            provider={ Platform.OS === "android" ? PROVIDER_GOOGLE : null}
+            provider={Platform.OS === "android" ? PROVIDER_GOOGLE : null}
             style={styles.siteMap}
             initialRegion={mapRegion}
             mapType="standard"
@@ -217,7 +219,7 @@ const JobDetail = ({ navigation, route }) => {
                 pinColor="red"
               />
             )}
-          </MapView>
+          </MapView> */}
         </View>
 
         {/* Date & Time */}
@@ -243,7 +245,7 @@ const JobDetail = ({ navigation, route }) => {
           task.inventory.map((item, index) => (
             <View key={index} style={styles.rowBox}>
               <View style={styles.iconText}>
-                <SafeImageBackground source={{uri:item?.icon||item?.image}} name={item.item} style={styles.itemIcon} />
+                <SafeImageBackground source={{ uri: item?.icon || item?.image }} name={item.item} style={styles.itemIcon} />
                 <Text style={styles.rowText}>{item?.item || "Item"}</Text>
               </View>
               <Text style={styles.rowText}>{item?.quantity} {item?.unit || "Units"}</Text>
@@ -330,10 +332,11 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     width: "100%",
-    height: heightPixel(160),
+    height: heightPixel(500),
     borderRadius: widthPixel(8),
     marginBottom: heightPixel(16),
     overflow: "hidden",
+    // backgroundColor: 'pink'
   },
   siteMap: {
     width: "100%",

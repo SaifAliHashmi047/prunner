@@ -66,7 +66,7 @@ const weekdayShort = ["S", "M", "T", "W", "T", "F", "S"];
 
 const SelectTask = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const { materialLocation, dropOffLocation } = route.params || {};
+  const { materialLocation, dropOffLocation, markedImageUrl } = route.params || {};
   const { selectedSite } = useSelector((state) => state.site);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -131,7 +131,7 @@ const SelectTask = ({ navigation, route }) => {
         multiple: true,
         mediaType: "photo",
         maxFiles: 5 - pictures.length,
-          compressImageQuality: 0.8,
+        compressImageQuality: 0.8,
 
       });
       const formattedImages = images.map((img) => ({
@@ -229,25 +229,31 @@ const SelectTask = ({ navigation, route }) => {
       return;
     }
 
-    const taskData = {
-      materialLocation,
-      dropOffLocation,
+    try {
+      const taskData = {
+        materialLocation,
+        dropOffLocation,
 
-      title,
-      description,
-      taskType,
-      priority,
-      scheduledDate:
-        taskType === "scheduled" ? new Date(scheduledDate).toISOString() : null, // Mocking date logic if 'time' not fully parsed
-      estimatedDuration: parseInt(duration) || 60,
-      siteId: siteId,
-      pictures: pictures,
-    };
+        title,
+        description,
+        taskType,
+        priority,
+        scheduledDate:
+          taskType === "scheduled" ? new Date(scheduledDate).toISOString() : null, // Mocking date logic if 'time' not fully parsed
+        estimatedDuration: parseInt(duration) || 60,
+        siteId: siteId,
+        pictures: pictures,
+        siteMap: markedImageUrl
+      };
+      console?.log('--->>>>>>', taskData)
 
-    navigation.navigate(routes.selectInventoryForTask, {
-      isSelection: true,
-      previousData: taskData,
-    });
+      navigation.navigate(routes.selectInventoryForTask, {
+        isSelection: true,
+        previousData: taskData,
+      });
+    } catch (err) {
+      console?.log('----->>>Error', err)
+    }
   };
 
   const SelectionButton = ({ label, selected, onPress }) => (
@@ -342,15 +348,16 @@ const SelectTask = ({ navigation, route }) => {
             <TouchableOpacity
               onPress={() => setShowCalendar(true)}
             >
-              <View style={{ backgroundColor: "#f5f5f5",borderRadius:widthPixel(10),padding:widthPixel(10),
-              height:heightPixel(50),
+              <View style={{
+                backgroundColor: "#f5f5f5", borderRadius: widthPixel(10), padding: widthPixel(10),
+                height: heightPixel(50),
 
               }}>
-              <Text>
-                {formatDisplayDate(scheduledDate)}
-              </Text>
+                <Text>
+                  {formatDisplayDate(scheduledDate)}
+                </Text>
               </View>
-              
+
             </TouchableOpacity>
 
             <Modal

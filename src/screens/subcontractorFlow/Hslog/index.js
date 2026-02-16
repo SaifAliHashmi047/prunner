@@ -74,8 +74,8 @@ const HsLog = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container,{
-      paddingTop: insets.top+0
+    <SafeAreaView style={[styles.container, {
+      paddingTop: insets.top + 0
     }]}>
       <View style={styles.content}>
         <SecondHeader onPress={() => navigation.goBack()} title="H&S Log" />
@@ -151,7 +151,7 @@ const HsLog = ({ navigation }) => {
           )}
         />
       </View>
-      {user?.role === "subConstructor" && (
+      {/* {user?.role === "subConstructor" && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => navigation.navigate(routes.createHsLog)}
@@ -165,7 +165,7 @@ const HsLog = ({ navigation }) => {
             }}
           />
         </TouchableOpacity>
-      )}
+      )} */}
 
       <Loader isVisible={loading} />
     </SafeAreaView>

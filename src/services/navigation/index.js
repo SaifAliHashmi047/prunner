@@ -12,7 +12,7 @@ import useSite from "../../hooks/useSite";
 const MyStack = createStackNavigator();
 
 export const MainNavigator = () => {
- 
+
     return (
         <NavigationContainer>
             <MyStack.Navigator

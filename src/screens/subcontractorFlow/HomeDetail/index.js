@@ -23,8 +23,10 @@ const HomeDetail = ({ navigation }) => {
     const dispatch = useDispatch();
     const { sites, loading, fetchSites } = useSite();
     const { user } = useSelector((state) => state.user);
+    const { selectedSite } = useSelector((state) => state.site);
     useEffect(() => {
         fetchSites(1);
+        console.log('------>>', sites)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -34,24 +36,44 @@ const HomeDetail = ({ navigation }) => {
     };
 
     const renderSiteCard = ({ item }) => {
+        console?.log('----->>>>7878787', selectedSite)
         const siteName = item?.name || item?.siteName || "Unknown Site";
         const siteImage = item?.image || item?.imageUrl || item?.siteImage || null;
         const taskCount = item?.taskCount || item?.tasks?.length || item?.activeTasks || 0;
         const taskText = taskCount > 0 ? `${taskCount} Active Task${taskCount > 1 ? "s" : ""}` : "No Active Tasks";
         const status = item?.status || (item?.isAssigned ? "Assigned Site" : "");
+        const isSelected = selectedSite?._id == item?._id
 
         return (
-            <TouchableOpacity style={styles.card} onPress={() => handleSitePress(item)}>
-                 <SafeImageBackground 
-                    name={siteName}
-                     source={{uri:siteImage}} 
-                     style={styles.siteImage} 
-                     />
+            <TouchableOpacity
+                style={[
+                    styles.card,
+                    isSelected && { backgroundColor: colors?.themeColor },
+                ]}
+                onPress={() => handleSitePress(item)}
+                activeOpacity={0.8}
+            >
+                <SafeImageBackground
+                    name={"Site"}
+                    source={{ uri: siteImage }}
+                    style={styles.siteImage}
+                />
+
                 <View style={{ flex: 1, marginLeft: widthPixel(12) }}>
-                    <Text style={styles.siteName}>{siteName}</Text>
-                    <Text style={styles.taskText}>{taskText}</Text>
+                    <Text style={[styles.siteName, isSelected && { color: "#fff" }]}>
+                        {siteName}
+                    </Text>
+
+                    <Text style={[styles.taskText, isSelected && { color: "#fff" }]}>
+                        {taskText}
+                    </Text>
                 </View>
-                {status ? <Text style={styles.status}>{status}</Text> : null}
+
+                {status ? (
+                    <Text style={[styles.status, isSelected && { color: "#fff" }]}>
+                        {status}
+                    </Text>
+                ) : null}
             </TouchableOpacity>
         );
     };
@@ -65,23 +87,23 @@ const HomeDetail = ({ navigation }) => {
 
             }}>
                 <View style={styles.headerRow}>
-                <SafeImageBackground 
-                    name={user?.name}
-                     source={{uri:user?.image}} 
-                     style={styles.avatar} 
-                     />
+                    <SafeImageBackground
+                        name={user?.name}
+                        source={{ uri: user?.image }}
+                        style={styles.avatar}
+                    />
                     <View style={{ flex: 1, marginLeft: widthPixel(10) }}>
                         <Text style={styles.greeting}>Hi, {user?.name}</Text>
                         <Text style={styles.subGreeting}>Welcome back to Project Runner!</Text>
                     </View>
                     <TouchableOpacity style={styles.iconBtn}
-                    
-                    onPress={() => navigation.navigate(routes.auth,{
-                        screen: routes.scanQr,
-                        params: {
-                            goBack: true,
-                        },
-                    })}>
+
+                        onPress={() => navigation.navigate(routes.auth, {
+                            screen: routes.scanQr,
+                            params: {
+                                goBack: true,
+                            },
+                        })}>
                         <Image source={appIcons.scan} style={styles.icon} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate(routes.settings)}>
@@ -96,11 +118,11 @@ const HomeDetail = ({ navigation }) => {
 
                 {/* Builder Info */}
                 <View style={styles.builderRow}>
-                <SafeImageBackground
-                    name={user?.name}
-                     source={{uri:user?.image}} 
-                     style={styles.avatar} 
-                     />
+                    <SafeImageBackground
+                        name={user?.name}
+                        source={{ uri: user?.image }}
+                        style={styles.avatar}
+                    />
                     <Text style={styles.builderName}>{user?.name}</Text>
                 </View>
 
@@ -109,7 +131,7 @@ const HomeDetail = ({ navigation }) => {
                     data={sites}
                     renderItem={renderSiteCard}
                     keyExtractor={(item) => item?._id || item?.id || `site-${Math.random()}`}
-                    contentContainerStyle={{padding:heightPixel(2), paddingBottom: heightPixel(20) }}
+                    contentContainerStyle={{ padding: heightPixel(2), paddingBottom: heightPixel(20) }}
                     ListEmptyComponent={
                         !loading ? (
                             <View style={{ paddingVertical: heightPixel(40), alignItems: "center" }}>
@@ -186,7 +208,7 @@ const styles = StyleSheet.create({
         fontFamily: fonts.NunitoMedium,
         color: colors.black,
         fontWeight: "500",
-        marginLeft:widthPixel(10)
+        marginLeft: widthPixel(10)
     },
     card: {
         flexDirection: "row",

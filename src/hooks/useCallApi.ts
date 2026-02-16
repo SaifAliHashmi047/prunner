@@ -42,7 +42,8 @@ export const handleApiError = (error: any) => {
     message: 'Request setup failed',
   };
 };
-const BASE_URL = "http://ec2-52-91-126-131.compute-1.amazonaws.com/api/v1/";
+export const BASE_URL = "http://ec2-52-91-126-131.compute-1.amazonaws.com/api/v1/";
+// export const BASE_URL = 'https://ighly-dialyzable-amie.ngrok-free.dev/api/v1/'
 const REFRESH_ENDPOINT = "auth/refresh-token";
 const api = axios.create({
   baseURL: BASE_URL,

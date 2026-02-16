@@ -1,11 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../hooks/useCallApi';
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
 const axiosInstance = axios.create({
-  baseURL: 'http://ec2-52-91-126-131.compute-1.amazonaws.com/api/v1/',
+  baseURL: BASE_URL,
 });
 
 // 🔹 Process queue (used when refreshing token)

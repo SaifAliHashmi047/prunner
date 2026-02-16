@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,358 +6,214 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  Platform,
-  PermissionsAndroid,
+  Image,
+  Pressable,
+  StatusBar,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import Geolocation from "@react-native-community/geolocation";
+
 import { SecondHeader, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
-import { appIcons } from "../../../services/utilities/assets";
 import { routes } from "../../../services/constant";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Loader } from "../../../components/Loader";
-import useCallApi from "../../../hooks/useCallApi";
-import useSite from "../../../hooks/useSite";
-import { setSelectedSite } from "../../../services/store/slices/siteSlice";
-import { useDispatch } from "react-redux";
 
-const LocationOnMap = ({ navigation }) => { 
+import { useSelector } from "react-redux";
+import ViewShot from "react-native-view-shot";
+
+const LocationOnMap = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const mapRef = useRef(null);
-  const { callApi } = useCallApi();
-  const [pickupLocation, setPickupLocation] = useState(null);
-  const [dropoffLocation, setDropoffLocation] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [isLoading, setLoading] = useState(true);
-  const [selectingLocation, setSelectingLocation] = useState("pickup"); // "pickup" or "dropoff"
-  const { getSites } = useSite();
-  const [sites, setSites] = useState([]);
-  const [selectedSiteId, setSelectedSiteId] = useState(null);
-  const dispatch = useDispatch();
+  const { selectedSite } = useSelector((state) => state.site);
 
+  const [pickupLocation, setPickupLocation] = useState(null); // { x, y }
+  const [dropoffLocation, setDropoffLocation] = useState(null); // { x, y }
+  const [selectingLocation, setSelectingLocation] = useState("pickup");
+  const [isLoading, setLoading] = useState(false);
 
+  const viewShotRef = useRef(null);
 
-  useEffect(() => {
-    fetchSites();
-}, []);
+  const isPickupStep = selectingLocation === "pickup";
 
-const fetchSites = async () => {
-    try {
-        setLoading(true);
-        const sitesList = await getSites();
-        if (sitesList && sitesList.length > 0) {
-          console.log("sitesList====>>", JSON.stringify(sitesList , null , 2));
-            setSites(sitesList);
-        }
-    } catch (error) {
-        console.log("Error fetching sites", error);
-    } finally {
-        setLoading(false);
-    }
-};
+  // ✅ Tap on image
+  const handleTapOnImage = (event) => {
+    const { locationX, locationY } = event.nativeEvent;
 
-  // Default region (Lahore, Pakistan)
-  const defaultRegion = {
-    latitude: 31.5204,
-    longitude: 74.3587,
-    latitudeDelta: 0.15,
-    longitudeDelta: 0.15,
-  };
-
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
-
-  const requestLocationPermission = async () => {
-    setLoading(false);
-    try {
-      if (Platform.OS === "ios") {
-        await Geolocation.requestAuthorization();
-        getCurrentLocation();
-      } else {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          getCurrentLocation();
-        }
-      }
-    } catch (err) {
-      console.log("Location permission error", err);
+    if (isPickupStep) {
+      setPickupLocation({ x: locationX, y: locationY });
+      setSelectingLocation("dropoff");
+    } else {
+      setDropoffLocation({ x: locationX, y: locationY });
     }
   };
 
-  const getCurrentLocation = () => {
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setCurrentLocation({ latitude, longitude });
-        if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude,
-            longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
-        }
-      },
-      (error) => {
-        console.log("Location error", error);
-      },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
-    );
-  };
-
-  const getAddressFromCoordinates = async (latitude, longitude) => {
-    try {
-      // Using reverse geocoding API (you might need to use Google Geocoding API)
-      // For now, we'll use a simple format
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyBTfmafw67mrYUhReeF6NURJ0QIta0nNaA`
-      );
-      const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        return data.results[0].formatted_address;
-      }
-      return `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-    } catch (error) {
-      console.log("Geocoding error", error);
-      return `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-    }
-  };
-
-  const handleMapPress = async (e) => {
-    // Only allow map press for dropoff location selection
-    // Pickup location must be selected from site markers
-    if (selectingLocation === "pickup") {
-      return;
-    }
-
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    const address = await getAddressFromCoordinates(latitude, longitude);
-
-    const locationData = {
-      address: address,
-      coordinates: {
-        latitude,
-        longitude,
-      },
-    };
-
-    setDropoffLocation(locationData);
-  };
-
-  const handleSiteMarkerPress = async (site) => {
-    // Only allow site marker selection for pickup location
-    if (selectingLocation !== "pickup") {
-      return;
-    }
-
-    const { latitude, longitude } = site.location.coordinates;
-    const address = site.location.address || `Site: ${site.name}`;
-
-    const locationData = {
-      address: address,
-      coordinates: {
-        latitude,
-        longitude,
-      },
-    };
-    setSelectedSiteId(site._id);
-
-    setPickupLocation(locationData);
-    setSelectingLocation("dropoff");
-  };
-
-  // Filter and normalize sites with valid coordinates
-  // Sites with invalid coordinates (0,0 or 90,180) will be marked in Lahore
-  const validSites = sites
-    .filter((site) => {
-      const lat = site?.location?.coordinates?.latitude;
-      const lng = site?.location?.coordinates?.longitude;
-      
-      // Basic validation - must have coordinates
-      return (
-        lat !== undefined &&
-        lng !== undefined &&
-        lat !== null &&
-        lng !== null &&
-        typeof lat === "number" &&
-        typeof lng === "number" &&
-        !isNaN(lat) &&
-        !isNaN(lng)
-      );
-    })
-    .map((site) => {
-      const lat = site?.location?.coordinates?.latitude;
-      const lng = site?.location?.coordinates?.longitude;
-      
-      // Normalize invalid coordinates to Lahore
-      const isInvalid = 
-        (lat === 0 && lng === 0) || // Null island
-        (lat === 90 && lng === 180); // Invalid coordinates
-      
-      if (isInvalid) {
-        return {
-          ...site,
-          location: {
-            ...site.location,
-            coordinates: {
-              latitude: defaultRegion.latitude,
-              longitude: defaultRegion.longitude,
-            },
-            address: site.location?.address || `${site.name}, Lahore, Pakistan`,
-          },
-        };
-      }
-      
-      return site;
-    });
-
-  const handleNext = () => {
-    if (!pickupLocation || !dropoffLocation) {
-      Alert.alert("Error", "Please select both pickup and dropoff locations on the map");
-      return;
-    }
-    console.log("pickupLocation====>>", selectedSiteId);
-    dispatch(setSelectedSite(selectedSiteId))
-
-    navigation.navigate(routes.selectTask, {
-      materialLocation: pickupLocation,
-      dropOffLocation: dropoffLocation,
-    });
-  };
-
-  const handleResetPickup = () => {
+  const handleResetAll = () => {
     setPickupLocation(null);
+    setDropoffLocation(null);
     setSelectingLocation("pickup");
   };
 
   const handleResetDropoff = () => {
+    setPickupLocation(null);
     setDropoffLocation(null);
-    if (pickupLocation) {
-      setSelectingLocation("dropoff");
-    } else {
-      setSelectingLocation("pickup");
+    setSelectingLocation("pickup");
+  };
+
+  const captureMarkedImage = async () => {
+    if (!viewShotRef.current) return null;
+
+    const uri = await viewShotRef.current.capture?.({
+      format: "png",
+      quality: 1,
+    });
+
+    return uri;
+  };
+
+  const handleNext = async () => {
+    if (!pickupLocation || !dropoffLocation) {
+      Alert.alert("Error", "Please select both pickup and dropoff locations");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const markedImageUri = await captureMarkedImage();
+
+      if (!markedImageUri) {
+        Alert.alert("Error", "Failed to generate marked image");
+        return;
+      }
+
+      const file = {
+        uri: markedImageUri,
+        type: "image/png",
+        name: "marked-map.png",
+      };
+
+      navigation.navigate(routes.selectTask, {
+        pickupLocation,
+        dropoffLocation,
+        markedImageUri,
+        markedImageUrl: file,
+      });
+    } catch (err) {
+      console.log("NEXT error", err);
+      Alert.alert("Error", "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <SecondHeader onPress={() => navigation.goBack()} title="Select Locations" />
-        <Text style={styles.subtitle}>
-          {selectingLocation === "pickup" 
-            ? "Tap on a site marker to select pickup location" 
-            : "Tap on the map to select dropoff location"}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <SafeAreaView style={[{ paddingTop: insets.top, flex: 1 }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <SecondHeader
+            onPress={() => navigation.goBack()}
+            title="Select Locations"
+          />
+        </View>
 
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          provider={ Platform.OS === "android" ? PROVIDER_GOOGLE : null}
-          style={{ flex: 1 }}
-          initialRegion={defaultRegion}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          showsCompass={true}
-          mapType="standard"
-          onPress={handleMapPress}
-        >
-          {/* Site markers - only for pickup selection */}
-          {validSites.map((site) => {
-            const lat = site?.location?.coordinates?.latitude;
-            const lng = site?.location?.coordinates?.longitude;
-            
-            if (!lat || !lng) return null;
+        {/* Step Card */}
+        <View style={styles.stepCard}>
+          <View style={styles.stepRow}>
+            <View style={[styles.stepDot, isPickupStep && styles.stepDotActive]} />
+            <Text style={[styles.stepText, isPickupStep && styles.stepTextActive]}>
+              Pickup
+            </Text>
 
-            return (
-              <Marker
-                key={site._id}
-                coordinate={{ latitude: lat, longitude: lng }}
-                title={site.name}
-                description={site.location?.address || ""}
-                pinColor="blue"
-                onPress={() => handleSiteMarkerPress(site)}
-              />
-            );
-          })}
-          
-          {pickupLocation && (
-            <Marker
-              coordinate={pickupLocation.coordinates}
-              title="Pickup Location"
-              description={pickupLocation.address}
-              pinColor="green"
-            />
-          )}
-          {dropoffLocation && (
-            <Marker
-              coordinate={dropoffLocation.coordinates}
-              title="Dropoff Location"
-              description={dropoffLocation.address}
-              pinColor="red"
-            />
-          )}
-        </MapView>
+            <View style={styles.stepLine} />
 
-        {/* Location selection indicator */}
-        <View style={styles.selectionIndicator}>
-          <Text style={styles.selectionText}>
-            {selectingLocation === "pickup"
-              ? "Tap on a site marker to select Pickup Location"
-              : "Tap on the map to select Dropoff Location"}
+            <View style={[styles.stepDot, !isPickupStep && styles.stepDotActive]} />
+            <Text style={[styles.stepText, !isPickupStep && styles.stepTextActive]}>
+              Dropoff
+            </Text>
+          </View>
+
+          <Text style={styles.stepHint}>
+            {isPickupStep
+              ? "Tap on site map to select Pickup point"
+              : "Tap on site map to select Dropoff point"}
           </Text>
         </View>
 
-        {/* Selected locations info */}
-        {(pickupLocation || dropoffLocation) && (
-          <View style={styles.locationsInfo}>
-            {pickupLocation && (
-              <View style={styles.locationCard}>
-                <View style={styles.locationHeader}>
-                  <Text style={styles.locationLabel}>Pickup</Text>
-                  <TouchableOpacity onPress={handleResetPickup}>
-                    <Text style={styles.resetText}>Reset</Text>
-                  </TouchableOpacity>
+        {/* Map Image */}
+        <ViewShot ref={viewShotRef} style={styles.mapContainer}>
+          <Pressable style={styles.imageWrapper} onPress={handleTapOnImage}>
+            <Image
+              source={{ uri: selectedSite?.siteMap }}
+              style={styles.mapImage}
+            />
+
+            {/* Pickup Marker */}
+            {pickupLocation ? (
+              <View
+                style={[
+                  styles.pin,
+                  { left: pickupLocation.x - 16, top: pickupLocation.y - 38 },
+                ]}
+              >
+                <View style={[styles.pinCircle, { backgroundColor: "#22c55e" }]}>
+                  <Text style={styles.pinText}>P</Text>
                 </View>
-                <Text style={styles.locationAddress} numberOfLines={2}>
-                  {pickupLocation.address}
-                </Text>
+                <View style={[styles.pinTail, { backgroundColor: "#22c55e" }]} />
               </View>
-            )}
-            {dropoffLocation && (
-              <View style={styles.locationCard}>
-                <View style={styles.locationHeader}>
-                  <Text style={styles.locationLabel}>Dropoff</Text>
-                  <TouchableOpacity onPress={handleResetDropoff}>
-                    <Text style={styles.resetText}>Reset</Text>
-                  </TouchableOpacity>
+            ) : null}
+
+            {/* Dropoff Marker */}
+            {dropoffLocation ? (
+              <View
+                style={[
+                  styles.pin,
+                  { left: dropoffLocation.x - 16, top: dropoffLocation.y - 38 },
+                ]}
+              >
+                <View style={[styles.pinCircle, { backgroundColor: "#ef4444" }]}>
+                  <Text style={styles.pinText}>D</Text>
                 </View>
-                <Text style={styles.locationAddress} numberOfLines={2}>
-                  {dropoffLocation.address}
-                </Text>
+                <View style={[styles.pinTail, { backgroundColor: "#ef4444" }]} />
               </View>
+            ) : null}
+          </Pressable>
+        </ViewShot>
+
+        {/* Bottom Sheet */}
+        <View style={styles.bottomSheet}>
+          <View style={styles.bottomRow}>
+            <TouchableOpacity style={styles.resetBtn} onPress={handleResetAll}>
+              <Text style={styles.resetText}>Reset All</Text>
+            </TouchableOpacity>
+
+            {pickupLocation && !dropoffLocation ? (
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={handleResetDropoff}
+              >
+                <Text style={styles.resetText}>Reset PickUp</Text>
+              </TouchableOpacity>
+            ) : (
+              <View />
             )}
           </View>
-        )}
-      </View>
 
-      <View style={styles.bottom}>
-        <AppButton
-          title="NEXT"
-          style={{ backgroundColor: colors.themeColor }}
-          textStyle={{ color: colors.white }}
-          onPress={handleNext}
-          disabled={!pickupLocation || !dropoffLocation}
-        />
-      </View>
-      <Loader isVisible={isLoading} />
-    </SafeAreaView>
+          <AppButton
+            title="NEXT"
+            style={[
+              styles.nextBtn,
+              { backgroundColor: colors.themeColor },
+            ]}
+            textStyle={{ color: colors.white }}
+            onPress={handleNext}
+            disabled={!pickupLocation || !dropoffLocation}
+          />
+        </View>
+
+        <Loader isVisible={isLoading} />
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -366,84 +222,171 @@ export default LocationOnMap;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0, // ✅ Fix
+    // backgroundColor: "#F7F7F7",
   },
+
   header: {
     paddingHorizontal: widthPixel(20),
     paddingTop: heightPixel(10),
+    backgroundColor: colors.white,
   },
-  subtitle: {
-    fontSize: fontPixel(14),
-    color: "#777",
-    fontFamily: fonts.NunitoRegular,
+
+  stepCard: {
+    marginHorizontal: widthPixel(16),
+    marginTop: heightPixel(12),
+    padding: widthPixel(14),
+    borderRadius: widthPixel(14),
+    backgroundColor: colors.white,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  stepDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#d1d5db",
+  },
+
+  stepDotActive: {
+    backgroundColor: colors.themeColor,
+  },
+
+  stepText: {
+    marginLeft: 8,
+    fontSize: fontPixel(13),
+    fontFamily: fonts.NunitoSemiBold,
+    color: "#9ca3af",
+  },
+
+  stepTextActive: {
+    color: colors.black,
+  },
+
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 12,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 10,
+  },
+
+  stepHint: {
     marginTop: heightPixel(10),
-    marginBottom: heightPixel(10),
+    fontSize: fontPixel(12),
+    fontFamily: fonts.NunitoRegular,
+    color: "#6b7280",
   },
+
   mapContainer: {
+    // flex: 1,
+
+    height: heightPixel(500),
+    width: '93%',
+    marginTop: heightPixel(10),
+    marginHorizontal: widthPixel(16),
+    borderRadius: widthPixel(16),
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    // alignSelf: 'center',
+    backgroundColor: 'pink',
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+
+  imageWrapper: {
     flex: 1,
     position: "relative",
   },
-  selectionIndicator: {
+
+  mapImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "stretch",
+    backgroundColor: "#fff",
+  },
+
+  // Pin Marker
+  pin: {
     position: "absolute",
-    top: heightPixel(20),
-    left: widthPixel(20),
-    right: widthPixel(20),
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingVertical: heightPixel(12),
+    width: 32,
+    alignItems: "center",
+  },
+
+  pinCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#fff",
+  },
+
+  pinText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  pinTail: {
+    width: 10,
+    height: 12,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    marginTop: -2,
+  },
+
+  bottomSheet: {
+    backgroundColor: '#fff',
     paddingHorizontal: widthPixel(16),
-    borderRadius: widthPixel(8),
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingTop: heightPixel(14),
+    paddingBottom: heightPixel(18),
+    borderTopLeftRadius: widthPixel(18),
+    borderTopRightRadius: widthPixel(18),
+    // shadowColor: "#000",
+
+    // shadowOpacity: 0.08,
+    // shadowRadius: 12,
+    // shadowOffset: { width: 0, height: -4 },
+    // elevation: 10,
   },
-  selectionText: {
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoSemiBold,
-    color: colors.themeColor,
-    textAlign: "center",
-  },
-  locationsInfo: {
-    position: "absolute",
-    bottom: heightPixel(100),
-    left: widthPixel(20),
-    right: widthPixel(20),
-    gap: heightPixel(10),
-  },
-  locationCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    padding: widthPixel(12),
-    borderRadius: widthPixel(8),
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  locationHeader: {
+
+  bottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: heightPixel(6),
+    marginBottom: heightPixel(12),
   },
-  locationLabel: {
-    fontSize: fontPixel(14),
-    fontFamily: fonts.NunitoSemiBold,
-    color: colors.black,
+
+  resetBtn: {
+    paddingVertical: heightPixel(8),
+    paddingHorizontal: widthPixel(12),
+    borderRadius: widthPixel(10),
+    backgroundColor: "#f3f4f6",
   },
+
   resetText: {
     fontSize: fontPixel(12),
-    fontFamily: fonts.NunitoRegular,
+    fontFamily: fonts.NunitoSemiBold,
     color: colors.themeColor,
   },
-  locationAddress: {
-    fontSize: fontPixel(12),
-    fontFamily: fonts.NunitoRegular,
-    color: colors.greyText,
-  },
-  bottom: {
-    paddingHorizontal: widthPixel(20),
-    paddingBottom: heightPixel(20),
+
+  nextBtn: {
+    borderRadius: widthPixel(14),
   },
 });

@@ -33,6 +33,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import useSite from "../../../hooks/useSite";
 import useUsers from "../../../hooks/useUsers";
+import { toastError } from "../../../services/utilities/toast/toast";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -50,11 +51,12 @@ const Home = () => {
   } = useTasks();
   const { selectedSite } = useSelector((state) => state.site || {});
   console.log("selectedSite", selectedSite);
-    const { getSites } = useSite();
-    const { getLoggedInUser } = useUsers();
-    useEffect(()=>{
-      getLoggedInUser();
-    },[])
+  const { getSites } = useSite();
+  const { getLoggedInUser } = useUsers();
+
+  useEffect(() => {
+    getLoggedInUser();
+  }, [])
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
@@ -128,7 +130,7 @@ const Home = () => {
   const TabContent = () => (
     <FlatList
       data={filteredData}
-      keyExtractor={(item) =>   item?._id}
+      keyExtractor={(item) => item?._id}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{
         padding: heightPixel(3),
@@ -150,7 +152,7 @@ const Home = () => {
         console.log("item", item);
         return (
           <AppTaskCard
-          key={item?._id}
+            key={item?._id}
             userName={item?.assignedTo?.name} // Using title as header
             taskTitle={item.title}
             status={item.status}
@@ -240,9 +242,10 @@ const Home = () => {
       {/* Floating Action Button (FAB) */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => {
-          navigation.navigate(routes.createTask);
-        }}
+        onPress={() => selectedSite ?
+
+          navigation.navigate(routes.createTask)
+          : toastError({ text: 'Please Select a site first from top right corner icon' })}
       >
         <Text style={styles.fabPlus}>+</Text>
       </TouchableOpacity>

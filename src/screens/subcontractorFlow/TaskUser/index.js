@@ -49,6 +49,14 @@ const TaskUser = ({ navigation, route }) => {
   useEffect(() => {
     fetchUsers(1);
   }, []);
+  const forkliftUsers = users?.filter((item) => item?.role === "forklift") || [];
+  useEffect(() => {
+    if (forkliftUsers.length < 10 && !loadingMore && !loading) {
+      loadMore();
+    }
+  }, [forkliftUsers.length]);
+
+
 
   const handleCreateTask = async () => {
     if (!selectedUser) return;
@@ -64,14 +72,19 @@ const TaskUser = ({ navigation, route }) => {
         const urls = await Promise.all(uploadPromises);
         uploadedPictures = urls.map((url) => ({ url }));
       }
-
+      // console?.log('------>>>', previousData?.siteMap)
+      const siteMap = await uploadFile(previousData?.siteMap)
+      // console?.log('------>>>>SiteMap', siteMap)
       const payload = {
         ...previousData,
         pictures: uploadedPictures,
         assignedTo: selectedUser,
         inventory: selectedInventory,
+        siteMap: siteMap,
+        siteId: previousData?.siteId?._id
         // dropOffLocation and materialLocation should already be in previousData
       };
+      console.log('------>>>Task', JSON?.stringify(payload, null, 2))
 
       const response = await createTask(payload);
 
@@ -102,21 +115,28 @@ const TaskUser = ({ navigation, route }) => {
     );
   };
 
-  const renderUser = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.userCard, selectedUser === item._id && styles.activeCard]}
-      onPress={() => setSelectedUser(item._id)}
-    >
-      <Image
-        source={item?.image ? { uri: item.image } : null}
-        style={styles.avatar}
-      />
-      <Text style={styles.userName}>{item?.name || item?.email}</Text>
-    </TouchableOpacity>
-  );
+  const renderUser = ({ item }) => {
+    // console?.log('0--------', item)
+    return (
+
+      <TouchableOpacity
+        style={[styles.userCard, selectedUser === item._id && styles.activeCard]}
+        onPress={() => setSelectedUser(item._id)}
+      >
+        <Image
+          source={item?.image ? { uri: item.image } : null}
+          style={styles.avatar}
+        />
+        <View style={{}}>
+          <Text style={styles.userName}>{item?.name}</Text>
+          <Text style={styles.email}>{item?.email}</Text>
+        </View>
+      </TouchableOpacity>
+    )
+  };
 
   return (
-    <SafeAreaView style={[styles.container,{
+    <SafeAreaView style={[styles.container, {
       paddingTop: insets.top
     }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Select User" />
@@ -124,14 +144,14 @@ const TaskUser = ({ navigation, route }) => {
         <Text style={styles.subtitle}>Assign this task to a user.</Text>
 
         <FlatList
-          data={users}
+          data={forkliftUsers}
           keyExtractor={(item) => item._id || item.id}
           renderItem={renderUser}
           contentContainerStyle={{ paddingBottom: heightPixel(100) }}
           ListEmptyComponent={
             !loading && (
               <Text style={{ textAlign: "center", marginTop: 20 }}>
-                No users found
+                No forklift users found
               </Text>
             )
           }
@@ -140,9 +160,10 @@ const TaskUser = ({ navigation, route }) => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.1}
           ListFooterComponent={renderFooter}
         />
+
       </View>
 
       <View style={styles.footer}>
@@ -206,6 +227,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: fontPixel(15),
     fontFamily: fonts.NunitoSemiBold,
+    color: colors.black,
+  },
+  email: {
+    fontSize: fontPixel(12),
+    fontFamily: fonts.NunitoRegular,
     color: colors.black,
   },
   footer: {

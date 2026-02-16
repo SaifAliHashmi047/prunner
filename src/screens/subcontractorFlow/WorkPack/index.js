@@ -82,11 +82,11 @@ const WorkPack = ({ navigation }) => {
                     )}
                 />
             </View>
-            <TouchableOpacity style={styles.fab} onPress={() => {
+            {/* <TouchableOpacity style={styles.fab} onPress={() => {
                 navigation.navigate(routes.createWorkPack);
             }}>
                 <Image source={appIcons.plus} style={{ width: widthPixel(24), height: widthPixel(24), tintColor: colors.white }} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Loader isVisible={loading} />
         </SafeAreaView>
     );
