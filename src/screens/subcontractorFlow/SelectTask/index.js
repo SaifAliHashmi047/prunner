@@ -76,7 +76,7 @@ const SelectTask = ({ navigation, route }) => {
   const [dropAddress, setDropAddress] = useState("");
   const [siteId, setSiteId] = useState("");
   const [duration, setDuration] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   console.log(selectedSite);
 
@@ -237,10 +237,10 @@ const SelectTask = ({ navigation, route }) => {
         title,
         description,
         taskType,
-        priority,
+        // priority,
         scheduledDate:
           taskType === "scheduled" ? new Date(scheduledDate).toISOString() : null, // Mocking date logic if 'time' not fully parsed
-        estimatedDuration: parseInt(duration) || 60,
+        // estimatedDuration: parseInt(duration) || 60,
         siteId: siteId,
         pictures: pictures,
         siteMap: markedImageUrl
@@ -565,7 +565,7 @@ const SelectTask = ({ navigation, route }) => {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Priority</Text>
+        {/* <Text style={styles.sectionTitle}>Priority</Text>
         <View style={styles.row}>
           <SelectionButton
             label="Low"
@@ -582,8 +582,8 @@ const SelectTask = ({ navigation, route }) => {
             selected={priority === "high"}
             onPress={() => setPriority("high")}
           />
-        </View>
-
+        </View> */}
+        {/* 
         <Text style={styles.sectionTitle}>Estimateed Duration Time</Text>
 
         <AppTextInput
@@ -591,7 +591,7 @@ const SelectTask = ({ navigation, route }) => {
           value={duration}
           onChangeText={setDuration}
           keyboardType="numeric"
-        />
+        /> */}
 
         <Text style={styles.label}>Add Pictures</Text>
         <View style={styles.picturesRow}>

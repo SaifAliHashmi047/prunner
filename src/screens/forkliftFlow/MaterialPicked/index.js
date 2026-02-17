@@ -58,7 +58,7 @@ const MaterialPicked = ({ navigation, route }) => {
         try {
             const taskId = task._id || task.id;
             const response = await updateTaskStatus(taskId, "started");
-            
+
             if (response?.success) {
                 setIsMaterialPicked(true);
                 toastSuccess({ text: response?.message || "Material picked successfully" });
@@ -76,7 +76,7 @@ const MaterialPicked = ({ navigation, route }) => {
         try {
             const taskId = task._id || task.id;
             const response = await updateTaskStatus(taskId, "completed");
-            
+
             if (response?.success) {
                 toastSuccess({ text: response?.message || "Job completed successfully" });
                 // Navigate back to home or task list
@@ -217,8 +217,8 @@ const MaterialPicked = ({ navigation, route }) => {
                                 ? "COMPLETING..."
                                 : "Mark as Completed"
                             : loading
-                            ? "UPDATING..."
-                            : "Material Picked"
+                                ? "UPDATING..."
+                                : "Material Picked"
                     }
                     onPress={isMaterialPicked ? handleCompleteJob : handleMaterialPicked}
                     style={{

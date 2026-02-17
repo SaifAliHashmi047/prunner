@@ -23,6 +23,7 @@ const ForkHomeDetail = ({ navigation }) => {
     const dispatch = useDispatch();
     const { sites, loading, fetchSites } = useSite();
     const { user } = useSelector((state) => state.user);
+    const { selectedSite } = useSelector((state) => state.site);
     console.log("usr", user);
     useEffect(() => {
         fetchSites(1);
@@ -30,7 +31,7 @@ const ForkHomeDetail = ({ navigation }) => {
     }, []);
 
     const handleSitePress = (site) => {
-        // dispatch(setSelectedSite(site));
+        dispatch(setSelectedSite(site));
         navigation.replace(routes.forkliftFlow);
     };
 
@@ -40,19 +41,38 @@ const ForkHomeDetail = ({ navigation }) => {
         const taskCount = item?.taskCount || item?.tasks?.length || item?.activeTasks || 0;
         const taskText = taskCount > 0 ? `${taskCount} Active Task${taskCount > 1 ? "s" : ""}` : "No Active Tasks";
         const status = item?.status || (item?.isAssigned ? "Assigned Site" : "");
+        const isSelected = selectedSite?._id === item?._id;
 
         return (
-            <TouchableOpacity style={styles.card} onPress={() => handleSitePress(item)}>
+            <TouchableOpacity
+                style={[
+                    styles.card,
+                    isSelected && { backgroundColor: colors?.themeColor },
+                ]}
+                onPress={() => handleSitePress(item)}
+                activeOpacity={0.8}
+            >
                 <SafeImageBackground
-                    name={siteName}
+                    name={"Site"}
                     source={{ uri: siteImage }}
                     style={styles.siteImage}
                 />
+
                 <View style={{ flex: 1, marginLeft: widthPixel(12) }}>
-                    <Text style={styles.siteName}>{siteName}</Text>
-                    <Text style={styles.taskText}>{taskText}</Text>
+                    <Text style={[styles.siteName, isSelected && { color: "#fff" }]}>
+                        {siteName}
+                    </Text>
+
+                    <Text style={[styles.taskText, isSelected && { color: "#fff" }]}>
+                        {taskText}
+                    </Text>
                 </View>
-                {status ? <Text style={styles.status}>{status}</Text> : null}
+
+                {status ? (
+                    <Text style={[styles.status, isSelected && { color: "#fff" }]}>
+                        {status}
+                    </Text>
+                ) : null}
             </TouchableOpacity>
         );
     };

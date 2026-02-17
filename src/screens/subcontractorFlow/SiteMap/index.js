@@ -20,9 +20,11 @@ import { Loader } from "../../../components/Loader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useSite from "../../../hooks/useSite";
 import SitesOnMapView from "../../../components/Maps/SitesOnMapView";
+import { useSelector } from "react-redux";
 
 const SiteMap = ({ navigation, route }) => {
-   
+  const { selectedSite } = useSelector((state) => state.site);
+
   const insets = useSafeAreaInsets();
   return (
     <SafeAreaView
@@ -38,12 +40,12 @@ const SiteMap = ({ navigation, route }) => {
       </View>
 
       {/* Image shown on full width */}
-      {/* <Image
-        source={siteMapUrl ? { uri: siteMapUrl } : appImages.siteImage}
+      {selectedSite?.siteMap ? <Image
+        source={selectedSite?.siteMap ? { uri: selectedSite?.siteMap } : appImages.siteImage}
         style={styles.image}
         resizeMode="contain"
-      /> */}
-      <SitesOnMapView />
+      /> : <Text style={{ marginTop: heightPixel(100), fontFamily: fonts.regular, fontSize: fontPixel(16), color: colors.black, textAlign: 'center', flex: 1 }}>Please Select a site from sites</Text>}
+      {/* <SitesOnMapView /> */}
     </SafeAreaView>
   );
 };

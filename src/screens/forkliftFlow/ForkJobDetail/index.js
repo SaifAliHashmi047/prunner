@@ -24,7 +24,7 @@ const ForkJobDetail = ({ navigation, route }) => {
   const { updateTaskStatus } = useTasks();
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
-  
+
   if (!task) {
     return (
       <SafeAreaView style={styles.container}>
@@ -39,12 +39,12 @@ const ForkJobDetail = ({ navigation, route }) => {
       </SafeAreaView>
     );
   }
-  
-  const handleCompleteJob = async() => {
+
+  const handleCompleteJob = async () => {
     await updateTaskStatus(task._id, "completed");
     navigation.goBack()
   }
-  
+
   const taskTitle = task.title || "Task";
   const customerName =
     task.assignedTo?.name || task.createdBy?.name || "Unknown User";
@@ -65,21 +65,21 @@ const ForkJobDetail = ({ navigation, route }) => {
     // UK approximate bounds: lat 50-60, lng -8 to 2
     const baseLat = 50 + Math.random() * 10; // Random latitude in UK
     const baseLng = -8 + Math.random() * 10; // Random longitude in UK
-    
+
     // 5km ≈ 0.045 degrees (1 degree ≈ 111km)
     const distanceInDegrees = 0.045;
     const angle = Math.random() * 2 * Math.PI; // Random direction
-    
+
     const pickup = {
       latitude: baseLat,
       longitude: baseLng,
     };
-    
+
     const dropoff = {
       latitude: baseLat + distanceInDegrees * Math.cos(angle),
       longitude: baseLng + distanceInDegrees * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180),
     };
-    
+
     return { pickup, dropoff };
   };
 
@@ -112,10 +112,10 @@ const ForkJobDetail = ({ navigation, route }) => {
     const dropoffCoord = dropOffLocation;
     console.log("pickupCoord====>>", pickupCoord);
     console.log("dropoffCoord====>>", dropoffCoord);
-    
+
     const pickupValid = isValidCoordinate(pickupCoord);
     const dropoffValid = isValidCoordinate(dropoffCoord);
-    
+
     if (!pickupValid || !dropoffValid) {
       // Generate UK coordinates if invalid
       const ukCoords = generateUKCoordinates();
@@ -124,7 +124,7 @@ const ForkJobDetail = ({ navigation, route }) => {
         dropoff: dropoffValid ? dropoffCoord : ukCoords.dropoff,
       };
     }
-    
+
     return {
       pickup: pickupCoord,
       dropoff: dropoffCoord,
@@ -136,20 +136,20 @@ const ForkJobDetail = ({ navigation, route }) => {
     const { pickup, dropoff } = mapCoordinates;
     const latitudes = [pickup.latitude, dropoff.latitude];
     const longitudes = [pickup.longitude, dropoff.longitude];
-    
+
     const minLat = Math.min(...latitudes);
     const maxLat = Math.max(...latitudes);
     const minLng = Math.min(...longitudes);
     const maxLng = Math.max(...longitudes);
-    
+
     const latDelta = maxLat - minLat;
     const lngDelta = maxLng - minLng;
-    
+
     // Add padding (20% on each side)
     const padding = 0.2;
     const centerLat = (minLat + maxLat) / 2;
     const centerLng = (minLng + maxLng) / 2;
-    
+
     return {
       latitude: centerLat,
       longitude: centerLng,
@@ -201,7 +201,8 @@ const ForkJobDetail = ({ navigation, route }) => {
         {/* Site Map */}
         <Text style={styles.sectionTitle}>Site Map</Text>
         <View style={styles.mapContainer}>
-          <MapView
+          <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
+          {/* <MapView
             ref={mapRef}
             provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
             style={styles.siteMap}
@@ -240,7 +241,7 @@ const ForkJobDetail = ({ navigation, route }) => {
                 pinColor="red"
               />
             )}
-          </MapView>
+          </MapView> */}
         </View>
 
         {/* Date & Time */}
@@ -314,37 +315,37 @@ const ForkJobDetail = ({ navigation, route }) => {
       </ScrollView>
 
       {/* Button pinned at bottom */}
-{status !== "completed" && (
-      <View
-        style={{
-          paddingHorizontal: heightPixel(16),
-          paddingBottom: insets.bottom,
-        }}
-      >
-        <AppButton
-          title={status === "started" || status === "in_progress" ? "Complete Job" : "Start Now"}
-          onPress={() =>{
-            if (status === "pending") {
-                navigation.navigate(routes.materialPicked,{
-                    task
-                  })
-            }
-            else if (status === "started" || status === "in_progress") {
-                handleCompleteJob()
-            }
-
-           }}
+      {status !== "completed" && (
+        <View
           style={{
-            marginTop: heightPixel(20),
-            borderWidth: 1,
-            borderColor: colors.themeColor,
+            paddingHorizontal: heightPixel(16),
+            paddingBottom: insets.bottom,
           }}
-          textStyle={{
-            color: colors.themeColor,
-            fontFamily: fonts.NunitoSemiBold,
-          }}
-        />
-      </View>
+        >
+          <AppButton
+            title={status === "started" || status === "in_progress" ? "Complete Job" : "Start Now"}
+            onPress={() => {
+              if (status === "pending") {
+                navigation.navigate(routes.materialPicked, {
+                  task
+                })
+              }
+              else if (status === "started" || status === "in_progress") {
+                handleCompleteJob()
+              }
+
+            }}
+            style={{
+              marginTop: heightPixel(20),
+              borderWidth: 1,
+              borderColor: colors.themeColor,
+            }}
+            textStyle={{
+              color: colors.themeColor,
+              fontFamily: fonts.NunitoSemiBold,
+            }}
+          />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     width: "100%",
-    height: heightPixel(160),
+    height: heightPixel(500),
     borderRadius: widthPixel(8),
     marginBottom: heightPixel(16),
     overflow: "hidden",
