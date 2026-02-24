@@ -73,7 +73,7 @@ const TaskUser = ({ navigation, route }) => {
         uploadedPictures = urls.map((url) => ({ url }));
       }
       // console?.log('------>>>', previousData?.siteMap)
-      const siteMap = await uploadFile(previousData?.siteMap)
+      const siteMap = previousData?.siteMap ? await uploadFile(previousData?.siteMap) : null
       // console?.log('------>>>>SiteMap', siteMap)
       const payload = {
         ...previousData,
@@ -84,7 +84,7 @@ const TaskUser = ({ navigation, route }) => {
         siteId: previousData?.siteId?._id
         // dropOffLocation and materialLocation should already be in previousData
       };
-      console.log('------>>>Task', JSON?.stringify(payload, null, 2))
+      console.log('------>>>TaskSent', JSON?.stringify(payload, null, 2))
 
       const response = await createTask(payload);
 

@@ -201,6 +201,10 @@ const Home = () => {
             style={{ width: widthPixel(24), height: widthPixel(24) }}
           />
         </TouchableOpacity>
+        {/* <Image
+          source={appIcons.appLogo}
+          style={{ width: widthPixel(50), height: widthPixel(50), resizeMode: 'contain' }}
+        /> */}
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity
             onPress={() => navigation.navigate(routes.forkHomeDetail)}

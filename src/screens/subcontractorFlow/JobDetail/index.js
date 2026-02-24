@@ -20,7 +20,7 @@ import SafeImageBackground from "../../../components/SafeImageBackground";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const JobDetail = ({ navigation, route }) => {
   const { task } = route.params || {};
-  console?.log('------->>>', task)
+  console?.log('------->>>Task', task)
   const insets = useSafeAreaInsets();
   if (!task) {
     return (
@@ -177,8 +177,8 @@ const JobDetail = ({ navigation, route }) => {
         </View>
 
         {/* Site Map */}
-        <Text style={styles.sectionTitle}>Site Map</Text>
-        <View style={styles.mapContainer}>
+        {task?.siteMap && <Text style={styles.sectionTitle}>Site Map</Text>}
+        {task?.siteMap ? <View style={styles.mapContainer}>
           <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
           {/* <MapView
             ref={mapRef}
@@ -220,7 +220,30 @@ const JobDetail = ({ navigation, route }) => {
               />
             )}
           </MapView> */}
-        </View>
+        </View> :
+          <View style={styles.locationCard}>
+            <View style={styles.locationRow}>
+              <View style={styles.dotLineContainer}>
+                <View style={styles.dot} />
+                <View style={styles.verticalLine} />
+                <View style={[styles.dot, { backgroundColor: colors.themeColor }]} />
+              </View>
+              <View style={styles.locationContent}>
+                <View>
+                  <Text style={styles.locationLabel}>From</Text>
+                  <Text style={styles.locationValue}>
+                    {task?.materialLocation || "N/A"}
+                  </Text>
+                </View>
+                <View style={{ marginTop: heightPixel(15) }}>
+                  <Text style={styles.locationLabel}>To</Text>
+                  <Text style={styles.locationValue}>
+                    {task?.dropOffLocation || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>}
 
         {/* Date & Time */}
         <Text style={styles.sectionTitle}>Date & Time</Text>
@@ -382,6 +405,53 @@ const styles = StyleSheet.create({
     width: widthPixel(100),
     height: widthPixel(80),
     borderRadius: widthPixel(6),
+  },
+  locationCard: {
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(12),
+    padding: widthPixel(16),
+    marginBottom: heightPixel(20),
+    elevation: 3,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  locationRow: {
+    flexDirection: "row",
+  },
+  dotLineContainer: {
+    alignItems: "center",
+    marginRight: widthPixel(12),
+    paddingVertical: heightPixel(4),
+  },
+  dot: {
+    width: widthPixel(10),
+    height: widthPixel(10),
+    borderRadius: widthPixel(5),
+    backgroundColor: colors.gray,
+  },
+  verticalLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: colors.lightGray,
+    marginVertical: heightPixel(4),
+  },
+  locationContent: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: fontPixel(12),
+    color: colors.greyText,
+    fontFamily: fonts.NunitoRegular,
+    marginBottom: heightPixel(2),
+  },
+  locationValue: {
+    fontSize: fontPixel(14),
+    color: colors.black,
+    fontFamily: fonts.NunitoSemiBold,
   },
   footer: {
     // paddingHorizontal: widthPixel(20),

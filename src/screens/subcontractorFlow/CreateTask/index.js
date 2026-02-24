@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
-import { SecondHeader, AppButton } from "../../../components";
+import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel, GOOGLE_PLACES_API_KEY } from "../../../services/constant";
 import { fonts } from "../../../services/utilities/fonts";
@@ -30,14 +30,16 @@ const CreateTask = ({ navigation }) => {
         return;
       }
       navigation.navigate(routes.selectTask, {
-        materialLocation: {
-          address: pickupLocation.address,
-          coordinates: pickupLocation.coordinates,
-        },
-        dropOffLocation: {
-          address: dropoffLocation.address,
-          coordinates: dropoffLocation.coordinates,
-        },
+        materialLocation: pickupLocation,
+        dropOffLocation: dropoffLocation,
+        // materialLocation: {
+        //   address: pickupLocation.address,
+        //   coordinates: pickupLocation.coordinates,
+        // },
+        // dropOffLocation: {
+        //   address: dropoffLocation.address,
+        //   coordinates: dropoffLocation.coordinates,
+        // },
       });
     } else {
       Alert.alert("Error", "Please select a location method");
@@ -45,8 +47,8 @@ const CreateTask = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container,{
-      paddingTop: insets.top 
+    <SafeAreaView style={[styles.container, {
+      paddingTop: insets.top
     }]}>
       <SecondHeader onPress={() => navigation.goBack()} title="Create Task" />
       <KeyboardAwareScrollView
@@ -80,7 +82,13 @@ const CreateTask = ({ navigation }) => {
         {showPlotInput && (
           <View style={{ marginTop: heightPixel(10) }}>
             <Text style={styles.label}>Pickup Location</Text>
-            <GooglePlacesAutocomplete
+            <AppTextInput
+              placeholder="Enter pickup location"
+              value={pickupLocation}
+              style={styles.autocompleteContainer}
+              onChangeText={setPickupLocation}
+            />
+            {/* <GooglePlacesAutocomplete
               placeholder="Enter pickup location"
               fetchDetails={true}
               listViewDisplayed="auto"
@@ -111,12 +119,18 @@ const CreateTask = ({ navigation }) => {
                 placeholderTextColor: colors.grey300,
               }}
               keyboardShouldPersistTaps="handled"
-            />
+            /> */}
 
             <Text style={[styles.label, { marginTop: heightPixel(20) }]}>
               Dropoff Location
             </Text>
-            <GooglePlacesAutocomplete
+            <AppTextInput
+              placeholder="Enter dropoff location"
+              value={dropoffLocation}
+              style={styles.autocompleteContainer}
+              onChangeText={setDropoffLocation}
+            />
+            {/* <GooglePlacesAutocomplete
               placeholder="Enter dropoff location"
               fetchDetails={true}
               listViewDisplayed="auto"
@@ -147,7 +161,7 @@ const CreateTask = ({ navigation }) => {
                 placeholderTextColor: colors.grey300,
               }}
               keyboardShouldPersistTaps="handled"
-            />
+            /> */}
           </View>
         )}
 

@@ -186,21 +186,24 @@ const ForkJobDetail = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* User Info */}
-        <View style={styles.userRow}>
+        <View style={styles.headerCard}>
           <SafeImageBackground
             source={customerImage ? { uri: customerImage } : null}
             name={customerName}
             style={styles.avatar}
           />
-          <Text style={styles.userName}>{taskTitle}</Text>
-          <Text style={[styles.status, { textTransform: "capitalize" }]}>
-            {status}
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.userName}>{taskTitle}</Text>
+            <Text style={styles.customerSubText}>Client: {customerName}</Text>
+          </View>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>{status}</Text>
+          </View>
         </View>
 
         {/* Site Map */}
-        <Text style={styles.sectionTitle}>Site Map</Text>
-        <View style={styles.mapContainer}>
+        {task?.siteMap && <Text style={styles.sectionTitle}>Site Map</Text>}
+        {task?.siteMap ? <View style={styles.mapContainer}>
           <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
           {/* <MapView
             ref={mapRef}
@@ -242,20 +245,48 @@ const ForkJobDetail = ({ navigation, route }) => {
               />
             )}
           </MapView> */}
-        </View>
+        </View> :
+          <View style={styles.locationCard}>
+            <View style={styles.locationRow}>
+              <View style={styles.dotLineContainer}>
+                <View style={styles.dot} />
+                <View style={styles.verticalLine} />
+                <View style={[styles.dot, { backgroundColor: colors.themeColor }]} />
+              </View>
+              <View style={styles.locationContent}>
+                <View>
+                  <Text style={styles.locationLabel}>From</Text>
+                  <Text style={styles.locationValue}>
+                    {task?.materialLocation || "N/A"}
+                  </Text>
+                </View>
+                <View style={{ marginTop: heightPixel(15) }}>
+                  <Text style={styles.locationLabel}>To</Text>
+                  <Text style={styles.locationValue}>
+                    {task?.dropOffLocation || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        }
 
         {/* Date & Time */}
         <Text style={styles.sectionTitle}>Date & Time</Text>
         {taskDate ? (
           <View style={styles.rowBox}>
             <View style={styles.iconText}>
-              <Image source={appIcons.calandar} style={styles.icon} />
+              <View style={styles.iconCircle}>
+                <Image source={appIcons.calandar} style={styles.iconSmall} />
+              </View>
               <Text style={styles.rowText}>
                 {formateDate(taskDate, "DD-MMM-YYYY")}
               </Text>
             </View>
             <View style={styles.iconText}>
-              <Image source={appIcons.time} style={styles.icon} />
+              <View style={styles.iconCircle}>
+                <Image source={appIcons.time} style={styles.iconSmall} />
+              </View>
               <Text style={styles.rowText}>
                 {formateDate(taskDate, "hh:mm A")}
               </Text>
@@ -404,15 +435,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: colors.white,
-    borderRadius: widthPixel(8),
-    paddingVertical: heightPixel(12),
+    borderRadius: widthPixel(10),
+    paddingVertical: heightPixel(14),
     paddingHorizontal: widthPixel(14),
     elevation: 2,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    marginBottom: heightPixel(10),
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    marginBottom: heightPixel(12),
+    borderWidth: 1,
+    borderColor: colors.lightGray,
   },
   iconText: {
     flexDirection: "row",
@@ -433,12 +466,107 @@ const styles = StyleSheet.create({
   rowText: {
     fontSize: fontPixel(14),
     color: colors.black,
+    fontFamily: fonts.NunitoSemiBold,
+  },
+  headerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(12),
+    padding: widthPixel(16),
+    marginTop: heightPixel(10),
+    marginBottom: heightPixel(16),
+    elevation: 4,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  customerSubText: {
+    fontSize: fontPixel(12),
+    color: colors.greyText,
     fontFamily: fonts.NunitoRegular,
+    marginTop: heightPixel(2),
+  },
+  statusBadge: {
+    backgroundColor: "#F0E7FF", // Light theme color background
+    paddingHorizontal: widthPixel(10),
+    paddingVertical: heightPixel(4),
+    borderRadius: widthPixel(20),
+  },
+  statusText: {
+    fontSize: fontPixel(12),
+    color: colors.themeColor,
+    fontFamily: fonts.NunitoBold,
+    textTransform: "capitalize",
+  },
+  iconCircle: {
+    width: widthPixel(32),
+    height: widthPixel(32),
+    borderRadius: widthPixel(16),
+    backgroundColor: "#F5F5F7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: widthPixel(10),
+  },
+  iconSmall: {
+    width: widthPixel(16),
+    height: widthPixel(16),
+    resizeMode: "contain",
   },
   picture: {
     width: widthPixel(100),
     height: widthPixel(80),
     borderRadius: widthPixel(6),
+  },
+  locationCard: {
+    backgroundColor: colors.white,
+    borderRadius: widthPixel(12),
+    padding: widthPixel(16),
+    marginBottom: heightPixel(20),
+    elevation: 3,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  locationRow: {
+    flexDirection: "row",
+  },
+  dotLineContainer: {
+    alignItems: "center",
+    marginRight: widthPixel(12),
+    paddingVertical: heightPixel(4),
+  },
+  dot: {
+    width: widthPixel(10),
+    height: widthPixel(10),
+    borderRadius: widthPixel(5),
+    backgroundColor: colors.gray,
+  },
+  verticalLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: colors.lightGray,
+    marginVertical: heightPixel(4),
+  },
+  locationContent: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: fontPixel(12),
+    color: colors.greyText,
+    fontFamily: fonts.NunitoRegular,
+    marginBottom: heightPixel(2),
+  },
+  locationValue: {
+    fontSize: fontPixel(14),
+    color: colors.black,
+    fontFamily: fonts.NunitoSemiBold,
   },
   footer: {
     // paddingHorizontal: widthPixel(20),

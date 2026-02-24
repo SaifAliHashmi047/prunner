@@ -197,6 +197,10 @@ const Home = () => {
             style={{ width: widthPixel(24), height: widthPixel(24) }}
           />
         </TouchableOpacity>
+        <Image
+          source={appIcons.appLogo}
+          style={{ width: widthPixel(50), height: widthPixel(50), resizeMode: 'contain' }}
+        />
         <TouchableOpacity
           onPress={() => navigation.navigate(routes.homeDetail)}
           style={{ padding: heightPixel(12) }}
