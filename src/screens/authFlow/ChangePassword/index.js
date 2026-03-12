@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, View } from "react-native";
+import { SafeAreaView, StyleSheet, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { AppHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel } from "../../../services/constant";
@@ -109,14 +110,17 @@ const ChangePassword = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
       >
         <AppHeader
           title="Create your Password"
-          subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+          subtitle="Choose a strong password and confirm it to secure your account."
           onBack={() => navigation.goBack()}
         />
 
@@ -148,8 +152,7 @@ const ChangePassword = ({ navigation }) => {
             disabled={loading}
           />
         </View>
-
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
       <Loader isVisible={loading} />
     </SafeAreaView>
   );

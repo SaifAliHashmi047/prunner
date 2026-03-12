@@ -43,7 +43,7 @@ const ProfileVerified = ({ navigation }) => {
         {/* Header */}
         <AppHeader
           title="Congratulations your profile is Verified"
-          subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+          subtitle="Your profile has been verified. You're all set to use the app."
         />
 
         {/* Illustration */}

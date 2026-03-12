@@ -61,7 +61,7 @@ const CreateWorkPack = ({ navigation }) => {
                 {/* Scrollable content */}
                 <ScrollView contentContainerStyle={styles.content}>
                     <Text style={styles.descriptionText}>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor lectus augue.
+                        Create a work pack by giving it a title and a short description.
                     </Text>
 
                     <AppTextInput

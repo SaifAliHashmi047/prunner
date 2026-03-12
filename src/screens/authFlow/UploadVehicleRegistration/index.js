@@ -129,13 +129,9 @@ const UploadVehicleRegistration = ({ navigation, route }) => {
            {/* Title & Subtitle */}
            <ForkLiftHeader 
              title="Upload Vehicle Registration Card"
-             subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+             subtitle="Upload your vehicle registration card for verification."
              onPress={() => navigation.goBack()}
            />
-           {/* <Text style={styles.title}></Text>
-           <Text style={styles.subtitle}>
-             Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-           </Text> */}
    
            {/* File Card */}
            {registrationCardImage ? (

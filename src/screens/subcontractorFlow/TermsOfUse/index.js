@@ -22,69 +22,13 @@ const TermsOfUse = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.text}>
-            1. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            elementum dictum augue et iaculis. Ut id ullamcorper sapien. In neque
-            neque, lobortis rhoncus ligula id, vestibulum laoreet eros. Cras quis
-            vestibulum dui. Etiam feugiat ligula quis vehicula tincidunt. Ut ut
-            consectetur ex. Fusce ut aliquet leo. Nunc massa lectus, semper
-            fermentum dui eu, dapibus suscipit metus. Sed tempus consequat ante,
-            sit amet rhoncus turpis tincidunt varius.{"\n\n"}
+            1. Acceptance. By using Project Runner you agree to these terms. Use the app only for lawful purposes and in line with your role (subcontractor or forklift operator).{"\n\n"}
 
-            Praesent egestas risus eu aliquam euismod. Cras nibh erat, iaculis sed
-            vestibulum quis, hendrerit non dui. Etiam bibendum, erat ac ullamcorper
-            rutrum, leo lorem ullamcorper purus, sit amet turpis mauris a massa.
-            Sed a vulputate quam. Suspendisse cursus sit amet nulla a sagittis.
-            Aenean pharetra tempus quam, facilisis venenatis elit pulvinar eu.
-            Vivamus tempus arcu elit, eu elementum quam vestibulum at. Vivamus ac
-            lobortis felis. Nam fermentum tortor quis leo maximus venenatis. Donec
-            ut leo in diam hendrerit fringilla. Fusce non metus ultrices nunc
-            porttitor finibus quis id lorem.{"\n\n"}
+            2. Accounts. You are responsible for keeping your login details secure. Do not share your account. You must provide accurate information when signing up and updating your profile.{"\n\n"}
 
-            2. Vestibulum sodales pulvinar accumsan. Praesent rhoncus neque in tempor
-            bibendum. Cras nec feugiat orci. Vestibulum at ipsum primis in
-            faucibus orci luctus et ultrices posuere cubilia curae; Proin id leo
-            eros. Suspendisse vulputate leo justo eu porta. Nulla facilisi.{"\n\n"}
+            3. Use of the service. Project Runner is for managing tasks, sites, deliveries, and team communication. Do not use it for spam, harassment, or to share content that is illegal or harmful. We may suspend or remove accounts that break these rules.{"\n\n"}
 
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            elementum dictum augue et iaculis. Ut id ullamcorper sapien. In neque
-            neque, lobortis rhoncus ligula id, vestibulum laoreet eros. Cras quis
-            vestibulum dui. Etiam feugiat ligula quis vehicula tincidunt. Ut ut
-            consectetur ex. Fusce ut aliquet leo. Nunc massa lectus, semper
-            fermentum dui eu, dapibus suscipit metus. Sed tempus consequat ante,
-            sit amet rhoncus turpis tincidunt varius.{"\n\n"}
-
-            3. Praesent egestas risus eu aliquam euismod. Cras nibh erat, iaculis sed
-            vestibulum quis, hendrerit non dui. Etiam bibendum, erat ac ullamcorper
-            rutrum, leo lorem ullamcorper purus, sit amet turpis mauris a massa.
-            Sed a vulputate quam. Suspendisse cursus sit amet nulla a sagittis.
-            Aenean pharetra tempus quam, facilisis venenatis elit pulvinar eu.
-            Vivamus tempus arcu elit, eu elementum quam vestibulum at. Vivamus ac
-            lobortis felis. Nam fermentum tortor quis leo maximus venenatis. Donec
-            ut leo in diam hendrerit fringilla. Fusce non metus ultrices nunc
-            porttitor finibus quis id lorem.{"\n\n"}
-
-            Vestibulum sodales pulvinar accumsan. Praesent rhoncus neque in tempor
-            bibendum. Cras nec feugiat orci. Vestibulum at ipsum primis in
-            faucibus orci luctus et ultrices posuere cubilia curae; Proin id leo
-            eros. Suspendisse vulputate leo justo eu porta. Nulla facilisi.{"\n\n"}
-
-            4. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            elementum dictum augue et iaculis. Ut id ullamcorper sapien. In neque
-            neque, lobortis rhoncus ligula id, vestibulum laoreet eros. Cras quis
-            vestibulum dui. Etiam feugiat ligula quis vehicula tincidunt. Ut ut
-            consectetur ex. Fusce ut aliquet leo. Nunc massa lectus, semper
-            fermentum dui eu, dapibus suscipit metus. Sed tempus consequat ante,
-            sit amet rhoncus turpis tincidunt varius.{"\n\n"}
-
-            Praesent egestas risus eu aliquam euismod. Cras nibh erat, iaculis sed
-            vestibulum quis, hendrerit non dui. Etiam bibendum, erat ac ullamcorper
-            rutrum, leo lorem ullamcorper purus, sit amet turpis mauris a massa.
-            Sed a vulputate quam. Suspendisse cursus sit amet nulla a sagittis.
-            Aenean pharetra tempus quam, facilisis venenatis elit pulvinar eu.
-            Vivamus tempus arcu elit, eu elementum quam vestibulum at. Vivamus ac
-            lobortis felis. Nam fermentum tortor quis leo maximus venenatis. Donec
-            ut leo in diam hendrerit fringilla. Fusce non metus ultrices nunc
-            porttitor finibus quis id lorem.{"\n\n"}
+            4. Data and privacy. We collect and use data as described in our privacy policy to run the app, improve it, and support you. By using the app you consent to this use. You can request deletion of your account and data from the app settings.
           </Text>
         </ScrollView>
       </View>

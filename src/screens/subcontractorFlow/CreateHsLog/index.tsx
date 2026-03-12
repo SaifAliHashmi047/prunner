@@ -282,8 +282,7 @@ const CreateHsLog = ({ navigation }:any) => {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.subtitle}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin
-            porttitor lectus augue
+            Log health and safety details for the site. Select a site, add a title and precaution details.
           </Text>
 
           {/* Site Selection Dropdown */}

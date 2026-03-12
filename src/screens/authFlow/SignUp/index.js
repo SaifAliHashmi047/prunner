@@ -135,7 +135,7 @@ const SignUp = ({ navigation }) => {
             <View style={styles.container}>
                 <Text style={styles.title}>Register yourself</Text>
                 <Text style={styles.subtitle}>
-                    Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit.
+                    Create an account to get started. Enter your email and choose a secure password.
                 </Text>
 
                 {/* Email Input */}

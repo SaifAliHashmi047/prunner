@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SecondHeader, AppButton, AppTextInput, AppModal } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -16,18 +17,19 @@ const CancelJobOther = ({ navigation }) => {
     const userRole = useSelector((state) => state.user.userRole);
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={{
-                flex: 1,
-                paddingHorizontal: widthPixel(20),
-
-            }}>
+            <KeyboardAwareScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: widthPixel(20) }}
+                showsVerticalScrollIndicator={false}
+                enableOnAndroid
+                extraScrollHeight={20}
+                keyboardShouldPersistTaps="handled"
+            >
                 <SecondHeader onPress={() => navigation.goBack()} title="Cancel Job" />
 
                 {/* Description */}
                 <Text style={styles.description}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor
-                    lectus augue
+                    Please describe why you need to cancel this job. Your reason helps us improve.
                 </Text>
 
                 {/* Reason Input */}
@@ -77,7 +79,7 @@ const CancelJobOther = ({ navigation }) => {
                         }}
                     />
                 </View>
-            </View>
+            </KeyboardAwareScrollView>
             <AppModal
                 title="Job Cancelled"
                 subtitle="Sed dignissim nisl a vehicula fringilla. Nulla faucibus dui tellus, ut dignissim"

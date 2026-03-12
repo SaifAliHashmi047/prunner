@@ -138,11 +138,11 @@ const Login = ({ navigation }: { navigation: any }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Welcome Back to Project Runner</Text>
         <Text style={styles.subtitle}>
-          Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit.
+          Sign in with your email and password to manage tasks and collaborate with your team.
         </Text>
         <View style={{flexDirection:"row",gap:widthPixel(10),marginVertical:heightPixel(10)}}>
           <AppButton
-            title={"Subconstructor"}
+            title={"Subcontractor"}
             onPress={()=>setRole("subConstructor")}
             style={{ backgroundColor: role === "subConstructor" ? colors.themeColor : colors.gray }}
             textStyle={{ color: colors.white }}

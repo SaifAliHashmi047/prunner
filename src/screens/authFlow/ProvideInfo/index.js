@@ -72,7 +72,7 @@ const ProvideInfo = ({ navigation, route }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Please Provide Info</Text>
         <Text style={styles.subtitle}>
-          Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit.
+          Enter your induction number to complete your profile setup.
         </Text>
         <AppTextInput
           placeholder="Enter your induction number"

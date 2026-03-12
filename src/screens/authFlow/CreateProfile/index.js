@@ -170,7 +170,7 @@ const CreateProfile = ({ navigation }) => {
         {/* Header */}
         <AppHeader
           title="Tell About yourself"
-          subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+          subtitle="Add your name and profile photo so your team can recognize you."
         />
 
         {/* Profile Avatar */}

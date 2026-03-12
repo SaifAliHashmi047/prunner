@@ -22,6 +22,7 @@ try {
 } catch (e) {
     console.log("react-native-camera-kit not available. Please install: npm install react-native-camera-kit");
 }
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { AppHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, fontPixel } from "../../../services/constant";
@@ -221,7 +222,14 @@ const ScanQr = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
+            <KeyboardAwareScrollView
+                style={styles.container}
+                contentContainerStyle={{ flexGrow: 1 }}
+                showsVerticalScrollIndicator={false}
+                enableOnAndroid
+                extraScrollHeight={20}
+                keyboardShouldPersistTaps="handled"
+            >
                 <AppHeader
                     title="Scan QR Code"
                     onBack={() => navigation.goBack()}
@@ -229,10 +237,10 @@ const ScanQr = ({ navigation, route }) => {
 
                 <View style={styles.content}>
                     <Text style={styles.contentSubtitle}>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas at maximus nisi. Proin in orci ligula. Morbi tincidunt, leo nec aliquam gravida, felis enim auctor sapien, a dictum velit ipsum ut leo.
+                        Scan the QR code at the site or on your induction document to check in or verify your induction.
                     </Text>
                     <Text style={styles.contentSubtitle}>
-                        Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Phasellus scelerisque consectetur ligula, quis varius felis molestie in. Pellentesque quis maximus dolor. Vestibulum a luctus nisl. Phasellus vitae consequat tellus, quis pharetra tortor.
+                        If you can't scan, tap "Enter Code Manually" and type your induction number instead.
                     </Text>
                 </View>
 
@@ -252,7 +260,7 @@ const ScanQr = ({ navigation, route }) => {
                         </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </KeyboardAwareScrollView>
 
             {/* Manual Code Input Modal */}
             <Modal

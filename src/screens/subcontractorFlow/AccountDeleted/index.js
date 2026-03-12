@@ -32,7 +32,7 @@ const AccountDeleted = ({ navigation }) => {
         {/* Main Title */}
         <Text style={styles.title}>Account Deleted</Text>
         <Text style={styles.description}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce ac eleifend purus.
+          Your account has been deleted. We're sorry to see you go. You can sign up again anytime if you change your mind.
         </Text>
       </View>
     </SafeAreaView>

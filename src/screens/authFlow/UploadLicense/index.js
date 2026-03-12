@@ -524,7 +524,7 @@ const UploadLicense = ({ navigation }) => {
         {/* Title & Subtitle */}
         <ForkLiftHeader 
           title="Upload your Driving License"
-          subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          subtitle="Upload a clear photo or document of your driving license for verification."
           onPress={() => navigation.goBack()}
         />
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SecondHeader, AppTextInput, AppButton } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { widthPixel, heightPixel, fontPixel } from "../../../services/constant";
@@ -75,10 +76,13 @@ const DeleteAccount = ({ navigation }) => {
         <SecondHeader onPress={() => navigation.goBack()} title="Delete Account" />
 
         {/* Content */}
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          enableOnAndroid
+          extraScrollHeight={20}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Warning Section */}
           <View style={styles.warningSection}>
@@ -117,7 +121,7 @@ const DeleteAccount = ({ navigation }) => {
               disabled={loading}
             />
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
       <Loader isVisible={loading} />
     </SafeAreaView>

@@ -203,72 +203,10 @@ const ForkJobDetail = ({ navigation, route }) => {
 
         {/* Site Map */}
         {task?.siteMap && <Text style={styles.sectionTitle}>Site Map</Text>}
-        {task?.siteMap ? <View style={styles.mapContainer}>
+        {task?.siteMap && <View style={styles.mapContainer}>
           <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
-          {/* <MapView
-            ref={mapRef}
-            provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-            style={styles.siteMap}
-            initialRegion={mapRegion}
-            mapType="standard"
-            showsUserLocation={false}
-            showsMyLocationButton={false}
-            showsCompass={true}
-            onLayout={() => {
-              if (mapRef.current && mapCoordinates.pickup && mapCoordinates.dropoff) {
-                setTimeout(() => {
-                  mapRef.current?.fitToCoordinates(
-                    [mapCoordinates.pickup, mapCoordinates.dropoff],
-                    {
-                      edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-                      animated: true,
-                    }
-                  );
-                }, 500);
-              }
-            }}
-          >
-            {mapCoordinates.pickup && (
-              <Marker
-                coordinate={mapCoordinates.pickup}
-                title="Pickup Location"
-                description={pickUpLocation?.address || "Pickup Location"}
-                pinColor="green"
-              />
-            )}
-            {mapCoordinates.dropoff && (
-              <Marker
-                coordinate={mapCoordinates.dropoff}
-                title="Dropoff Location"
-                description={task?.dropOffLocation?.address || "Dropoff Location"}
-                pinColor="red"
-              />
-            )}
-          </MapView> */}
-        </View> :
-          <View style={styles.locationCard}>
-            <View style={styles.locationRow}>
-              <View style={styles.dotLineContainer}>
-                <View style={styles.dot} />
-                <View style={styles.verticalLine} />
-                <View style={[styles.dot, { backgroundColor: colors.themeColor }]} />
-              </View>
-              <View style={styles.locationContent}>
-                <View>
-                  <Text style={styles.locationLabel}>From</Text>
-                  <Text style={styles.locationValue}>
-                    {task?.materialLocation || "N/A"}
-                  </Text>
-                </View>
-                <View style={{ marginTop: heightPixel(15) }}>
-                  <Text style={styles.locationLabel}>To</Text>
-                  <Text style={styles.locationValue}>
-                    {task?.dropOffLocation || "N/A"}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
+         
+        </View> 
         }
 
         {/* Date & Time */}

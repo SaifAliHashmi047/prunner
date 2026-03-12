@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, View } from "react-native";
+import { SafeAreaView, StyleSheet, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { AppHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, widthPixel, emailFormat } from "../../../services/constant";
@@ -84,14 +85,17 @@ const Forgot = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
       >
         <AppHeader
           title="Forget Password"
-          subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+          subtitle="Enter your email and we'll send you a link to reset your password."
           onBack={() => navigation.goBack()}
         />
 
@@ -113,12 +117,11 @@ const Forgot = ({ navigation }) => {
             }}
             textStyle={{
             color: colors.white,
-          }} 
+          }}
             disabled={loading}
           />
         </View>
-
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
       <Loader isVisible={loading} />
     </SafeAreaView>
   );

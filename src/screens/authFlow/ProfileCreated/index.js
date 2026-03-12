@@ -24,8 +24,7 @@ const ProfileCreated = ({ navigation }) => {
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-          elementum dictum augue.
+          Your profile has been created successfully. You can now sign in and get started.
         </Text>
       </View>
     </SafeAreaView>

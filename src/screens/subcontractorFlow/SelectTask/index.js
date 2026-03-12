@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
-  ScrollView,
   FlatList,
   Alert,
   Modal,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import ImagePicker from "react-native-image-crop-picker";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
@@ -70,13 +70,13 @@ const SelectTask = ({ navigation, route }) => {
   const { selectedSite } = useSelector((state) => state.site);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [taskType, setTaskType] = useState("instant");
+  const [taskType, setTaskType] = useState(null);
   const [priority, setPriority] = useState("medium");
   const [time, setTime] = useState(""); // For scheduled date
   const [dropAddress, setDropAddress] = useState("");
   const [siteId, setSiteId] = useState("");
   const [duration, setDuration] = useState("");
-  const [scheduledDate, setScheduledDate] = useState(new Date());
+  const [scheduledDate, setScheduledDate] = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
   console.log(selectedSite);
 
@@ -194,7 +194,15 @@ const SelectTask = ({ navigation, route }) => {
     return years;
   };
 
+  const isPastDate = (dayNum) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateToCheck = new Date(year, month, dayNum);
+    return dateToCheck < today;
+  };
+
   const handleDateSelect = (day) => {
+    if (isPastDate(day)) return;
     setSelectedDay(day);
     const d = new Date(year, month, day);
     const yyyy = d.getFullYear();
@@ -220,6 +228,10 @@ const SelectTask = ({ navigation, route }) => {
     return dateStr;
   };
   const handleNext = () => {
+    if (!taskType) {
+      Alert.alert("Error", "Please select a task type");
+      return;
+    }
     if (!title || !description) {
       Alert.alert("Error", "Please fill all fields");
       return;
@@ -282,13 +294,16 @@ const SelectTask = ({ navigation, route }) => {
         },
       ]}
     >
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{
           paddingHorizontal: widthPixel(20),
           flexGrow: 1,
           paddingBottom: heightPixel(40),
         }}
         showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
       >
         <SecondHeader
           onPress={() => navigation.goBack()}
@@ -303,8 +318,7 @@ const SelectTask = ({ navigation, route }) => {
             marginBottom: heightPixel(10),
           }}
         >
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin
-          porttitor lectus augue
+          Enter the task title and description, then choose instant or scheduled delivery.
         </Text>
 
         <Text style={styles.sectionTitle}>Basic Info</Text>
@@ -439,19 +453,22 @@ const SelectTask = ({ navigation, route }) => {
                                 );
                               }
                               const isSelected = day === selectedDay;
+                              const isPast = isPastDate(day);
                               return (
                                 <TouchableOpacity
                                   key={`day-${wi}-${day}-${di}`}
                                   style={[
                                     styles.dayCell,
-                                    isSelected && styles.daySelected,
+                                    isSelected && !isPast && styles.daySelected,
                                   ]}
                                   onPress={() => handleDateSelect(day)}
+                                  disabled={isPast}
                                 >
                                   <Text
                                     style={[
                                       styles.dayText,
-                                      isSelected && styles.dayTextSelected,
+                                      isSelected && !isPast && styles.dayTextSelected,
+                                      isPast && styles.dayTextDisabled,
                                     ]}
                                   >
                                     {day}
@@ -631,7 +648,7 @@ const SelectTask = ({ navigation, route }) => {
             onPress={handleNext}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
@@ -826,6 +843,9 @@ const styles = StyleSheet.create({
   dayTextSelected: {
     color: colors.themeColor,
     fontFamily: fonts.NunitoSemiBold,
+  },
+  dayTextDisabled: {
+    color: "#D0D0D0",
   },
   monthYearButton: {
     paddingHorizontal: widthPixel(8),

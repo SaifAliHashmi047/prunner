@@ -22,26 +22,9 @@ const AboutUs = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.text}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-          elementum dictum augue et iaculis. Ut id ullamcorper sapien. In neque
-          neque, lobortis rhoncus ligula id, vestibulum laoreet eros. Cras quis
-          vestibulum dui. Etiam feugiat ligula quis vehicula tincidunt. Ut ut
-          consectetur ex. Fusce ut aliquet leo. Nunc massa lectus, semper
-          fermentum dui eu, dapibus suscipit metus. Sed tempus consequat ante,
-          sit amet rhoncus turpis tincidunt varius.{"\n\n"}
-          Praesent egestas risus eu aliquam euismod. Cras nibh erat, iaculis sed
-          vestibulum quis, hendrerit non dui. Etiam bibendum, erat ac ullamcorper
-          rutrum, leo lorem ullamcorper purus, sit amet turpis mauris a massa.
-          Sed a vulputate quam. Suspendisse cursus sit amet nulla a sagittis.
-          Aenean pharetra tempus quam, facilisis venenatis elit pulvinar eu.
-          Vivamus tempus arcu elit, eu elementum quam vestibulum at. Vivamus ac
-          lobortis felis. Nam fermentum tortor quis leo maximus venenatis. Donec
-          ut leo in diam hendrerit fringilla. Fusce non metus ultrices nunc
-          porttitor finibus quis id lorem.{"\n\n"}
-          Vestibulum sodales pulvinar accumsan. Praesent rhoncus neque in tempor
-          bibendum. Cras nec feugiat orci. Vestibulum at ipsum primis in
-          faucibus orci luctus et ultrices posuere cubilia curae; Proin id leo
-          eros. Suspendisse vulputate leo justo eu porta. Nulla facilisi.{"\n\n"}
+          Project Runner helps construction and logistics teams manage tasks, sites, and deliveries in one place.{"\n\n"}
+          Subcontractors can create and assign tasks, track materials, and communicate with forklift operators. Forklift operators receive jobs, update status, and complete deliveries.{"\n\n"}
+          We focus on clear communication, on-time delivery, and simple tools so your team can get work done efficiently.
         </Text>
       </ScrollView>
       </View>

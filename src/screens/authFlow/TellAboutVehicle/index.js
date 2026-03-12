@@ -310,7 +310,7 @@ const TellAboutVehicle = ({ navigation }) => {
             <View style={styles.content}>
                 <ForkLiftHeader
                     title="Tell About your Vehicle"
-                    subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+                    subtitle="Add your vehicle plate number and registration expiry date."
                     onPress={() => navigation.goBack()}
                 />
 

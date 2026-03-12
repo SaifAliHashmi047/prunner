@@ -178,7 +178,7 @@ const JobDetail = ({ navigation, route }) => {
 
         {/* Site Map */}
         {task?.siteMap && <Text style={styles.sectionTitle}>Site Map</Text>}
-        {task?.siteMap ? <View style={styles.mapContainer}>
+        {task?.siteMap && <View style={styles.mapContainer}>
           <Image source={{ uri: task?.siteMap }} style={{ height: '100%', width: '100%', resizeMode: 'contain' }} />
           {/* <MapView
             ref={mapRef}
@@ -220,30 +220,7 @@ const JobDetail = ({ navigation, route }) => {
               />
             )}
           </MapView> */}
-        </View> :
-          <View style={styles.locationCard}>
-            <View style={styles.locationRow}>
-              <View style={styles.dotLineContainer}>
-                <View style={styles.dot} />
-                <View style={styles.verticalLine} />
-                <View style={[styles.dot, { backgroundColor: colors.themeColor }]} />
-              </View>
-              <View style={styles.locationContent}>
-                <View>
-                  <Text style={styles.locationLabel}>From</Text>
-                  <Text style={styles.locationValue}>
-                    {task?.materialLocation || "N/A"}
-                  </Text>
-                </View>
-                <View style={{ marginTop: heightPixel(15) }}>
-                  <Text style={styles.locationLabel}>To</Text>
-                  <Text style={styles.locationValue}>
-                    {task?.dropOffLocation || "N/A"}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>}
+        </View> }
 
         {/* Date & Time */}
         <Text style={styles.sectionTitle}>Date & Time</Text>

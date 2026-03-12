@@ -25,14 +25,14 @@ const OnBoard = ({ navigation }) => {
                 <View style={styles.contentContainer}>
                     <Text style={styles.mainTitle}>
                         {step === 0
-                            ? "Lorem ipsum dolor sit con sectetur"
-                            : "Second screen title goes here"}
+                            ? "Welcome to Project Runner"
+                            : "Manage Tasks & Collaborate"}
                     </Text>
 
                     <Text style={styles.description}>
                         {step === 0
-                            ? "Aenean viverra ex ac enim hendrerit aliquet. Morbi eget purus nulla. Phasellus facilisis mattis laoreet. Integer ac massa venenatis,"
-                            : "This is the second onboarding description text. You can customize it."}
+                            ? "Create and assign tasks, track progress, and work together with your team on construction and delivery projects."
+                            : "Sign in as a subcontractor or forklift operator and start managing your jobs today."}
                     </Text>
 
                     <AppButton

@@ -87,7 +87,7 @@ const VerificationProcess = ({ navigation }) => {
         {/* Header */}
         <AppHeader
           title="Verification is in Process"
-          subtitle="Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit."
+          subtitle="We're reviewing your details. You'll be notified once verification is complete."
         />
 
         {/* Illustration */}

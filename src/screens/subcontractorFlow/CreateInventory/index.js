@@ -6,10 +6,10 @@ import {
     TouchableOpacity,
     Image,
     SafeAreaView,
-    ScrollView,
     RefreshControl,
     ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SecondHeader, AppButton, AppTextInput } from "../../../components";
 import { colors } from "../../../services/utilities/colors";
 import { heightPixel, fontPixel, widthPixel } from "../../../services/constant";
@@ -140,12 +140,15 @@ const CreateInventory = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView
+            <KeyboardAwareScrollView
                 contentContainerStyle={{ paddingHorizontal: widthPixel(20), flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
+                enableOnAndroid
+                extraScrollHeight={20}
+                keyboardShouldPersistTaps="handled"
             >
                 {/* Header */}
                 <SecondHeader onPress={() => navigation.goBack()} title="Create Inventory" />
@@ -273,7 +276,7 @@ const CreateInventory = ({ navigation, route }) => {
                         disabled={loading}
                     />
                 </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
             <Loader isVisible={loading || loadingInventory} />
         </SafeAreaView>
     );

@@ -23,10 +23,10 @@ const CancelJob = ({ navigation, route }) => {
   const { updateTaskStatus, loading } = useTasks();
 
   const options = [
-    "Aliquam ultricies fermentum elit,",
-    "Phasellus accumsan nulla ac velit",
-    "Mauris augue nisi",
-    "Lorem ipsum dolor sit amet",
+    "Schedule conflict",
+    "Material not available",
+    "Site access issue",
+    "Weather or safety concern",
     "Other",
   ];
 
@@ -72,7 +72,7 @@ const CancelJob = ({ navigation, route }) => {
 
         {/* Description */}
         <Text style={styles.description}>
-          Lorem ipsum dolor scelerisque sem amet, consectetur adipiscing elit.
+          Select a reason for cancelling this job. If none apply, choose Other and add details.
         </Text>
 
         {/* Options */}

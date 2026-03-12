@@ -113,7 +113,7 @@ const HomeDetail = ({ navigation }) => {
 
                 {/* Description */}
                 <Text style={styles.description}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin porttitor lectus augue
+                    Select a site to view tasks and manage your work.
                 </Text>
 
                 {/* Builder Info */}
